@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { enUS } from '@i18n/en_US';
+import { useI18n } from '@i18n/I18nContext';
 
 import * as styles from './PanelControls.css';
 
@@ -26,7 +26,7 @@ export function PanelControls({
   onChangeWidthMm,
   onChangeWidthHp
 }: PanelControlsProps) {
-  const t = enUS;
+  const t = useI18n();
   const [widthHpInput, setWidthHpInput] = React.useState(() => widthHp.toString());
   const [widthMmInput, setWidthMmInput] = React.useState(() => widthMm.toFixed(1));
 

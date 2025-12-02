@@ -5,12 +5,10 @@ import { PanelControls } from '@components/PanelControls/PanelControls';
 import { DisplayOptions } from '@components/DisplayOptions/DisplayOptions';
 import { ElementPalette } from '@components/ElementPalette/ElementPalette';
 import { ElementProperties } from '@components/ElementProperties/ElementProperties';
-import { enUS } from '@i18n/en_US';
+import { useI18n } from '@i18n/I18nContext';
 import { createPanelElement } from '@lib/elements';
-import { buildPanelSvg } from '@lib/exportSvg';
 import { generateMountingHoles } from '@lib/mountingHoles';
 import {
-  DEFAULT_PANEL_OPTIONS,
   PanelElementType,
   withElementProperties,
   type PanelElement,
@@ -18,26 +16,16 @@ import {
   type PanelModel,
   type Vector2
 } from '@lib/panelTypes';
-import {
-  deleteProject,
-  listProjects,
-  loadProject,
-  saveProject,
-  type StoredProject
-} from '@lib/storage';
-import {
-  deserializePanelModel,
-  serializePanelModel
-} from '@lib/serialization';
 import { createPanelDimensions, hpToMm, mmToCm } from '@lib/units';
 import { usePanelStore } from '@store/panelStore';
+import { usePanelHistory } from '@store/usePanelHistory';
+import { useProjects } from '@store/useProjects';
 import * as styles from './PanelDesigner.css';
 
 const DEFAULT_ZOOM = 1;
 const DEFAULT_PAN: Vector2 = { x: 0, y: 0 };
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 4;
-const MAX_HISTORY = 100;
 const GITHUB_REPO_URL = 'https://github.com/ratpi-studio/Eurorack-Panel-Designer';
 
 function computeMountingHoles(model: PanelModel): MountingHole[] {
@@ -49,52 +37,30 @@ function computeMountingHoles(model: PanelModel): MountingHole[] {
 }
 
 export function PanelDesigner() {
-  const t = enUS;
+  const t = useI18n();
   const panelModel = usePanelStore((state) => state.model);
-  const setModel = usePanelStore((state) => state.setModel);
   const placementType = usePanelStore((state) => state.placementType);
   const setPlacementType = usePanelStore((state) => state.setPlacementType);
   const selectedElementId = usePanelStore((state) => state.selectedElementId);
   const setSelectedElementId = usePanelStore((state) => state.setSelectedElement);
   const draftProperties = usePanelStore((state) => state.draftProperties);
   const setDraftProperties = usePanelStore((state) => state.setDraftProperties);
-  const [projectName, setProjectName] = React.useState(t.projects.defaultName);
-  const [projects, setProjects] = React.useState<StoredProject[]>([]);
-  const [activeProjectName, setActiveProjectName] = React.useState<string | null>(null);
-  const [selectedSavedName, setSelectedSavedName] = React.useState<string>('');
-  const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
   const [zoom, setZoom] = React.useState(DEFAULT_ZOOM);
   const [pan, setPan] = React.useState<Vector2>({ ...DEFAULT_PAN });
-  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
-  const historyRef = React.useRef<PanelModel[]>([]);
-  const futureRef = React.useRef<PanelModel[]>([]);
-  const moveHistoryPushedRef = React.useRef(false);
-
-  const pushHistory = React.useCallback((model: PanelModel) => {
-    const snapshot = JSON.parse(JSON.stringify(model)) as PanelModel;
-    historyRef.current.push(snapshot);
-    if (historyRef.current.length > MAX_HISTORY) {
-      historyRef.current.shift();
-    }
-  }, []);
-
-  const clearHistory = React.useCallback(() => {
-    historyRef.current = [];
-    futureRef.current = [];
-  }, []);
-
-  const updatePanelModel = React.useCallback(
-    (updater: (model: PanelModel) => PanelModel, options?: { skipHistory?: boolean }) => {
-      const current = usePanelStore.getState().model;
-      if (!options?.skipHistory) {
-        pushHistory(current);
-        futureRef.current = [];
-      }
-      setModel(updater(current));
-    },
-    [pushHistory, setModel]
-  );
+  const {
+    clearHistory,
+    updateModel,
+    undo,
+    redo,
+    beginMove,
+    endMove,
+    addElement,
+    moveElement,
+    updateElement,
+    updateElementProperties,
+    removeElement
+  } = usePanelHistory();
 
   const mountingHoles = React.useMemo(
     () => computeMountingHoles(panelModel),
@@ -107,18 +73,18 @@ export function PanelDesigner() {
 
   const handleSetWidthFromMm = React.useCallback(
     (widthMm: number) => {
-      updatePanelModel((prev) => ({
+      updateModel((prev) => ({
         ...prev,
         dimensions: createPanelDimensions(mmToCm(widthMm))
       }));
       setSelectedElementId(null);
     },
-    [updatePanelModel]
+    [setSelectedElementId, updateModel]
   );
 
   const handleSetWidthFromHp = React.useCallback(
     (widthHp: number) => {
-      updatePanelModel((prev) => {
+      updateModel((prev) => {
         const currentMmPerHp =
           prev.dimensions.widthHp > 0
             ? prev.dimensions.widthMm / prev.dimensions.widthHp
@@ -133,7 +99,7 @@ export function PanelDesigner() {
       });
       setSelectedElementId(null);
     },
-    [updatePanelModel]
+    [setSelectedElementId, updateModel]
   );
 
   const resetView = React.useCallback(() => {
@@ -165,7 +131,7 @@ export function PanelDesigner() {
 
   const handleDisplayOptionsChange = React.useCallback(
     (options: Partial<typeof panelModel.options>) => {
-      updatePanelModel((prev) => ({
+      updateModel((prev) => ({
         ...prev,
         options: {
           ...prev.options,
@@ -173,263 +139,67 @@ export function PanelDesigner() {
         }
       }));
     },
-    [updatePanelModel]
+    [updateModel]
   );
 
-  const refreshProjects = React.useCallback(() => {
-    setProjects(listProjects());
-  }, []);
-
-  React.useEffect(() => {
-    refreshProjects();
-  }, [refreshProjects]);
-
-  const handleSaveProject = React.useCallback(() => {
-    const trimmedName = projectName.trim() || 'Untitled panel';
-    const saved = saveProject(trimmedName, panelModel);
-    setProjects(saved);
-    setActiveProjectName(trimmedName);
-    setSelectedSavedName(trimmedName);
-    setStatusMessage(t.projects.messages.saveSuccess(trimmedName));
-  }, [panelModel, projectName, t.projects.messages]);
-
-  const handleLoadProject = React.useCallback(
-    (name: string) => {
-      const model = loadProject(name);
-      if (!model) {
-        setStatusMessage(t.projects.messages.loadError(name));
-        return;
-      }
-      setModel(model);
-      clearHistory();
-      setSelectedElementId(null);
-      setPlacementType(null);
-      resetView();
-      setActiveProjectName(name);
-      setSelectedSavedName(name);
-      setStatusMessage(t.projects.messages.loadSuccess(name));
-    },
-    [clearHistory, resetView, t.projects.messages]
-  );
-
-  const handleDeleteProject = React.useCallback(
-    (name: string) => {
-      const next = deleteProject(name);
-      setProjects(next);
-      if (activeProjectName && activeProjectName.toLowerCase() === name.toLowerCase()) {
-        setActiveProjectName(null);
-      }
-      if (selectedSavedName && selectedSavedName.toLowerCase() === name.toLowerCase()) {
-        setSelectedSavedName('');
-      }
-      setStatusMessage(t.projects.messages.deleteSuccess(name));
-    },
-    [activeProjectName, selectedSavedName, t.projects.messages]
-  );
-
-  const handleExportJson = React.useCallback(() => {
-    const payload = serializePanelModel(panelModel);
-    const blob = new Blob([payload], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    const baseName = (projectName || 'panel').trim().replace(/\s+/g, '-');
-    link.download = `${baseName || 'panel'}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    setStatusMessage(t.projects.messages.jsonExport);
-  }, [panelModel, projectName, t.projects.messages]);
-
-  const handleImportJson = React.useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
-      file
-        .text()
-        .then((text) => {
-          const model = deserializePanelModel(text);
-          setModel(model);
-          clearHistory();
-          setProjectName(file.name.replace(/\.json$/i, ''));
-          setSelectedElementId(null);
-          setPlacementType(null);
-          resetView();
-          setStatusMessage(t.projects.messages.importSuccess(file.name));
-        })
-        .catch(() => {
-          setStatusMessage(t.projects.messages.importError);
-        })
-        .finally(() => {
-          if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-          }
-        });
-    },
-    [clearHistory, resetView, setModel, t.projects.messages]
-  );
-
-  const handleExportPng = React.useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      setStatusMessage(t.projects.messages.pngError);
-      return;
-    }
-    const url = canvas.toDataURL('image/png');
-    const link = document.createElement('a');
-    const baseName = (projectName || 'panel').trim().replace(/\s+/g, '-');
-    link.download = `${baseName || 'panel'}.png`;
-    link.href = url;
-    link.click();
-    setStatusMessage(t.projects.messages.pngSuccess);
-  }, [projectName, t.projects.messages]);
-
-  const handleExportSvg = React.useCallback(() => {
-    const svg = buildPanelSvg(panelModel, mountingHoles, {
-      stroke: '#f5f3f0',
-      panelStroke: '#f5f3f0',
-      background: null,
-      strokeWidth: 0.8
-    });
-    const blob = new Blob([svg], { type: 'image/svg+xml' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    const baseName = (projectName || 'panel').trim().replace(/\s+/g, '-');
-    link.download = `${baseName || 'panel'}.svg`;
-    link.href = url;
-    link.click();
-    URL.revokeObjectURL(url);
-    setStatusMessage(t.projects.messages.svgExport);
-  }, [mountingHoles, panelModel, projectName, t.projects.messages]);
-
-  const handleReset = React.useCallback(() => {
-    setModel({
-      dimensions: createPanelDimensions(10),
-      elements: [],
-      options: { ...DEFAULT_PANEL_OPTIONS }
-    });
-    clearHistory();
-    futureRef.current = [];
-    setPlacementType(null);
-    setSelectedElementId(null);
-    setProjectName(t.projects.defaultName);
-    setStatusMessage(t.projects.messages.reset);
-    resetView();
-  }, [
-    clearHistory,
+  const {
+    projectName,
+    setProjectName,
+    projects,
+    activeProjectName,
+    selectedSavedName,
+    setSelectedSavedName,
+    statusMessage,
+    fileInputRef,
+    refreshProjects,
+    handleSaveProject,
+    handleLoadProject,
+    handleDeleteProject,
+    handleExportJson,
+    handleImportJson,
+    handleExportPng,
+    handleExportSvg,
+    handleReset
+  } = useProjects({
+    canvasRef,
+    mountingHoles,
     resetView,
-    setModel,
-    setPlacementType,
-    setSelectedElementId,
-    t.projects.defaultName,
-    t.projects.messages.reset
-  ]);
-
-  const handleMoveStart = React.useCallback(() => {
-    moveHistoryPushedRef.current = false;
-  }, []);
-
-  const handleMoveEnd = React.useCallback(() => {
-    moveHistoryPushedRef.current = false;
-  }, []);
-
-  const handleUndo = React.useCallback(() => {
-    const previous = historyRef.current.pop();
-    const current = usePanelStore.getState().model;
-    if (!previous) {
-      return;
-    }
-    const snapshot = JSON.parse(JSON.stringify(current)) as PanelModel;
-    futureRef.current.push(snapshot);
-    setModel(previous);
-    setSelectedElementId(null);
-  }, [setModel, setSelectedElementId]);
-
-  const handleRedo = React.useCallback(() => {
-    const next = futureRef.current.pop();
-    const current = usePanelStore.getState().model;
-    if (!next) {
-      return;
-    }
-    const snapshot = JSON.parse(JSON.stringify(current)) as PanelModel;
-    historyRef.current.push(snapshot);
-    setModel(next);
-    setSelectedElementId(null);
-  }, [setModel, setSelectedElementId]);
+    clearHistory
+  });
 
   const handlePlaceElement = React.useCallback(
     (type: PanelElementType, positionMm: Vector2) => {
-      let newId = '';
-      updatePanelModel((prev) => {
-        const element: PanelElement = createPanelElement(type, positionMm);
-        newId = element.id;
-        return {
-          ...prev,
-          elements: [...prev.elements, element]
-        };
-      });
-      return newId;
+      return addElement(type, positionMm);
     },
-    [updatePanelModel]
+    [addElement]
   );
 
   const handleMoveElement = React.useCallback(
     (elementId: string, positionMm: Vector2) => {
-      if (!moveHistoryPushedRef.current) {
-        const current = usePanelStore.getState().model;
-        pushHistory(current);
-        futureRef.current = [];
-        moveHistoryPushedRef.current = true;
-      }
-      updatePanelModel(
-        (prev) => ({
-          ...prev,
-          elements: prev.elements.map((element) =>
-            element.id === elementId ? { ...element, positionMm } : element
-          )
-        }),
-        { skipHistory: true }
-      );
+      moveElement(elementId, positionMm);
     },
-    [pushHistory, updatePanelModel]
+    [moveElement]
   );
 
   const handleUpdateElement = React.useCallback(
     (elementId: string, updater: (element: PanelElement) => PanelElement) => {
-      updatePanelModel((prev) => ({
-        ...prev,
-        elements: prev.elements.map((element) =>
-          element.id === elementId ? updater(element) : element
-        )
-      }));
+      updateElement(elementId, updater);
     },
-    [updatePanelModel]
+    [updateElement]
   );
 
   const handleUpdateProperties = React.useCallback(
     (elementId: string, properties: PanelElement['properties']) => {
-      updatePanelModel((prev) => ({
-        ...prev,
-        elements: prev.elements.map((element) =>
-          element.id === elementId
-            ? withElementProperties(element, properties)
-            : element
-        )
-      }));
+      updateElementProperties(elementId, properties);
     },
-    [updatePanelModel]
+    [updateElementProperties]
   );
 
   const handleRemoveElement = React.useCallback(
     (elementId: string) => {
-      updatePanelModel((prev) => ({
-        ...prev,
-        elements: prev.elements.filter((element) => element.id !== elementId)
-      }));
-      if (usePanelStore.getState().selectedElementId === elementId) {
-        setSelectedElementId(null);
-      }
+      removeElement(elementId);
     },
-    [setSelectedElementId, updatePanelModel]
+    [removeElement]
   );
 
   React.useEffect(() => {
@@ -458,9 +228,9 @@ export function PanelDesigner() {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z') {
         event.preventDefault();
         if (event.shiftKey) {
-          handleRedo();
+          redo();
         } else {
-          handleUndo();
+          undo();
         }
       }
     };
@@ -469,7 +239,7 @@ export function PanelDesigner() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [handleRedo, handleRemoveElement, handleUndo, selectedElementId]);
+  }, [handleRemoveElement, redo, selectedElementId, undo]);
 
   const selectedElement = React.useMemo(
     () => panelModel.elements.find((element) => element.id === selectedElementId) ?? null,
@@ -567,13 +337,14 @@ export function PanelDesigner() {
             placementType={placementType}
             onPlaceElement={handlePlaceElement}
             onMoveElement={handleMoveElement}
-            onMoveStart={handleMoveStart}
-            onMoveEnd={handleMoveEnd}
+            onMoveStart={beginMove}
+            onMoveEnd={endMove}
             onZoomChange={handleZoomChange}
             onPanChange={handlePanChange}
             onSelectElement={setSelectedElementId}
             displayOptions={panelModel.options}
             selectedElementId={selectedElementId}
+            draftProperties={draftProperties}
           />
           <div className={styles.shortcuts}>
             <span className={styles.key}>{t.shortcuts.shift}</span>
@@ -627,7 +398,7 @@ export function PanelDesigner() {
                 {t.projects.exportSvg}
               </button>
               <button type="button" className={styles.secondaryButton} onClick={handleReset}>
-                Reset design
+                {t.projects.reset}
               </button>
             </div>
             <label className={styles.fieldRow}>
@@ -683,7 +454,10 @@ export function PanelDesigner() {
               element={elementForProperties}
               onChangePosition={(positionMm) => {
                 if (selectedElement) {
-                  handleMoveElement(selectedElement.id, positionMm);
+                  updateElement(selectedElement.id, (element) => ({
+                    ...element,
+                    positionMm
+                  }));
                 }
               }}
               onChangeRotation={(rotationDeg) => {
