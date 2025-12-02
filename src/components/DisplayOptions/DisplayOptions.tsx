@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { enUS } from '@i18n/en_US';
+import { useI18n } from '@i18n/I18nContext';
 import type { PanelOptions } from '@lib/panelTypes';
 
 import * as styles from './DisplayOptions.css';
@@ -16,7 +16,7 @@ export function DisplayOptions({
   onChange,
   onResetView
 }: DisplayOptionsProps) {
-  const t = enUS;
+  const t = useI18n();
   const [gridInput, setGridInput] = React.useState(() => options.gridSizeMm.toString());
 
   React.useEffect(() => {

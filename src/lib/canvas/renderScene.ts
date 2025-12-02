@@ -23,6 +23,11 @@ export interface PanelCanvasPalette {
   selection: string;
 }
 
+interface SelectionAnimationState {
+  dashOffset: number;
+  pulseScale: number;
+}
+
 interface PanelSceneDrawingOptions {
   context: CanvasRenderingContext2D;
   transform: CanvasTransform;
@@ -36,6 +41,8 @@ interface PanelSceneDrawingOptions {
   elementFillColors: Record<PanelElementType, string>;
   elementStrokeColor: string;
   fontFamily: string;
+  selectionAnimation?: SelectionAnimationState;
+  ghostElement?: PanelElement | null;
 }
 
 export function drawPanelScene({
@@ -50,7 +57,9 @@ export function drawPanelScene({
   palette,
   elementFillColors,
   elementStrokeColor,
-  fontFamily
+  fontFamily,
+  selectionAnimation,
+  ghostElement
 }: PanelSceneDrawingOptions) {
   drawPanelArea(context, transform, palette);
 
@@ -70,8 +79,21 @@ export function drawPanelScene({
     elementFillColors,
     elementStrokeColor,
     palette.selection,
-    fontFamily
+    fontFamily,
+    selectionAnimation
   );
+
+  if (ghostElement) {
+    drawGhostElement(
+      context,
+      ghostElement,
+      transform,
+      elementFillColors,
+      elementStrokeColor,
+      palette.selection,
+      fontFamily
+    );
+  }
 }
 
 function drawPanelArea(
@@ -199,7 +221,8 @@ function drawElements(
   elementFillColors: Record<PanelElementType, string>,
   elementStrokeColor: string,
   selectionColor: string,
-  fontFamily: string
+  fontFamily: string,
+  selectionAnimation?: SelectionAnimationState
 ) {
   elements.forEach((element) => {
     const center = projectPanelPoint(element.positionMm, transform);
@@ -222,7 +245,8 @@ function drawElements(
           selectedElementId === element.id,
           elementFillColors[element.type],
           elementStrokeColor,
-          selectionColor
+          selectionColor,
+          selectionAnimation
         );
         break;
       }
@@ -234,7 +258,8 @@ function drawElements(
           selectedElementId === element.id,
           elementFillColors[element.type],
           elementStrokeColor,
-          selectionColor
+          selectionColor,
+          selectionAnimation
         );
         break;
       }
@@ -246,7 +271,8 @@ function drawElements(
           selectedElementId === element.id,
           elementFillColors[element.type],
           selectionColor,
-          fontFamily
+          fontFamily,
+          selectionAnimation
         );
         break;
       }
@@ -258,6 +284,30 @@ function drawElements(
   });
 }
 
+function drawGhostElement(
+  context: CanvasRenderingContext2D,
+  element: PanelElement,
+  transform: CanvasTransform,
+  elementFillColors: Record<PanelElementType, string>,
+  elementStrokeColor: string,
+  selectionColor: string,
+  fontFamily: string
+) {
+  context.save();
+  context.globalAlpha = 0.4;
+  drawElements(
+    context,
+    [element],
+    transform,
+    null,
+    elementFillColors,
+    elementStrokeColor,
+    selectionColor,
+    fontFamily
+  );
+  context.restore();
+}
+
 function drawCircularElement(
   context: CanvasRenderingContext2D,
   element: PanelElement,
@@ -265,7 +315,8 @@ function drawCircularElement(
   isSelected: boolean,
   fillColor: string,
   strokeColor: string,
-  selectionColor: string
+  selectionColor: string,
+  selectionAnimation?: SelectionAnimationState
 ) {
   if (
     element.type !== PanelElementType.Jack &&
@@ -285,7 +336,7 @@ function drawCircularElement(
   context.stroke();
 
   if (isSelected) {
-    drawSelectionCircle(context, radius + 6, selectionColor);
+    drawSelectionCircle(context, radius + 6, selectionColor, selectionAnimation);
   }
 }
 
@@ -296,7 +347,8 @@ function drawRectangularElement(
   isSelected: boolean,
   fillColor: string,
   strokeColor: string,
-  selectionColor: string
+  selectionColor: string,
+  selectionAnimation?: SelectionAnimationState
 ) {
   if (element.type !== PanelElementType.Switch) {
     return;
@@ -313,7 +365,13 @@ function drawRectangularElement(
   context.stroke();
 
   if (isSelected) {
-    drawSelectionRect(context, width + 12, height + 12, selectionColor);
+    drawSelectionRect(
+      context,
+      width + 12,
+      height + 12,
+      selectionColor,
+      selectionAnimation
+    );
   }
 }
 
@@ -324,7 +382,8 @@ function drawLabelElement(
   isSelected: boolean,
   fillColor: string,
   selectionColor: string,
-  fontFamily: string
+  fontFamily: string,
+  selectionAnimation?: SelectionAnimationState
 ) {
   if (element.type !== PanelElementType.Label) {
     return;
@@ -344,7 +403,8 @@ function drawLabelElement(
       context,
       size.widthMm * scale + 12,
       size.heightMm * scale + 12,
-      selectionColor
+      selectionColor,
+      selectionAnimation
     );
   }
 }
@@ -352,14 +412,18 @@ function drawLabelElement(
 function drawSelectionCircle(
   context: CanvasRenderingContext2D,
   radius: number,
-  selectionColor: string
+  selectionColor: string,
+  selectionAnimation?: SelectionAnimationState
 ) {
   context.save();
   context.strokeStyle = selectionColor;
-  context.lineWidth = 2;
-  context.setLineDash([6, 6]);
+  const pulseScale = selectionAnimation?.pulseScale ?? 1;
+  context.lineWidth = 2 * pulseScale;
+  const baseDash = 6;
+  context.setLineDash([baseDash * pulseScale, baseDash * pulseScale]);
+  context.lineDashOffset = selectionAnimation?.dashOffset ?? 0;
   context.beginPath();
-  context.arc(0, 0, radius, 0, Math.PI * 2);
+  context.arc(0, 0, radius * pulseScale, 0, Math.PI * 2);
   context.stroke();
   context.restore();
 }
@@ -368,12 +432,21 @@ function drawSelectionRect(
   context: CanvasRenderingContext2D,
   width: number,
   height: number,
-  selectionColor: string
+  selectionColor: string,
+  selectionAnimation?: SelectionAnimationState
 ) {
   context.save();
   context.strokeStyle = selectionColor;
-  context.lineWidth = 2;
-  context.setLineDash([6, 6]);
-  context.strokeRect(-width / 2, -height / 2, width, height);
+  const pulseScale = selectionAnimation?.pulseScale ?? 1;
+  context.lineWidth = 2 * pulseScale;
+  const baseDash = 6;
+  context.setLineDash([baseDash * pulseScale, baseDash * pulseScale]);
+  context.lineDashOffset = selectionAnimation?.dashOffset ?? 0;
+  context.strokeRect(
+    (-width / 2) * pulseScale,
+    (-height / 2) * pulseScale,
+    width * pulseScale,
+    height * pulseScale
+  );
   context.restore();
 }
