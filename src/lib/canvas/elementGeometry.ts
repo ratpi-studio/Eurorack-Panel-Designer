@@ -10,7 +10,7 @@ const LABEL_LINE_HEIGHT_RATIO = 1.25;
 
 export const PT_TO_MM = 25.4 / 72;
 
-export interface LabelSizeMm {
+interface LabelSizeMm {
   widthMm: number;
   heightMm: number;
 }
@@ -29,7 +29,7 @@ export function getLabelSizeMm(
   return { widthMm, heightMm };
 }
 
-export function convertToElementSpace(
+function convertToElementSpace(
   point: Vector2,
   element: PanelElement
 ): Vector2 {
@@ -52,7 +52,7 @@ export function convertToElementSpace(
   };
 }
 
-export function isPointInsideElement(
+function isPointInsideElement(
   pointMm: Vector2,
   element: PanelElement
 ): boolean {

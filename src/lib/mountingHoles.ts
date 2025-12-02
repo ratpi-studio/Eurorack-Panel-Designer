@@ -5,7 +5,7 @@ import {
 } from './panelTypes';
 import { hpToMm } from './units';
 
-export interface MountingHoleInput {
+interface MountingHoleInput {
   widthHp: number;
   widthMm: number;
   heightMm: number;

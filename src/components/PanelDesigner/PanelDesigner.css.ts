@@ -29,7 +29,7 @@ export const logo = style({
   height: '48px'
 });
 
-export const subtitle = style({
+const subtitle = style({
   margin: 0,
   color: vars.color.textSecondary
 });
@@ -84,7 +84,7 @@ export const sectionStack = style({
   minHeight: 0
 });
 
-export const projectCard = card;
+const projectCard = card;
 
 export const cardHeader = style({
   display: 'flex',

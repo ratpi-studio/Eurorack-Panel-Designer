@@ -1,4 +1,4 @@
-export type LengthUnit = 'cm' | 'mm' | 'hp';
+type LengthUnit = 'cm' | 'mm' | 'hp';
 
 export interface Vector2 {
   x: number;
@@ -28,7 +28,7 @@ interface PanelElementBase<
   properties: TProperties;
 }
 
-export interface PanelElementPropertiesBase {
+interface PanelElementPropertiesBase {
   label?: string;
 }
 
@@ -119,19 +119,19 @@ export interface SerializedPanel {
 
 export const SERIALIZATION_VERSION = 1;
 
-export function isCircularElementProperties(
+function isCircularElementProperties(
   properties: PanelElement['properties']
 ): properties is CircularElementProperties {
   return 'diameterMm' in properties;
 }
 
-export function isRectangularElementProperties(
+function isRectangularElementProperties(
   properties: PanelElement['properties']
 ): properties is RectangularElementProperties {
   return 'widthMm' in properties && 'heightMm' in properties;
 }
 
-export function isLabelElementProperties(
+function isLabelElementProperties(
   properties: PanelElement['properties']
 ): properties is LabelElementProperties {
   return 'text' in properties && 'fontSizePt' in properties;

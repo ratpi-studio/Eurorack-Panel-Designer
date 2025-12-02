@@ -5,14 +5,14 @@ import {
   type PanelDimensions
 } from './panelTypes';
 
-export interface PanelWidthComputation {
+interface PanelWidthComputation {
   widthCm: number;
   widthMm: number;
   widthHp: number;
   normalizedWidthMm: number;
 }
 
-export const MIN_PANEL_WIDTH_CM = 1;
+const MIN_PANEL_WIDTH_CM = 1;
 
 export function sanitizeWidthCm(value: number): number {
   if (!Number.isFinite(value)) {
