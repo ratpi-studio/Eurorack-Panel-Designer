@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { enUS } from '@i18n/en_US';
+import { useI18n } from '@i18n/I18nContext';
 import {
   PanelElementType,
   type PanelElement,
@@ -29,7 +29,7 @@ export function ElementProperties({
   onChangeProperties,
   onRemove
 }: ElementPropertiesProps) {
-  const t = enUS;
+  const t = useI18n();
   const [inputs, setInputs] = React.useState<Record<string, string>>({});
 
   React.useEffect(() => {

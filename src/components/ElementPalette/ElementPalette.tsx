@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { enUS } from '@i18n/en_US';
+import { useI18n } from '@i18n/I18nContext';
 import { PanelElementType } from '@lib/panelTypes';
 
 import * as styles from './ElementPalette.css';
@@ -10,36 +10,40 @@ interface ElementPaletteProps {
   onSelect: (type: PanelElementType | null) => void;
 }
 
-const paletteItems: Array<{
-  type: PanelElementType;
-  label: string;
-  description: string;
-  color: string;
-}> = [
-  {
-    type: PanelElementType.Jack,
-    ...enUS.palette.items.jack
-  },
-  {
-    type: PanelElementType.Potentiometer,
-    ...enUS.palette.items.potentiometer
-  },
-  {
-    type: PanelElementType.Switch,
-    ...enUS.palette.items.switch
-  },
-  {
-    type: PanelElementType.Led,
-    ...enUS.palette.items.led
-  },
-  {
-    type: PanelElementType.Label,
-    ...enUS.palette.items.label
-  }
-];
-
 export function ElementPalette({ activeType, onSelect }: ElementPaletteProps) {
-  const t = enUS;
+  const t = useI18n();
+
+  const paletteItems: Array<{
+    type: PanelElementType;
+    label: string;
+    description: string;
+    color: string;
+  }> = React.useMemo(
+    () => [
+      {
+        type: PanelElementType.Jack,
+        ...t.palette.items.jack
+      },
+      {
+        type: PanelElementType.Potentiometer,
+        ...t.palette.items.potentiometer
+      },
+      {
+        type: PanelElementType.Switch,
+        ...t.palette.items.switch
+      },
+      {
+        type: PanelElementType.Led,
+        ...t.palette.items.led
+      },
+      {
+        type: PanelElementType.Label,
+        ...t.palette.items.label
+      }
+    ],
+    [t]
+  );
+
   return (
     <div className={styles.root}>
       <div className={styles.header}>
