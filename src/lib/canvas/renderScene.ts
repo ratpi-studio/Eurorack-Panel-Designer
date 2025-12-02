@@ -23,7 +23,7 @@ export interface PanelCanvasPalette {
   selection: string;
 }
 
-export interface PanelSceneDrawingOptions {
+interface PanelSceneDrawingOptions {
   context: CanvasRenderingContext2D;
   transform: CanvasTransform;
   elements: PanelElement[];

@@ -1,4 +1,4 @@
-export interface Translations {
+interface Translations {
   app: {
     title: string;
     subtitle: string;
@@ -205,4 +205,4 @@ export const enUS: Translations = {
   }
 };
 
-export type Locale = 'en_US';
+type Locale = 'en_US';

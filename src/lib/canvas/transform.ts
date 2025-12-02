@@ -6,7 +6,7 @@ export interface CanvasTransform {
   panelSizePx: Vector2;
 }
 
-export interface CanvasTransformInput {
+interface CanvasTransformInput {
   canvasSizePx: Vector2;
   panelSizeMm: Vector2;
   zoom: number;

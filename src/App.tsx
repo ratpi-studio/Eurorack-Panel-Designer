@@ -6,4 +6,3 @@ export function App() {
   return <PanelDesigner />;
 }
 
-export default App;
