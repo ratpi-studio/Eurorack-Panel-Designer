@@ -1,0 +1,31 @@
+{
+  "name": "eurorack_panel_designer",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "start": "vite preview",
+    "lint": "oxlint --react-plugin --import-plugin --tsconfig tsconfig.json src",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@vanilla-extract/css": "1.17.5",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@vanilla-extract/vite-plugin": "5.1.3",
+    "@vitejs/plugin-react-swc": "4.2.2",
+    "oxlint": "1.30.0",
+    "typescript": "5.9.3",
+    "vite": "npm:rolldown-vite@latest",
+    "vitest": "4.0.14"
+  },
+  "packageManager": "yarn@4.11.0"
+}
