@@ -8,11 +8,14 @@ import {
 } from '@lib/canvas/transform';
 import {
   PanelElementType,
+  withElementProperties,
   type MountingHole,
+  type PanelElement,
   type PanelModel,
   type PanelOptions,
   type Vector2
 } from '@lib/panelTypes';
+import { createPanelElement } from '@lib/elements';
 import { snapPointToGrid } from '@lib/grid';
 import { themeValues } from '@styles/theme.css';
 
@@ -32,6 +35,10 @@ const elementFillColors: Record<PanelElementType, string> = {
 
 const elementStrokeColor = '#0f172a';
 
+type DraftPropertiesState = Partial<{
+  [T in PanelElementType]: PanelElement['properties'];
+}>;
+
 interface ExtendedCanvasPalette extends PanelCanvasPalette {
   workspace: string;
   text: string;
@@ -45,7 +52,7 @@ const canvasPalette: ExtendedCanvasPalette = {
   gridCenter: 'rgba(148, 163, 184, 0.45)',
   mountingHoleFill: '#0f172a',
   mountingHoleStroke: '#94a3b8',
-  selection: themeValues.color.accent,
+  selection: '#ffffff',
   text: themeValues.color.textSecondary
 };
 
@@ -69,6 +76,7 @@ interface PanelCanvasProps {
     'showGrid' | 'showMountingHoles' | 'gridSizeMm' | 'snapToGrid'
   >;
   selectedElementId: string | null;
+  draftProperties: DraftPropertiesState;
 }
 
 export function PanelCanvas({
@@ -87,7 +95,8 @@ export function PanelCanvas({
   onPanChange,
   onSelectElement,
   displayOptions,
-  selectedElementId
+  selectedElementId,
+  draftProperties
 }: PanelCanvasProps) {
   const internalCanvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const canvasRef = forwardedCanvasRef ?? internalCanvasRef;
@@ -109,6 +118,7 @@ export function PanelCanvas({
   });
   const [pointerPanelPos, setPointerPanelPos] = React.useState<Vector2 | null>(null);
   const [snapOverridden, setSnapOverridden] = React.useState(false);
+  const animationFrameRef = React.useRef<number | null>(null);
 
   React.useLayoutEffect(() => {
     const container = containerRef.current;
@@ -189,63 +199,6 @@ export function PanelCanvas({
     1
   )} mm · Zoom ${(zoom * 100).toFixed(0)}%`;
 
-  React.useLayoutEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      return;
-    }
-
-    const context = canvas.getContext('2d');
-    if (!context) {
-      return;
-    }
-
-    const width = canvasSize.x;
-    const height = canvasSize.y;
-    const pixelRatio =
-      typeof window !== 'undefined' ? window.devicePixelRatio : 1;
-    const scaledWidth = Math.round(width * pixelRatio);
-    const scaledHeight = Math.round(height * pixelRatio);
-
-    if (canvas.width !== scaledWidth || canvas.height !== scaledHeight) {
-      canvas.width = scaledWidth;
-      canvas.height = scaledHeight;
-    }
-
-    context.setTransform(1, 0, 0, 1, 0, 0);
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.scale(pixelRatio, pixelRatio);
-
-    context.fillStyle = canvasPalette.workspace;
-    context.fillRect(0, 0, width, height);
-
-    drawPanelScene({
-      context,
-      transform,
-      elements: model.elements,
-      mountingHoles,
-      selectedElementId,
-      showGrid: displayOptions.showGrid,
-      showMountingHoles: displayOptions.showMountingHoles,
-      gridSizeMm: displayOptions.gridSizeMm,
-      palette: canvasPalette,
-      elementFillColors,
-      elementStrokeColor,
-      fontFamily: themeValues.font.body
-    });
-  }, [
-    transform,
-    model.elements,
-    mountingHoles,
-    displayOptions.gridSizeMm,
-    displayOptions.showGrid,
-    displayOptions.showMountingHoles,
-    selectedElementId,
-    zoom,
-    canvasSize.x,
-    canvasSize.y
-  ]);
-
   const clampZoom = React.useCallback(
     (value: number) => Math.min(zoomLimits.max, Math.max(zoomLimits.min, value)),
     [zoomLimits.max, zoomLimits.min]
@@ -268,6 +221,112 @@ export function PanelCanvas({
       model.dimensions.widthMm
     ]
   );
+
+  const ghostElement = React.useMemo<PanelElement | null>(() => {
+    if (!placementType || !pointerPanelPos) {
+      return null;
+    }
+
+    const snappedPoint = maybeSnap(pointerPanelPos);
+    const base = createPanelElement(placementType, snappedPoint);
+    const draft = draftProperties[placementType];
+    const withDraft = draft ? withElementProperties(base, draft) : base;
+
+    return {
+      ...withDraft,
+      id: 'ghost'
+    };
+  }, [draftProperties, maybeSnap, placementType, pointerPanelPos]);
+
+  React.useLayoutEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return;
+    }
+
+    const context = canvas.getContext('2d');
+    if (!context) {
+      return;
+    }
+
+    const renderFrame = (timeMs: number) => {
+      const width = canvasSize.x;
+      const height = canvasSize.y;
+      const pixelRatio =
+        typeof window !== 'undefined' ? window.devicePixelRatio : 1;
+      const scaledWidth = Math.round(width * pixelRatio);
+      const scaledHeight = Math.round(height * pixelRatio);
+
+      if (canvas.width !== scaledWidth || canvas.height !== scaledHeight) {
+        canvas.width = scaledWidth;
+        canvas.height = scaledHeight;
+      }
+
+      context.setTransform(1, 0, 0, 1, 0, 0);
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.scale(pixelRatio, pixelRatio);
+
+      context.fillStyle = canvasPalette.workspace;
+      context.fillRect(0, 0, width, height);
+
+      let selectionAnimation: { dashOffset: number; pulseScale: number } | undefined;
+      if (selectedElementId) {
+        const t = timeMs / 1000;
+        const dashSpeed = 40; // dash movement speed in px/s (approx)
+        const patternLength = 12; // 6 + 6 from setLineDash
+        const dashOffset = -((t * dashSpeed) % patternLength);
+        const pulseSpeed = 0.6; // Hz
+        const pulseAmplitude = 0.15;
+        const pulseScale =
+          1 + pulseAmplitude * Math.sin(2 * Math.PI * pulseSpeed * t);
+        selectionAnimation = { dashOffset, pulseScale };
+      }
+
+      drawPanelScene({
+        context,
+        transform,
+        elements: model.elements,
+        mountingHoles,
+        selectedElementId,
+        showGrid: displayOptions.showGrid,
+        showMountingHoles: displayOptions.showMountingHoles,
+        gridSizeMm: displayOptions.gridSizeMm,
+        palette: canvasPalette,
+        elementFillColors,
+        elementStrokeColor,
+        fontFamily: themeValues.font.body,
+        selectionAnimation,
+        ghostElement
+      });
+
+      if (typeof window !== 'undefined') {
+        animationFrameRef.current = window.requestAnimationFrame(renderFrame);
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      animationFrameRef.current = window.requestAnimationFrame(renderFrame);
+    }
+
+    return () => {
+      if (animationFrameRef.current !== null && typeof window !== 'undefined') {
+        window.cancelAnimationFrame(animationFrameRef.current);
+      }
+      animationFrameRef.current = null;
+    };
+  }, [
+    transform,
+    model.elements,
+    mountingHoles,
+    displayOptions.gridSizeMm,
+    displayOptions.showGrid,
+    displayOptions.showMountingHoles,
+    selectedElementId,
+    zoom,
+    canvasSize.x,
+    canvasSize.y,
+    ghostElement
+  ]);
 
   const handleWheel = React.useCallback(
     (event: WheelEvent | React.WheelEvent<HTMLCanvasElement>) => {
@@ -378,14 +437,6 @@ export function PanelCanvas({
       return;
     }
 
-    if (placementType) {
-      const snappedPoint = maybeSnap(pointPanel);
-      const newId = onPlaceElement(placementType, snappedPoint);
-      onSelectElement(newId);
-      pointerModeRef.current = 'idle';
-      return;
-    }
-
     const element = findElementAtPoint(pointPanel, model.elements);
     if (element) {
       const offset = {
@@ -396,6 +447,14 @@ export function PanelCanvas({
       pointerModeRef.current = 'move';
       onMoveStart?.(element.id);
       onSelectElement(element.id);
+      return;
+    }
+
+    if (placementType) {
+      const snappedPoint = maybeSnap(pointPanel);
+      const newId = onPlaceElement(placementType, snappedPoint);
+      onSelectElement(newId);
+      pointerModeRef.current = 'idle';
       return;
     }
 
