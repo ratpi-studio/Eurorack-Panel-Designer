@@ -1,3 +1,7 @@
+![Vercel Deploy](https://deploy-badge.vercel.app/vercel/eurorack-panel-designer-oss8)
+
+[Online version](https://eurorack-panel-designer-oss8.vercel.app/)
+
 # Eurorack Panel Designer
 
 Single-page web app to sketch Eurorack front panels. The canvas mirrors a real 3U panel: convert cm/mm/HP on the fly, drop elements (jacks, pots, switches, LEDs, labels), tweak their properties, and export or save layouts locally.
