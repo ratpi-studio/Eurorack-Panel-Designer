@@ -1729,7 +1729,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"csstype@npm:^3.2.2, csstype@npm:^3.2.3":
+"csstype@npm:^3.1.3, csstype@npm:^3.2.2, csstype@npm:^3.2.3":
   version: 3.2.3
   resolution: "csstype@npm:3.2.3"
   checksum: 10c0/cd29c51e70fa822f1cecd8641a1445bed7063697469d35633b516e60fe8c1bde04b08f6c5b6022136bb669b64c63d4173af54864510fbb4ee23281801841a3ce
@@ -2024,8 +2024,10 @@ __metadata:
     "@vitejs/plugin-react-swc": "npm:4.2.2"
     knip: "npm:^5.71.0"
     oxlint: "npm:1.31.0"
-    react: "npm:19.2.0"
-    react-dom: "npm:19.2.0"
+    react: "npm:19.2.1"
+    react-dom: "npm:19.2.1"
+    react-hot-toast: "npm:^2.4.1"
+    three: "npm:^0.170.0"
     typescript: "npm:5.9.3"
     vite: "npm:rolldown-vite@latest"
     vitest: "npm:4.0.15"
@@ -2182,6 +2184,15 @@ __metadata:
     minipass: "npm:^7.1.2"
     path-scurry: "npm:^2.0.0"
   checksum: 10c0/8e2f5821f3f7c312dd102e23a15b80c79e0837a9872784293ba2e15ec73b3f3749a49a42a31bfcb4e52c84820a474e92331c2eebf18819d20308f5c33876630a
+  languageName: node
+  linkType: hard
+
+"goober@npm:^2.1.16":
+  version: 2.1.18
+  resolution: "goober@npm:2.1.18"
+  peerDependencies:
+    csstype: ^3.0.10
+  checksum: 10c0/de9bf7b6f57417900afac81a479b85d8c0bcb0322ba8b174f9287d10e7891ba7e33db5fe2b0cdd75281c69130e76eb0c694345acf45ea57e4e4a2db8e4c4f021
   languageName: node
   linkType: hard
 
@@ -2961,21 +2972,34 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:19.2.0":
-  version: 19.2.0
-  resolution: "react-dom@npm:19.2.0"
+"react-dom@npm:19.2.1":
+  version: 19.2.1
+  resolution: "react-dom@npm:19.2.1"
   dependencies:
     scheduler: "npm:^0.27.0"
   peerDependencies:
-    react: ^19.2.0
-  checksum: 10c0/fa2cae05248d01288e91523b590ce4e7635b1e13f1344e225f850d722a8da037bf0782f63b1c1d46353334e0c696909b82e582f8cad607948fde6f7646cc18d9
+    react: ^19.2.1
+  checksum: 10c0/e56b6b3d72314df580ca800b70a69a21c6372703c8f45d9b5451ca6519faefb2496d76ffa9c5adb94136d2bbf2fd303d0dfc208a2cd77ede3132877471af9470
   languageName: node
   linkType: hard
 
-"react@npm:19.2.0":
-  version: 19.2.0
-  resolution: "react@npm:19.2.0"
-  checksum: 10c0/1b6d64eacb9324725bfe1e7860cb7a6b8a34bc89a482920765ebff5c10578eb487e6b46b2f0df263bd27a25edbdae2c45e5ea5d81ae61404301c1a7192c38330
+"react-hot-toast@npm:^2.4.1":
+  version: 2.6.0
+  resolution: "react-hot-toast@npm:2.6.0"
+  dependencies:
+    csstype: "npm:^3.1.3"
+    goober: "npm:^2.1.16"
+  peerDependencies:
+    react: ">=16"
+    react-dom: ">=16"
+  checksum: 10c0/c25652e0a477ab501b365a6a2d20b314275a1d9963dd56a9803972d602845f0d44ade2c3345cd66ccd251d62e2e5a10001a55fd80fa183c0e41343f3780ffa9f
+  languageName: node
+  linkType: hard
+
+"react@npm:19.2.1":
+  version: 19.2.1
+  resolution: "react@npm:19.2.1"
+  checksum: 10c0/2b5eaf407abb3db84090434c20d6c5a8e447ab7abcd8fe9eaf1ddc299babcf31284ee9db7ea5671d21c85ac5298bd632fa1a7da1ed78d5b368a537f5e1cd5d62
   languageName: node
   linkType: hard
 
@@ -3266,6 +3290,13 @@ __metadata:
     minizlib: "npm:^3.1.0"
     yallist: "npm:^5.0.0"
   checksum: 10c0/a7d8b801139b52f93a7e34830db0de54c5aa45487c7cb551f6f3d44a112c67f1cb8ffdae856b05fd4f17b1749911f1c26f1e3a23bbe0279e17fd96077f13f467
+  languageName: node
+  linkType: hard
+
+"three@npm:^0.170.0":
+  version: 0.170.0
+  resolution: "three@npm:0.170.0"
+  checksum: 10c0/eeaa1eccb31467654a044fb90634b3b6bb8d0768a4f029c082fb6aa22aec0d6362d0e3af74938caa1db512b7823a031b54a76e88fba6cfd535054165ea9667c9
   languageName: node
   linkType: hard
 
