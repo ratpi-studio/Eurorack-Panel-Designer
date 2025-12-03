@@ -18,6 +18,7 @@ import {
 } from '@lib/panelTypes';
 import { createPanelDimensions, hpToMm, mmToCm } from '@lib/units';
 import { StlPreview } from '@components/StlPreview/StlPreview';
+import { type ExportFormat } from '@lib/exportPreferences';
 import { usePanelStore } from '@store/panelStore';
 import { usePanelHistory } from '@store/usePanelHistory';
 import { useProjects } from '@store/useProjects';
@@ -197,6 +198,8 @@ export function PanelDesigner() {
     handleExportPng,
     handleExportSvg,
     handleExportStl,
+    handleExportKicadSvg,
+    handleExportKicadPcb,
     exportFormat,
     setExportFormat,
     handleReset
@@ -334,40 +337,79 @@ export function PanelDesigner() {
         return t.projects.exportPng;
       case 'stl':
         return t.projects.exportStl;
+      case 'kicadSvg':
+        return t.projects.exportKicadSvg;
+      case 'kicadPcb':
+        return t.projects.exportKicadPcb;
       case 'svg':
       default:
         return t.projects.exportSvg;
     }
-  }, [exportFormat, t.projects.exportPng, t.projects.exportStl, t.projects.exportSvg]);
+  }, [
+    exportFormat,
+    t.projects.exportKicadPcb,
+    t.projects.exportKicadSvg,
+    t.projects.exportPng,
+    t.projects.exportStl,
+    t.projects.exportSvg
+  ]);
 
   const handleExportClick = React.useCallback(() => {
-    if (exportFormat === 'png') {
-      handleExportPng();
-      return;
+    switch (exportFormat) {
+      case 'png':
+        handleExportPng();
+        return;
+      case 'stl':
+        setIsStlModalOpen(true);
+        return;
+      case 'kicadSvg':
+        handleExportKicadSvg();
+        return;
+      case 'kicadPcb':
+        handleExportKicadPcb();
+        return;
+      case 'svg':
+      default:
+        handleExportSvg();
     }
-    if (exportFormat === 'stl') {
-      setIsStlModalOpen(true);
-      return;
-    }
-    handleExportSvg();
-  }, [exportFormat, handleExportPng, handleExportSvg]);
+  }, [
+    exportFormat,
+    handleExportKicadPcb,
+    handleExportKicadSvg,
+    handleExportPng,
+    handleExportSvg
+  ]);
 
   const handleSelectExportFormat = React.useCallback(
-    (format: 'svg' | 'png' | 'stl') => {
+    (format: ExportFormat) => {
       setExportFormat(format);
       setIsExportMenuOpen(false);
 
-      if (format === 'png') {
-        handleExportPng();
-        return;
+      switch (format) {
+        case 'png':
+          handleExportPng();
+          return;
+        case 'stl':
+          setIsStlModalOpen(true);
+          return;
+        case 'kicadSvg':
+          handleExportKicadSvg();
+          return;
+        case 'kicadPcb':
+          handleExportKicadPcb();
+          return;
+        case 'svg':
+        default:
+          handleExportSvg();
       }
-      if (format === 'stl') {
-        setIsStlModalOpen(true);
-        return;
-      }
-      handleExportSvg();
     },
-    [handleExportPng, handleExportSvg, setExportFormat]
+    [
+      handleExportKicadPcb,
+      handleExportKicadSvg,
+      handleExportPng,
+      handleExportSvg,
+      setExportFormat
+    ]
   );
 
   const handleConfirmStlExport = React.useCallback(() => {
@@ -601,6 +643,20 @@ export function PanelDesigner() {
                         onClick={() => handleSelectExportFormat('png')}
                       >
                         {t.projects.exportPng}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.exportMenuItem}
+                        onClick={() => handleSelectExportFormat('kicadSvg')}
+                      >
+                        {t.projects.exportKicadSvg}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.exportMenuItem}
+                        onClick={() => handleSelectExportFormat('kicadPcb')}
+                      >
+                        {t.projects.exportKicadPcb}
                       </button>
                       <button
                         type="button"
