@@ -218,6 +218,16 @@ export const canvasSection = style({
   alignItems: 'start'
 });
 
+export const canvasSectionCompact = style({
+  flex: 1,
+  minHeight: 0,
+  display: 'grid',
+  gridTemplateColumns: '1fr',
+  gap: vars.spacing.md,
+  alignItems: 'start',
+  position: 'relative'
+});
+
 export const leftColumn = style({
   display: 'flex',
   flexDirection: 'column',
@@ -269,6 +279,50 @@ export const rightColumn = style({
   minHeight: 0,
   overflow: 'auto',
   paddingRight: vars.spacing.sm
+});
+
+export const drawer = style({
+  position: 'fixed',
+  top: '72px',
+  bottom: vars.spacing.md,
+  width: 'min(360px, calc(100% - 32px))',
+  zIndex: 30,
+  transform: 'translateX(-120%)',
+  transition: 'transform 200ms ease, opacity 200ms ease',
+  boxShadow: '0 24px 60px rgba(0,0,0,0.45)',
+  overflow: 'auto',
+  opacity: 0
+});
+
+export const drawerRight = style({
+  right: vars.spacing.md,
+  left: 'auto',
+  transform: 'translateX(120%)'
+});
+
+export const drawerLeft = style({
+  left: vars.spacing.md,
+  right: 'auto'
+});
+
+export const drawerOpen = style({
+  transform: 'translateX(0)',
+  opacity: 1
+});
+
+export const compactToggleBar = style({
+  display: 'flex',
+  gap: vars.spacing.sm,
+  marginBottom: vars.spacing.sm,
+  width: '100%',
+  justifyContent: 'flex-end'
+});
+
+export const drawerHeader = style({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: vars.spacing.sm
 });
 
 export const hint = style({
