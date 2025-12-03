@@ -58,6 +58,8 @@ interface Translations {
     exportJson: string;
     exportPng: string;
     exportSvg: string;
+    exportStl: string;
+    exportMenuLabel: string;
     reset: string;
     savedLabel: string;
     load: string;
@@ -75,7 +77,17 @@ interface Translations {
       pngSuccess: string;
       jsonExport: string;
       svgExport: string;
+      stlExport: string;
       reset: string;
+    };
+    stlDialog: {
+      title: string;
+      description: string;
+      thicknessLabel: string;
+      thicknessHint: string;
+      previewLabel: string;
+      cancel: string;
+      confirm: string;
     };
   };
   shortcuts: {
@@ -171,6 +183,8 @@ export const enUS: Translations = {
     exportJson: 'Export JSON',
     exportPng: 'Export PNG',
     exportSvg: 'Export SVG',
+    exportStl: 'Export STL',
+    exportMenuLabel: 'Choose export format',
     reset: 'Reset design',
     savedLabel: 'Saved projects',
     load: 'Load',
@@ -188,7 +202,17 @@ export const enUS: Translations = {
       pngSuccess: 'PNG export created.',
       jsonExport: 'JSON export created.',
       svgExport: 'SVG export created.',
+      stlExport: 'STL export created.',
       reset: 'Design reset.'
+    },
+    stlDialog: {
+      title: 'Export STL',
+      description: 'Set the panel thickness in millimeters for the 3D model.',
+      thicknessLabel: 'Panel thickness (mm)',
+      thicknessHint: 'Default is 2 mm.',
+      previewLabel: 'Preview',
+      cancel: 'Cancel',
+      confirm: 'Export STL'
     }
   },
   shortcuts: {
