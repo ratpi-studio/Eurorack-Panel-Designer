@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { useI18n } from '@i18n/I18nContext';
+import { buildKicadEdgeCutsSvg, buildKicadPcbFile } from '@lib/exportKicad';
 import { buildPanelSvg } from '@lib/exportSvg';
 import { buildPanelStl } from '@lib/exportStl';
 import {
@@ -58,6 +59,8 @@ interface UseProjectsResult {
   handleImportJson: (event: React.ChangeEvent<HTMLInputElement>) => void;
   handleExportPng: () => void;
   handleExportSvg: () => void;
+  handleExportKicadSvg: () => void;
+  handleExportKicadPcb: () => void;
   handleExportStl: (thicknessMm: number) => void;
   exportFormat: ExportFormat;
   setExportFormat: (format: ExportFormat) => void;
@@ -235,6 +238,32 @@ export function useProjects({
     setStatus(t.projects.messages.svgExport, 'success');
   }, [mountingHoles, panelModel, projectName, setStatus, t.projects.messages]);
 
+  const handleExportKicadSvg = React.useCallback(() => {
+    const svg = buildKicadEdgeCutsSvg(panelModel, mountingHoles);
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const baseName = (projectName || 'panel').trim().replace(/\s+/g, '-');
+    link.download = `${baseName || 'panel'}-edge-cuts.svg`;
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+    setStatus(t.projects.messages.kicadSvgExport, 'success');
+  }, [mountingHoles, panelModel, projectName, setStatus, t.projects.messages]);
+
+  const handleExportKicadPcb = React.useCallback(() => {
+    const pcb = buildKicadPcbFile(panelModel, mountingHoles);
+    const blob = new Blob([pcb], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const baseName = (projectName || 'panel').trim().replace(/\s+/g, '-');
+    link.download = `${baseName || 'panel'}.kicad_pcb`;
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+    setStatus(t.projects.messages.kicadPcbExport, 'success');
+  }, [mountingHoles, panelModel, projectName, setStatus, t.projects.messages]);
+
   const handleExportStl = React.useCallback(
     (thicknessMm: number) => {
       if (!Number.isFinite(thicknessMm) || thicknessMm <= 0) {
@@ -302,6 +331,8 @@ export function useProjects({
     handleImportJson,
     handleExportPng,
     handleExportSvg,
+    handleExportKicadSvg,
+    handleExportKicadPcb,
     handleExportStl,
     exportFormat,
     setExportFormat,

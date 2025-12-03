@@ -14,7 +14,7 @@ Single-page web app to sketch Eurorack front panels. The canvas mirrors a real 3
 - Automatic conversion between centimeters, millimeters, and HP.
 - Library of panel elements with editable geometry, rotation, and labels.
 - Generated mounting holes that update with the panel width.
-- Local projects (save/load/delete) plus JSON, PNG, SVG, and STL exports (vector extrusion, thickness picker, and live 3D preview).
+- Local projects (save/load/delete) plus JSON, PNG, SVG, KiCad Edge.Cuts (SVG or `.kicad_pcb`), and STL exports (vector extrusion, thickness picker, and live 3D preview).
 
 ## Tech stack
 
@@ -51,7 +51,13 @@ Single-page web app to sketch Eurorack front panels. The canvas mirrors a real 3
 - Adjust panel width through either the mm or HP input; the other unit updates instantly and the canvas resizes.
 - Pick an element in the palette, click on the canvas to place it, then drag to reposition. Use the right-hand panel to fine-tune coordinates, rotation, or dimensions.
 - Keep `Shift` pressed to temporarily disable snapping, `Esc` to cancel placement, `⌘/Ctrl + Z` and `⌘/Ctrl + Shift + Z` for undo/redo.
-- Save named projects to the browser, export/import JSON for backups, render the canvas as PNG/SVG, or export a clean STL: choose STL in the export dropdown, set thickness in mm, and use the live 3D preview to inspect the mesh before downloading.
+- Save named projects to the browser, export/import JSON for backups, render the canvas as PNG/SVG, export KiCad Edge.Cuts, or export a clean STL: choose STL in the export dropdown, set thickness in mm, and use the live 3D preview to inspect the mesh before downloading.
+
+## KiCad Edge.Cuts export
+
+- Open the export dropdown and pick either **KiCad Edge SVG** (minimal Edge.Cuts-only SVG) or **KiCad PCB** (minimal `.kicad_pcb` with Edge.Cuts lines).
+- The SVG is ready for KiCad via `File → Import Graphics → Edge.Cuts`.
+- The `.kicad_pcb` contains only Edge.Cuts `gr_line` geometry (outline, circular holes approximated with 32 segments, rectangular cutouts). No copper or silkscreen is added.
 
 ## Contributing
 
