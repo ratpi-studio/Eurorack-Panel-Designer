@@ -58,6 +58,8 @@ interface Translations {
     exportJson: string;
     exportPng: string;
     exportSvg: string;
+    exportKicadSvg: string;
+    exportKicadPcb: string;
     exportStl: string;
     exportMenuLabel: string;
     reset: string;
@@ -77,6 +79,8 @@ interface Translations {
       pngSuccess: string;
       jsonExport: string;
       svgExport: string;
+      kicadSvgExport: string;
+      kicadPcbExport: string;
       stlExport: string;
       reset: string;
     };
