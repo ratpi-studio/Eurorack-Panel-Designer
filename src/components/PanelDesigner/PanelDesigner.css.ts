@@ -66,6 +66,32 @@ export const githubLabel = style({
   fontWeight: 600
 });
 
+export const headerActions = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: vars.spacing.sm
+});
+
+export const supportLink = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
+  borderRadius: '999px',
+  border: `1px solid ${vars.color.border}`,
+  backgroundColor: vars.color.surface,
+  transition: 'background-color 150ms ease',
+  selectors: {
+    '&:hover': {
+      backgroundColor: '#101c33'
+    }
+  }
+});
+
+export const supportImage = style({
+  height: '36px',
+  width: 'auto'
+});
+
 export const card = style({
   border: `1px solid ${vars.color.border}`,
   backgroundColor: vars.color.surface,
