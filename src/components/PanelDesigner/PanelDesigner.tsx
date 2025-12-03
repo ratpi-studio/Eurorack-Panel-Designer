@@ -53,6 +53,9 @@ export function PanelDesigner() {
   const [isExportMenuOpen, setIsExportMenuOpen] = React.useState(false);
   const [isStlModalOpen, setIsStlModalOpen] = React.useState(false);
   const [stlThicknessInput, setStlThicknessInput] = React.useState('2');
+  const [isCompact, setIsCompact] = React.useState(false);
+  const [showLeftPanel, setShowLeftPanel] = React.useState(true);
+  const [showRightPanel, setShowRightPanel] = React.useState(true);
   const previewThickness = React.useMemo(() => {
     const parsed = Number.parseFloat(stlThicknessInput);
     if (!Number.isFinite(parsed) || parsed <= 0) {
@@ -60,6 +63,27 @@ export function PanelDesigner() {
     }
     return parsed;
   }, [stlThicknessInput]);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) {
+      return;
+    }
+    const media = window.matchMedia('(max-width: 1200px)');
+    const handleChange = () => {
+      const compact = media.matches;
+      setIsCompact(compact);
+      if (compact) {
+        setShowLeftPanel(false);
+        setShowRightPanel(false);
+      } else {
+        setShowLeftPanel(true);
+        setShowRightPanel(true);
+      }
+    };
+    handleChange();
+    media.addEventListener('change', handleChange);
+    return () => media.removeEventListener('change', handleChange);
+  }, []);
 
   const {
     clearHistory,
@@ -182,6 +206,10 @@ export function PanelDesigner() {
     resetView,
     clearHistory
   });
+
+  const leftVisible = !isCompact || showLeftPanel;
+  const rightVisible = !isCompact || showRightPanel;
+  const canvasSectionClass = isCompact ? styles.canvasSectionCompact : styles.canvasSection;
 
   React.useEffect(() => {
     if (!statusMessage) {
@@ -385,36 +413,80 @@ export function PanelDesigner() {
           </a>
         </div>
         </section>
-        <section className={styles.canvasSection}>
-        <div className={styles.leftColumn}>
-          <div className={styles.sectionStack}>
-            <div className={styles.card}>
-              <PanelControls
-                widthMm={panelModel.dimensions.widthMm}
-                widthHp={panelModel.dimensions.widthHp}
-                onChangeWidthMm={(nextMm) => {
-                  handleSetWidthFromMm(nextMm);
-                  resetView();
-                }}
-                onChangeWidthHp={(nextHp) => {
-                  handleSetWidthFromHp(nextHp);
-                  resetView();
-                }}
-              />
-            </div>
-            <div className={styles.card}>
-              <DisplayOptions
-                options={panelModel.options}
-                onChange={handleDisplayOptionsChange}
-                onResetView={resetView}
-              />
-            </div>
-            <div className={styles.card}>
-              <ElementPalette activeType={placementType} onSelect={handleSelectPaletteType} />
+        <section className={canvasSectionClass}>
+        {leftVisible ? (
+          <div
+            className={`${styles.leftColumn} ${
+              isCompact
+                ? `${styles.drawer} ${styles.drawerLeft} ${showLeftPanel ? styles.drawerOpen : ''}`
+                : ''
+            }`}
+          >
+            <div className={styles.sectionStack}>
+              {isCompact ? (
+                <div className={styles.drawerHeader}>
+                  <div className={styles.cardTitle}>{t.palette.title}</div>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={() => setShowLeftPanel(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+              ) : null}
+              <div className={styles.card}>
+                <PanelControls
+                  widthMm={panelModel.dimensions.widthMm}
+                  widthHp={panelModel.dimensions.widthHp}
+                  onChangeWidthMm={(nextMm) => {
+                    handleSetWidthFromMm(nextMm);
+                    resetView();
+                  }}
+                  onChangeWidthHp={(nextHp) => {
+                    handleSetWidthFromHp(nextHp);
+                    resetView();
+                  }}
+                />
+              </div>
+              <div className={styles.card}>
+                <DisplayOptions
+                  options={panelModel.options}
+                  onChange={handleDisplayOptionsChange}
+                  onResetView={resetView}
+                />
+              </div>
+              <div className={styles.card}>
+                <ElementPalette activeType={placementType} onSelect={handleSelectPaletteType} />
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
         <div className={styles.canvasColumn}>
+          {isCompact ? (
+            <div className={styles.compactToggleBar}>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => {
+                  setShowLeftPanel((prev) => !prev);
+                  setShowRightPanel(false);
+                }}
+              >
+                Tools
+              </button>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => {
+                  setShowRightPanel((prev) => !prev);
+                  setShowLeftPanel(false);
+                }}
+              >
+                Properties
+              </button>
+            </div>
+          ) : null}
           <PanelCanvas
             canvasRef={canvasRef}
             model={panelModel}
@@ -447,170 +519,190 @@ export function PanelDesigner() {
             <span className={styles.shortcutLabel}>{t.shortcuts.redo}</span>
           </div>
         </div>
-        <aside className={styles.rightColumn}>
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>
-              <div>
-                <div className={styles.cardTitle}>{t.projects.title}</div>
-                <div className={styles.cardSubtitle}>{t.projects.subtitle}</div>
-              </div>
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                onClick={() => refreshProjects()}
-              >
-                {t.projects.refresh}
-              </button>
-            </div>
-            <label className={styles.fieldRow}>
-              <span className={styles.label}>{t.projects.nameLabel}</span>
-              <input
-                className={styles.textInput}
-                type="text"
-                value={projectName}
-                onChange={(event) => setProjectName(event.target.value)}
-                placeholder={t.projects.nameLabel}
-              />
-            </label>
-            <div className={styles.buttonRow}>
-              <button type="button" className={styles.primaryButton} onClick={handleSaveProject}>
-                {t.projects.save}
-              </button>
-              <button type="button" className={styles.secondaryButton} onClick={handleExportJson}>
-                {t.projects.exportJson}
-              </button>
-              <div className={styles.exportSplitButton}>
+        {rightVisible ? (
+          <aside
+            className={`${styles.rightColumn} ${
+              isCompact
+                ? `${styles.drawer} ${styles.drawerRight} ${showRightPanel ? styles.drawerOpen : ''}`
+                : ''
+            }`}
+          >
+            <div className={styles.card}>
+              {isCompact ? (
+                <div className={styles.drawerHeader}>
+                  <div className={styles.cardTitle}>{t.projects.title}</div>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={() => setShowRightPanel(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+              ) : null}
+              <div className={styles.cardHeader}>
+                <div>
+                  <div className={styles.cardTitle}>{t.projects.title}</div>
+                  <div className={styles.cardSubtitle}>{t.projects.subtitle}</div>
+                </div>
                 <button
                   type="button"
-                  className={styles.exportSplitMain}
-                  onClick={handleExportClick}
+                  className={styles.secondaryButton}
+                  onClick={() => refreshProjects()}
                 >
-                  {exportButtonLabel}
+                  {t.projects.refresh}
+                </button>
+              </div>
+              <label className={styles.fieldRow}>
+                <span className={styles.label}>{t.projects.nameLabel}</span>
+                <input
+                  className={styles.textInput}
+                  type="text"
+                  value={projectName}
+                  onChange={(event) => setProjectName(event.target.value)}
+                  placeholder={t.projects.nameLabel}
+                />
+              </label>
+              <div className={styles.buttonRow}>
+                <button type="button" className={styles.primaryButton} onClick={handleSaveProject}>
+                  {t.projects.save}
+                </button>
+                <button type="button" className={styles.secondaryButton} onClick={handleExportJson}>
+                  {t.projects.exportJson}
+                </button>
+                <div className={styles.exportSplitButton}>
+                  <button
+                    type="button"
+                    className={styles.exportSplitMain}
+                    onClick={handleExportClick}
+                  >
+                    {exportButtonLabel}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t.projects.exportMenuLabel}
+                    className={styles.exportSplitToggle}
+                    onClick={() => setIsExportMenuOpen((open) => !open)}
+                  >
+                    ▾
+                  </button>
+                  {isExportMenuOpen ? (
+                    <div className={styles.exportMenu}>
+                      <button
+                        type="button"
+                        className={styles.exportMenuItem}
+                        onClick={() => handleSelectExportFormat('svg')}
+                      >
+                        {t.projects.exportSvg}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.exportMenuItem}
+                        onClick={() => handleSelectExportFormat('png')}
+                      >
+                        {t.projects.exportPng}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.exportMenuItem}
+                        onClick={() => handleSelectExportFormat('stl')}
+                      >
+                        {t.projects.exportStl}
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+                <button type="button" className={styles.secondaryButton} onClick={handleReset}>
+                  {t.projects.reset}
+                </button>
+              </div>
+              <label className={styles.fieldRow}>
+                <span className={styles.label}>{t.projects.savedLabel}</span>
+                <select
+                  className={styles.textInput}
+                  value={selectedSavedName}
+                  onChange={(event) => setSelectedSavedName(event.target.value)}
+                >
+                  <option value="">—</option>
+                  {projects.map((project) => (
+                    <option key={project.name} value={project.name}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className={styles.buttonRow}>
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  disabled={!selectedSavedName}
+                  onClick={() => selectedSavedName && handleLoadProject(selectedSavedName)}
+                >
+                  {t.projects.load}
                 </button>
                 <button
                   type="button"
-                  aria-label={t.projects.exportMenuLabel}
-                  className={styles.exportSplitToggle}
-                  onClick={() => setIsExportMenuOpen((open) => !open)}
+                  className={styles.secondaryButton}
+                  disabled={!selectedSavedName}
+                  onClick={() => selectedSavedName && handleDeleteProject(selectedSavedName)}
                 >
-                  ▾
+                  {t.projects.delete}
                 </button>
-                {isExportMenuOpen ? (
-                  <div className={styles.exportMenu}>
-                    <button
-                      type="button"
-                      className={styles.exportMenuItem}
-                      onClick={() => handleSelectExportFormat('svg')}
-                    >
-                      {t.projects.exportSvg}
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.exportMenuItem}
-                      onClick={() => handleSelectExportFormat('png')}
-                    >
-                      {t.projects.exportPng}
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.exportMenuItem}
-                      onClick={() => handleSelectExportFormat('stl')}
-                    >
-                      {t.projects.exportStl}
-                    </button>
-                  </div>
-                ) : null}
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {t.projects.importJson}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="application/json"
+                  className={styles.hiddenInput}
+                  onChange={handleImportJson}
+                />
               </div>
-              <button type="button" className={styles.secondaryButton} onClick={handleReset}>
-                {t.projects.reset}
-              </button>
             </div>
-            <label className={styles.fieldRow}>
-              <span className={styles.label}>{t.projects.savedLabel}</span>
-              <select
-                className={styles.textInput}
-                value={selectedSavedName}
-                onChange={(event) => setSelectedSavedName(event.target.value)}
-              >
-                <option value="">—</option>
-                {projects.map((project) => (
-                  <option key={project.name} value={project.name}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className={styles.buttonRow}>
-              <button
-                type="button"
-                className={styles.primaryButton}
-                disabled={!selectedSavedName}
-                onClick={() => selectedSavedName && handleLoadProject(selectedSavedName)}
-              >
-                {t.projects.load}
-              </button>
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                disabled={!selectedSavedName}
-                onClick={() => selectedSavedName && handleDeleteProject(selectedSavedName)}
-              >
-                {t.projects.delete}
-              </button>
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {t.projects.importJson}
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="application/json"
-                className={styles.hiddenInput}
-                onChange={handleImportJson}
+            <div className={styles.card}>
+              <ElementProperties
+                element={elementForProperties}
+                onChangePosition={(positionMm) => {
+                  if (selectedElement) {
+                    updateElement(selectedElement.id, (element) => ({
+                      ...element,
+                      positionMm
+                    }));
+                  }
+                }}
+                onChangeRotation={(rotationDeg) => {
+                  if (selectedElement) {
+                    handleUpdateElement(selectedElement.id, (element) => ({
+                      ...element,
+                      rotationDeg
+                    }));
+                  }
+                }}
+                onChangeProperties={(properties) => {
+                  if (selectedElement) {
+                    handleUpdateProperties(selectedElement.id, properties);
+                    return;
+                  }
+                  if (placementType) {
+                    setDraftProperties(placementType, properties);
+                  }
+                }}
+                onRemove={() => {
+                  if (selectedElement) {
+                    handleRemoveElement(selectedElement.id);
+                  } else {
+                    setPlacementType(null);
+                  }
+                }}
               />
             </div>
-          </div>
-          <div className={styles.card}>
-            <ElementProperties
-              element={elementForProperties}
-              onChangePosition={(positionMm) => {
-                if (selectedElement) {
-                  updateElement(selectedElement.id, (element) => ({
-                    ...element,
-                    positionMm
-                  }));
-                }
-              }}
-              onChangeRotation={(rotationDeg) => {
-                if (selectedElement) {
-                  handleUpdateElement(selectedElement.id, (element) => ({
-                    ...element,
-                    rotationDeg
-                  }));
-                }
-              }}
-              onChangeProperties={(properties) => {
-                if (selectedElement) {
-                  handleUpdateProperties(selectedElement.id, properties);
-                  return;
-                }
-                if (placementType) {
-                  setDraftProperties(placementType, properties);
-                }
-              }}
-              onRemove={() => {
-                if (selectedElement) {
-                  handleRemoveElement(selectedElement.id);
-                } else {
-                  setPlacementType(null);
-                }
-              }}
-            />
-          </div>
-        </aside>
+          </aside>
+        ) : null}
         </section>
       </main>
       {isStlModalOpen ? (

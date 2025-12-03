@@ -28,8 +28,7 @@ describe('buildPanelStl', () => {
     });
 
     const stl = buildPanelStl(model, mountingHoles, {
-      thicknessMm: 2,
-      gridStepMm: 5
+      thicknessMm: 2
     });
 
     expect(stl.startsWith('solid eurorack_panel')).toBe(true);
@@ -46,8 +45,7 @@ describe('buildPanelStl', () => {
 
     const thickness = 3.5;
     const stl = buildPanelStl(model, mountingHoles, {
-      thicknessMm: thickness,
-      gridStepMm: 5
+      thicknessMm: thickness
     });
 
     expect(stl).toContain(` ${thickness}`);
@@ -71,8 +69,7 @@ describe('buildPanelStl', () => {
     });
 
     const stl = buildPanelStl(model, mountingHoles, {
-      thicknessMm: 2,
-      gridStepMm: 5
+      thicknessMm: 2
     });
 
     // The presence of a jack should reduce the number of filled cells and
