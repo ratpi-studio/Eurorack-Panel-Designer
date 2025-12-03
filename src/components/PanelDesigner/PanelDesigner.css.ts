@@ -25,8 +25,8 @@ export const headerTop = style({
 });
 
 export const logo = style({
-  width: '240px',
-  height: '48px'
+  width: '280px',
+  height: '56px'
 });
 
 const subtitle = style({
@@ -149,6 +149,62 @@ export const secondaryButton = style({
   border: `1px solid ${vars.color.border}`
 });
 
+export const exportSplitButton = style({
+  position: 'relative',
+  display: 'inline-flex'
+});
+
+export const exportSplitMain = style({
+  ...baseButton,
+  backgroundColor: vars.color.accent,
+  color: '#0b1426',
+  borderTopRightRadius: 0,
+  borderBottomRightRadius: 0
+});
+
+export const exportSplitToggle = style({
+  ...baseButton,
+  backgroundColor: vars.color.accent,
+  color: '#0b1426',
+  borderTopLeftRadius: 0,
+  borderBottomLeftRadius: 0,
+  borderLeft: '1px solid rgba(15, 23, 42, 0.4)',
+  paddingInline: vars.spacing.xs,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center'
+});
+
+export const exportMenu = style({
+  position: 'absolute',
+  top: '100%',
+  left: 0,
+  marginTop: 4,
+  minWidth: '160px',
+  backgroundColor: vars.color.surface,
+  borderRadius: '8px',
+  border: `1px solid ${vars.color.border}`,
+  boxShadow: '0 16px 40px rgba(15, 23, 42, 0.65)',
+  zIndex: 20,
+  overflow: 'hidden',
+  display: 'flex',
+  flexDirection: 'column'
+});
+
+export const exportMenuItem = style({
+  ...baseButton,
+  borderRadius: 0,
+  width: '100%',
+  textAlign: 'left',
+  backgroundColor: 'transparent',
+  color: vars.color.textPrimary,
+  selectors: {
+    '&:hover': {
+      backgroundColor: '#101c33'
+    }
+  }
+});
+
 export const hiddenInput = style({
   display: 'none'
 });
@@ -213,4 +269,57 @@ export const rightColumn = style({
   minHeight: 0,
   overflow: 'auto',
   paddingRight: vars.spacing.sm
+});
+
+export const hint = style({
+  fontSize: '12px',
+  color: vars.color.textSecondary
+});
+
+export const modalBackdrop = style({
+  position: 'fixed',
+  inset: 0,
+  backgroundColor: 'rgba(15, 23, 42, 0.88)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 40
+});
+
+export const modal = style({
+  backgroundColor: vars.color.surface,
+  borderRadius: '12px',
+  border: `1px solid ${vars.color.border}`,
+  padding: vars.spacing.lg,
+  minWidth: '280px',
+  maxWidth: '360px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: vars.spacing.sm,
+  boxShadow: '0 24px 80px rgba(0, 0, 0, 0.7)'
+});
+
+export const modalTitle = style({
+  margin: 0,
+  fontWeight: 600,
+  fontSize: '16px'
+});
+
+export const modalDescription = style({
+  margin: 0,
+  fontSize: '14px',
+  color: vars.color.textSecondary
+});
+
+export const modalActions = style({
+  marginTop: vars.spacing.sm,
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: vars.spacing.sm
+});
+
+export const previewSection = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: vars.spacing.xs
 });

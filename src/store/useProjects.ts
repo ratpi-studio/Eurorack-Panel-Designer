@@ -2,10 +2,17 @@ import React from 'react';
 
 import { useI18n } from '@i18n/I18nContext';
 import { buildPanelSvg } from '@lib/exportSvg';
+import { buildPanelStl } from '@lib/exportStl';
 import {
   DEFAULT_PANEL_OPTIONS,
   type MountingHole
 } from '@lib/panelTypes';
+import {
+  DEFAULT_EXPORT_FORMAT,
+  getPreferredExportFormat,
+  setPreferredExportFormat,
+  type ExportFormat
+} from '@lib/exportPreferences';
 import {
   deleteProject,
   listProjects,
@@ -27,6 +34,13 @@ interface UseProjectsArgs {
   clearHistory: () => void;
 }
 
+type StatusVariant = 'success' | 'error' | 'info';
+
+interface StatusMessage {
+  message: string;
+  variant: StatusVariant;
+}
+
 interface UseProjectsResult {
   projectName: string;
   setProjectName: React.Dispatch<React.SetStateAction<string>>;
@@ -34,7 +48,7 @@ interface UseProjectsResult {
   activeProjectName: string | null;
   selectedSavedName: string;
   setSelectedSavedName: React.Dispatch<React.SetStateAction<string>>;
-  statusMessage: string | null;
+  statusMessage: StatusMessage | null;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   refreshProjects: () => void;
   handleSaveProject: () => void;
@@ -44,6 +58,9 @@ interface UseProjectsResult {
   handleImportJson: (event: React.ChangeEvent<HTMLInputElement>) => void;
   handleExportPng: () => void;
   handleExportSvg: () => void;
+  handleExportStl: (thicknessMm: number) => void;
+  exportFormat: ExportFormat;
+  setExportFormat: (format: ExportFormat) => void;
   handleReset: () => void;
 }
 
@@ -63,8 +80,12 @@ export function useProjects({
   const [projects, setProjects] = React.useState<StoredProject[]>([]);
   const [activeProjectName, setActiveProjectName] = React.useState<string | null>(null);
   const [selectedSavedName, setSelectedSavedName] = React.useState<string>('');
-  const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = React.useState<StatusMessage | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [exportFormat, setExportFormatState] = React.useState<ExportFormat>(() => {
+    const stored = getPreferredExportFormat();
+    return stored ?? DEFAULT_EXPORT_FORMAT;
+  });
 
   const refreshProjects = React.useCallback(() => {
     setProjects(listProjects());
@@ -74,20 +95,27 @@ export function useProjects({
     refreshProjects();
   }, [refreshProjects]);
 
+  const setStatus = React.useCallback(
+    (message: string, variant: StatusVariant) => {
+      setStatusMessage({ message, variant });
+    },
+    []
+  );
+
   const handleSaveProject = React.useCallback(() => {
     const trimmedName = projectName.trim() || t.projects.defaultName;
     const saved = saveProject(trimmedName, panelModel);
     setProjects(saved);
     setActiveProjectName(trimmedName);
     setSelectedSavedName(trimmedName);
-    setStatusMessage(t.projects.messages.saveSuccess(trimmedName));
-  }, [panelModel, projectName, t.projects.defaultName, t.projects.messages, t.projects.messages.saveSuccess]);
+    setStatus(t.projects.messages.saveSuccess(trimmedName), 'success');
+  }, [panelModel, projectName, setStatus, t.projects.defaultName, t.projects.messages, t.projects.messages.saveSuccess]);
 
   const handleLoadProject = React.useCallback(
     (name: string) => {
       const model = loadProject(name);
       if (!model) {
-        setStatusMessage(t.projects.messages.loadError(name));
+        setStatus(t.projects.messages.loadError(name), 'error');
         return;
       }
       setModel(model);
@@ -97,11 +125,12 @@ export function useProjects({
       resetView();
       setActiveProjectName(name);
       setSelectedSavedName(name);
-      setStatusMessage(t.projects.messages.loadSuccess(name));
+      setStatus(t.projects.messages.loadSuccess(name), 'success');
     },
     [
       clearHistory,
       resetView,
+      setStatus,
       setModel,
       setPlacementType,
       setSelectedElementId,
@@ -119,9 +148,9 @@ export function useProjects({
       if (selectedSavedName && selectedSavedName.toLowerCase() === name.toLowerCase()) {
         setSelectedSavedName('');
       }
-      setStatusMessage(t.projects.messages.deleteSuccess(name));
+      setStatus(t.projects.messages.deleteSuccess(name), 'success');
     },
-    [activeProjectName, selectedSavedName, t.projects.messages]
+    [activeProjectName, selectedSavedName, setStatus, t.projects.messages]
   );
 
   const handleExportJson = React.useCallback(() => {
@@ -134,8 +163,8 @@ export function useProjects({
     link.download = `${baseName || 'panel'}.json`;
     link.click();
     URL.revokeObjectURL(url);
-    setStatusMessage(t.projects.messages.jsonExport);
-  }, [panelModel, projectName, t.projects.messages]);
+    setStatus(t.projects.messages.jsonExport, 'success');
+  }, [panelModel, projectName, setStatus, t.projects.messages]);
 
   const handleImportJson = React.useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -151,10 +180,10 @@ export function useProjects({
           setSelectedElementId(null);
           setPlacementType(null);
           resetView();
-          setStatusMessage(t.projects.messages.importSuccess(file.name));
+          setStatus(t.projects.messages.importSuccess(file.name), 'success');
         })
         .catch(() => {
-          setStatusMessage(t.projects.messages.importError);
+          setStatus(t.projects.messages.importError, 'error');
         })
         .finally(() => {
           if (fileInputRef.current) {
@@ -165,6 +194,7 @@ export function useProjects({
     [
       clearHistory,
       resetView,
+      setStatus,
       setModel,
       t.projects.messages,
       t.projects.messages.importError,
@@ -175,7 +205,7 @@ export function useProjects({
   const handleExportPng = React.useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) {
-      setStatusMessage(t.projects.messages.pngError);
+      setStatus(t.projects.messages.pngError, 'error');
       return;
     }
     const url = canvas.toDataURL('image/png');
@@ -184,8 +214,8 @@ export function useProjects({
     link.download = `${baseName || 'panel'}.png`;
     link.href = url;
     link.click();
-    setStatusMessage(t.projects.messages.pngSuccess);
-  }, [canvasRef, projectName, t.projects.messages]);
+    setStatus(t.projects.messages.pngSuccess, 'success');
+  }, [canvasRef, projectName, setStatus, t.projects.messages]);
 
   const handleExportSvg = React.useCallback(() => {
     const svg = buildPanelSvg(panelModel, mountingHoles, {
@@ -202,8 +232,35 @@ export function useProjects({
     link.href = url;
     link.click();
     URL.revokeObjectURL(url);
-    setStatusMessage(t.projects.messages.svgExport);
-  }, [mountingHoles, panelModel, projectName, t.projects.messages]);
+    setStatus(t.projects.messages.svgExport, 'success');
+  }, [mountingHoles, panelModel, projectName, setStatus, t.projects.messages]);
+
+  const handleExportStl = React.useCallback(
+    (thicknessMm: number) => {
+      if (!Number.isFinite(thicknessMm) || thicknessMm <= 0) {
+        return;
+      }
+
+      const stl = buildPanelStl(panelModel, mountingHoles, {
+        thicknessMm
+      });
+      const blob = new Blob([stl], { type: 'model/stl' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const baseName = (projectName || 'panel').trim().replace(/\s+/g, '-');
+      link.download = `${baseName || 'panel'}.stl`;
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+      setStatus(t.projects.messages.stlExport, 'success');
+    },
+    [mountingHoles, panelModel, projectName, setStatus, t.projects.messages]
+  );
+
+  const setExportFormat = React.useCallback((format: ExportFormat) => {
+    setExportFormatState(format);
+    setPreferredExportFormat(format);
+  }, []);
 
   const handleReset = React.useCallback(() => {
     setModel({
@@ -215,10 +272,11 @@ export function useProjects({
     setPlacementType(null);
     setSelectedElementId(null);
     setProjectName(t.projects.defaultName);
-    setStatusMessage(t.projects.messages.reset);
+    setStatus(t.projects.messages.reset, 'info');
     resetView();
   }, [
     clearHistory,
+    setStatus,
     resetView,
     setModel,
     setPlacementType,
@@ -244,7 +302,9 @@ export function useProjects({
     handleImportJson,
     handleExportPng,
     handleExportSvg,
+    handleExportStl,
+    exportFormat,
+    setExportFormat,
     handleReset
   };
 }
-
