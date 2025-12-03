@@ -1,4 +1,4 @@
-export type ExportFormat = 'svg' | 'png' | 'stl';
+export type ExportFormat = 'svg' | 'png' | 'stl' | 'kicadSvg' | 'kicadPcb';
 
 const PREFERENCES_STORAGE_KEY = 'eurorack-panel-preferences';
 
@@ -36,7 +36,9 @@ function readPreferences(): PanelPreferences {
       candidate.preferredExportFormat &&
       candidate.preferredExportFormat !== 'svg' &&
       candidate.preferredExportFormat !== 'png' &&
-      candidate.preferredExportFormat !== 'stl'
+      candidate.preferredExportFormat !== 'stl' &&
+      candidate.preferredExportFormat !== 'kicadSvg' &&
+      candidate.preferredExportFormat !== 'kicadPcb'
     ) {
       return {};
     }
@@ -71,4 +73,3 @@ export function setPreferredExportFormat(format: ExportFormat): void {
 }
 
 export const DEFAULT_EXPORT_FORMAT: ExportFormat = 'svg';
-

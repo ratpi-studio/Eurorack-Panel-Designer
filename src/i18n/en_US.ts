@@ -183,6 +183,8 @@ export const enUS: Translations = {
     exportJson: 'Export JSON',
     exportPng: 'Export PNG',
     exportSvg: 'Export SVG',
+    exportKicadSvg: 'Export KiCad Edge SVG',
+    exportKicadPcb: 'Export KiCad PCB',
     exportStl: 'Export STL',
     exportMenuLabel: 'Choose export format',
     reset: 'Reset design',
@@ -202,6 +204,8 @@ export const enUS: Translations = {
       pngSuccess: 'PNG export created.',
       jsonExport: 'JSON export created.',
       svgExport: 'SVG export created.',
+      kicadSvgExport: 'KiCad Edge.Cuts SVG created.',
+      kicadPcbExport: 'KiCad PCB export created.',
       stlExport: 'STL export created.',
       reset: 'Design reset.'
     },
