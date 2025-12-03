@@ -17,9 +17,11 @@ import {
   type Vector2
 } from '@lib/panelTypes';
 import { createPanelDimensions, hpToMm, mmToCm } from '@lib/units';
+import { StlPreview } from '@components/StlPreview/StlPreview';
 import { usePanelStore } from '@store/panelStore';
 import { usePanelHistory } from '@store/usePanelHistory';
 import { useProjects } from '@store/useProjects';
+import toast from 'react-hot-toast';
 import * as styles from './PanelDesigner.css';
 
 const DEFAULT_ZOOM = 1;
@@ -48,6 +50,17 @@ export function PanelDesigner() {
   const [zoom, setZoom] = React.useState(DEFAULT_ZOOM);
   const [pan, setPan] = React.useState<Vector2>({ ...DEFAULT_PAN });
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  const [isExportMenuOpen, setIsExportMenuOpen] = React.useState(false);
+  const [isStlModalOpen, setIsStlModalOpen] = React.useState(false);
+  const [stlThicknessInput, setStlThicknessInput] = React.useState('2');
+  const previewThickness = React.useMemo(() => {
+    const parsed = Number.parseFloat(stlThicknessInput);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return 2;
+    }
+    return parsed;
+  }, [stlThicknessInput]);
+
   const {
     clearHistory,
     updateModel,
@@ -159,6 +172,9 @@ export function PanelDesigner() {
     handleImportJson,
     handleExportPng,
     handleExportSvg,
+    handleExportStl,
+    exportFormat,
+    setExportFormat,
     handleReset
   } = useProjects({
     canvasRef,
@@ -166,6 +182,23 @@ export function PanelDesigner() {
     resetView,
     clearHistory
   });
+
+  React.useEffect(() => {
+    if (!statusMessage) {
+      return;
+    }
+    const { message, variant } = statusMessage;
+    const toastId = `status-${variant}-${message}`;
+    if (variant === 'error') {
+      toast.error(message, { id: toastId });
+      return;
+    }
+    if (variant === 'success') {
+      toast.success(message, { id: toastId });
+      return;
+    }
+    toast(message, { id: toastId });
+  }, [statusMessage]);
 
   const handlePlaceElement = React.useCallback(
     (type: PanelElementType, positionMm: Vector2) => {
@@ -267,9 +300,65 @@ export function PanelDesigner() {
     [setPlacementType, setSelectedElementId]
   );
 
+  const exportButtonLabel = React.useMemo(() => {
+    switch (exportFormat) {
+      case 'png':
+        return t.projects.exportPng;
+      case 'stl':
+        return t.projects.exportStl;
+      case 'svg':
+      default:
+        return t.projects.exportSvg;
+    }
+  }, [exportFormat, t.projects.exportPng, t.projects.exportStl, t.projects.exportSvg]);
+
+  const handleExportClick = React.useCallback(() => {
+    if (exportFormat === 'png') {
+      handleExportPng();
+      return;
+    }
+    if (exportFormat === 'stl') {
+      setIsStlModalOpen(true);
+      return;
+    }
+    handleExportSvg();
+  }, [exportFormat, handleExportPng, handleExportSvg]);
+
+  const handleSelectExportFormat = React.useCallback(
+    (format: 'svg' | 'png' | 'stl') => {
+      setExportFormat(format);
+      setIsExportMenuOpen(false);
+
+      if (format === 'png') {
+        handleExportPng();
+        return;
+      }
+      if (format === 'stl') {
+        setIsStlModalOpen(true);
+        return;
+      }
+      handleExportSvg();
+    },
+    [handleExportPng, handleExportSvg, setExportFormat]
+  );
+
+  const handleConfirmStlExport = React.useCallback(() => {
+    const thickness = Number.parseFloat(stlThicknessInput);
+    if (!Number.isFinite(thickness) || thickness <= 0) {
+      return;
+    }
+    handleExportStl(thickness);
+    setIsStlModalOpen(false);
+  }, [handleExportStl, stlThicknessInput]);
+
+  const handleCancelStlExport = React.useCallback(() => {
+    setIsStlModalOpen(false);
+  }, []);
+
   return (
-    <main className={styles.page}>
-      <section className={styles.header}>
+    <>
+      <main className={styles.page}>
+        <section className={styles.header}>
         <div className={styles.headerTop}>
           <div>
             <img src="/images/logo.svg" alt={t.app.title} className={styles.logo} />
@@ -295,9 +384,8 @@ export function PanelDesigner() {
             <span className={styles.githubLabel}>GitHub</span>
           </a>
         </div>
-        <div className={styles.status}>{statusMessage}</div>
-      </section>
-      <section className={styles.canvasSection}>
+        </section>
+        <section className={styles.canvasSection}>
         <div className={styles.leftColumn}>
           <div className={styles.sectionStack}>
             <div className={styles.card}>
@@ -391,12 +479,48 @@ export function PanelDesigner() {
               <button type="button" className={styles.secondaryButton} onClick={handleExportJson}>
                 {t.projects.exportJson}
               </button>
-              <button type="button" className={styles.secondaryButton} onClick={handleExportPng}>
-                {t.projects.exportPng}
-              </button>
-              <button type="button" className={styles.secondaryButton} onClick={handleExportSvg}>
-                {t.projects.exportSvg}
-              </button>
+              <div className={styles.exportSplitButton}>
+                <button
+                  type="button"
+                  className={styles.exportSplitMain}
+                  onClick={handleExportClick}
+                >
+                  {exportButtonLabel}
+                </button>
+                <button
+                  type="button"
+                  aria-label={t.projects.exportMenuLabel}
+                  className={styles.exportSplitToggle}
+                  onClick={() => setIsExportMenuOpen((open) => !open)}
+                >
+                  ▾
+                </button>
+                {isExportMenuOpen ? (
+                  <div className={styles.exportMenu}>
+                    <button
+                      type="button"
+                      className={styles.exportMenuItem}
+                      onClick={() => handleSelectExportFormat('svg')}
+                    >
+                      {t.projects.exportSvg}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.exportMenuItem}
+                      onClick={() => handleSelectExportFormat('png')}
+                    >
+                      {t.projects.exportPng}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.exportMenuItem}
+                      onClick={() => handleSelectExportFormat('stl')}
+                    >
+                      {t.projects.exportStl}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
               <button type="button" className={styles.secondaryButton} onClick={handleReset}>
                 {t.projects.reset}
               </button>
@@ -487,7 +611,65 @@ export function PanelDesigner() {
             />
           </div>
         </aside>
-      </section>
-    </main>
+        </section>
+      </main>
+      {isStlModalOpen ? (
+        <div
+          className={styles.modalBackdrop}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="stl-export-title"
+          onClick={handleCancelStlExport}
+        >
+          <div
+            className={styles.modal}
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
+          >
+            <h2 id="stl-export-title" className={styles.modalTitle}>
+              {t.projects.stlDialog.title}
+            </h2>
+            <p className={styles.modalDescription}>{t.projects.stlDialog.description}</p>
+            <label className={styles.fieldRow}>
+              <span className={styles.label}>{t.projects.stlDialog.thicknessLabel}</span>
+              <input
+                className={styles.textInput}
+                type="number"
+                min={0}
+                step={0.1}
+                value={stlThicknessInput}
+                onChange={(event) => setStlThicknessInput(event.target.value)}
+              />
+              <span className={styles.hint}>{t.projects.stlDialog.thicknessHint}</span>
+            </label>
+            <div className={styles.previewSection}>
+              <span className={styles.label}>{t.projects.stlDialog.previewLabel}</span>
+              <StlPreview
+                model={panelModel}
+                mountingHoles={mountingHoles}
+                thicknessMm={previewThickness}
+              />
+            </div>
+            <div className={styles.modalActions}>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={handleCancelStlExport}
+              >
+                {t.projects.stlDialog.cancel}
+              </button>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={handleConfirmStlExport}
+              >
+                {t.projects.stlDialog.confirm}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
