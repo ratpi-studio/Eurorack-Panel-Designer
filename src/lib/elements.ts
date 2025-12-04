@@ -31,6 +31,30 @@ const DEFAULT_SWITCH: RectangularElementProperties = {
   label: ''
 };
 
+const DEFAULT_RECTANGLE: RectangularElementProperties = {
+  widthMm: 12,
+  heightMm: 20,
+  label: ''
+};
+
+const DEFAULT_OVAL: RectangularElementProperties = {
+  widthMm: 12,
+  heightMm: 8,
+  label: ''
+};
+
+const DEFAULT_SLOT: RectangularElementProperties = {
+  widthMm: 16,
+  heightMm: 6,
+  label: ''
+};
+
+const DEFAULT_TRIANGLE: RectangularElementProperties = {
+  widthMm: 12,
+  heightMm: 12,
+  label: ''
+};
+
 const DEFAULT_LED: CircularElementProperties = {
   diameterMm: 3,
   label: ''
@@ -67,6 +91,34 @@ export function createPanelElement(
         type,
         positionMm,
         properties: { ...DEFAULT_SWITCH }
+      };
+    case PanelElementType.Rectangle:
+      return {
+        id: generateElementId(),
+        type,
+        positionMm,
+        properties: { ...DEFAULT_RECTANGLE }
+      };
+    case PanelElementType.Oval:
+      return {
+        id: generateElementId(),
+        type,
+        positionMm,
+        properties: { ...DEFAULT_OVAL }
+      };
+    case PanelElementType.Slot:
+      return {
+        id: generateElementId(),
+        type,
+        positionMm,
+        properties: { ...DEFAULT_SLOT }
+      };
+    case PanelElementType.Triangle:
+      return {
+        id: generateElementId(),
+        type,
+        positionMm,
+        properties: { ...DEFAULT_TRIANGLE }
       };
     case PanelElementType.Led:
       return {

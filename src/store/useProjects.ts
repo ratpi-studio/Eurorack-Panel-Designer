@@ -3,7 +3,6 @@ import React from 'react';
 import { useI18n } from '@i18n/I18nContext';
 import { buildKicadEdgeCutsSvg, buildKicadPcbFile } from '@lib/exportKicad';
 import { buildPanelSvg } from '@lib/exportSvg';
-import { buildPanelStl } from '@lib/exportStl';
 import {
   DEFAULT_PANEL_OPTIONS,
   type MountingHole
@@ -271,18 +270,25 @@ export function useProjects({
         return;
       }
 
-      const stl = buildPanelStl(panelModel, mountingHoles, {
-        thicknessMm
-      });
-      const blob = new Blob([stl], { type: 'model/stl' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      const baseName = (projectName || 'panel').trim().replace(/\s+/g, '-');
-      link.download = `${baseName || 'panel'}.stl`;
-      link.href = url;
-      link.click();
-      URL.revokeObjectURL(url);
-      setStatus(t.projects.messages.stlExport, 'success');
+      import('@lib/exportStl')
+        .then(({ buildPanelStl }) => {
+          const stl = buildPanelStl(panelModel, mountingHoles, {
+            thicknessMm
+          });
+          const blob = new Blob([stl], { type: 'model/stl' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          const baseName = (projectName || 'panel').trim().replace(/\s+/g, '-');
+          link.download = `${baseName || 'panel'}.stl`;
+          link.href = url;
+          link.click();
+          URL.revokeObjectURL(url);
+          setStatus(t.projects.messages.stlExport, 'success');
+        })
+        .catch((error) => {
+          console.error('Failed to export STL', error);
+          setStatus(t.projects.messages.stlError, 'error');
+        });
     },
     [mountingHoles, panelModel, projectName, setStatus, t.projects.messages]
   );

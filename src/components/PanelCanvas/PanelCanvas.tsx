@@ -31,7 +31,11 @@ const elementFillColors: Record<PanelElementType, string> = {
   [PanelElementType.Potentiometer]: '#f472b6',
   [PanelElementType.Switch]: '#facc15',
   [PanelElementType.Led]: '#f87171',
-  [PanelElementType.Label]: '#f8fafc'
+  [PanelElementType.Label]: '#f8fafc',
+  [PanelElementType.Rectangle]: '#4ade80',
+  [PanelElementType.Oval]: '#c084fc',
+  [PanelElementType.Slot]: '#fb923c',
+  [PanelElementType.Triangle]: '#22d3ee'
 };
 
 const elementStrokeColor = '#0f172a';

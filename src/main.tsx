@@ -1,4 +1,3 @@
-import * as Sentry from '@sentry/react';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 
@@ -15,24 +14,40 @@ const ErrorFallback = () => (
   </div>
 );
 
-Sentry.init({
-  dsn: SENTRY_DSN,
-  sendDefaultPii: true,
-  enabled: import.meta.env.MODE !== 'test',
-  environment: import.meta.env.MODE,
-  ...(release ? { release } : {})
-});
+async function bootstrap() {
+  const rootElement = document.getElementById('root');
+  if (!rootElement) {
+    throw new Error('Root element "#root" is missing in index.html');
+  }
 
-const rootElement = document.getElementById('root');
+  const root = ReactDOM.createRoot(rootElement);
+  const shouldEnableSentry = Boolean(SENTRY_DSN) && import.meta.env.MODE !== 'test';
 
-if (!rootElement) {
-  throw new Error('Root element "#root" is missing in index.html');
+  if (shouldEnableSentry) {
+    const { init, ErrorBoundary } = await import('@sentry/react');
+    init({
+      dsn: SENTRY_DSN,
+      sendDefaultPii: true,
+      enabled: import.meta.env.MODE !== 'test',
+      environment: import.meta.env.MODE,
+      ...(release ? { release } : {})
+    });
+
+    root.render(
+      <React.StrictMode>
+        <ErrorBoundary fallback={<ErrorFallback />}>
+          <App />
+        </ErrorBoundary>
+      </React.StrictMode>
+    );
+    return;
+  }
+
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
 }
 
-ReactDOM.createRoot(rootElement).render(
-  <React.StrictMode>
-    <Sentry.ErrorBoundary fallback={<ErrorFallback />}>
-      <App />
-    </Sentry.ErrorBoundary>
-  </React.StrictMode>
-);
+void bootstrap();

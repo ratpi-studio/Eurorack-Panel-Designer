@@ -46,11 +46,11 @@ export function ElementProperties({
       rotation: (element.rotationDeg ?? 0).toString()
     };
 
-    if (
+    const isCircularElement =
       element.type === PanelElementType.Jack ||
       element.type === PanelElementType.Potentiometer ||
-      element.type === PanelElementType.Led
-    ) {
+      element.type === PanelElementType.Led;
+    if (isCircularElement) {
       setInputs({
         ...base,
         diameter: (element.properties as { diameterMm: number }).diameterMm.toString()
@@ -58,7 +58,14 @@ export function ElementProperties({
       return;
     }
 
-    if (element.type === PanelElementType.Switch) {
+    const isSizeElement =
+      element.type === PanelElementType.Switch ||
+      element.type === PanelElementType.Rectangle ||
+      element.type === PanelElementType.Oval ||
+      element.type === PanelElementType.Slot ||
+      element.type === PanelElementType.Triangle;
+
+    if (isSizeElement) {
       setInputs({
         ...base,
         width: (element.properties as { widthMm: number }).widthMm.toString(),
@@ -208,9 +215,9 @@ export function ElementProperties({
           />
         </label>
 
-        {element.type === PanelElementType.Jack ||
-        element.type === PanelElementType.Potentiometer ||
-        element.type === PanelElementType.Led ? (
+        {(element.type === PanelElementType.Jack ||
+          element.type === PanelElementType.Potentiometer ||
+          element.type === PanelElementType.Led) && (
           <label className={styles.field}>
             <span className={styles.label}>{t.properties.diameter}</span>
             <input
@@ -224,9 +231,13 @@ export function ElementProperties({
               }
             />
           </label>
-        ) : null}
+        )}
 
-        {element.type === PanelElementType.Switch ? (
+        {(element.type === PanelElementType.Switch ||
+          element.type === PanelElementType.Rectangle ||
+          element.type === PanelElementType.Oval ||
+          element.type === PanelElementType.Slot ||
+          element.type === PanelElementType.Triangle) && (
           <>
             <label className={styles.field}>
             <span className={styles.label}>{t.properties.width}</span>
@@ -255,7 +266,7 @@ export function ElementProperties({
             />
             </label>
           </>
-        ) : null}
+        )}
 
         {element.type === PanelElementType.Label ? (
           <>
