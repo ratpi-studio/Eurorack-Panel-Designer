@@ -41,3 +41,10 @@ export const hud = style({
   pointerEvents: 'none',
   userSelect: 'none'
 });
+
+export const selectionRect = style({
+  position: 'absolute',
+  border: `1px dashed ${vars.color.accent}`,
+  backgroundColor: 'rgba(56, 189, 248, 0.15)',
+  pointerEvents: 'none'
+});

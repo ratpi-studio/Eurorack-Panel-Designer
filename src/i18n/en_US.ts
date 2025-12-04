@@ -40,6 +40,8 @@ interface Translations {
     subtitle: string;
     delete: string;
     empty: string;
+    multiSelection: (count: number) => string;
+    multiSelectionHint: string;
     posX: string;
     posY: string;
     rotation: string;
@@ -169,6 +171,9 @@ export const enUS: Translations = {
     subtitle: 'Selection',
     delete: 'Delete',
     empty: 'Select an element to view its properties.',
+    multiSelection: (count: number) => `${count} elements selected`,
+    multiSelectionHint:
+      'Multi-selection is active. Drag elements on the canvas to move the group or press Delete to remove it.',
     posX: 'Position X (mm)',
     posY: 'Position Y (mm)',
     rotation: 'Rotation (°)',

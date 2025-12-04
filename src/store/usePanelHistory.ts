@@ -23,18 +23,22 @@ interface PanelHistoryApi {
   endMove: () => void;
   addElement: (type: PanelElementType, positionMm: Vector2) => string;
   moveElement: (elementId: string, positionMm: Vector2) => void;
+  moveElements: (updates: { id: string; positionMm: Vector2 }[]) => void;
   updateElement: (elementId: string, updater: (element: PanelElement) => PanelElement) => void;
   updateElementProperties: (elementId: string, properties: PanelElement['properties']) => void;
   removeElement: (elementId: string) => void;
+  removeElements: (elementIds: string[]) => void;
 }
 
 export function usePanelHistory(): PanelHistoryApi {
   const setModel = usePanelStore((state) => state.setModel);
-  const setSelectedElementId = usePanelStore((state) => state.setSelectedElement);
+  const clearSelection = usePanelStore((state) => state.clearSelection);
   const addElementAction = usePanelStore((state) => state.addElement);
   const moveElementAction = usePanelStore((state) => state.moveElement);
+  const moveElementsAction = usePanelStore((state) => state.moveElements);
   const updateElementAction = usePanelStore((state) => state.updateElement);
   const removeElementAction = usePanelStore((state) => state.removeElement);
+  const removeElementsAction = usePanelStore((state) => state.removeElements);
 
   const historyRef = React.useRef<PanelModel[]>([]);
   const futureRef = React.useRef<PanelModel[]>([]);
@@ -76,8 +80,8 @@ export function usePanelHistory(): PanelHistoryApi {
     const snapshot = JSON.parse(JSON.stringify(current)) as PanelModel;
     futureRef.current.push(snapshot);
     setModel(previous);
-    setSelectedElementId(null);
-  }, [setModel, setSelectedElementId]);
+    clearSelection();
+  }, [clearSelection, setModel]);
 
   const redo = React.useCallback(() => {
     const next = futureRef.current.pop();
@@ -88,8 +92,8 @@ export function usePanelHistory(): PanelHistoryApi {
     const snapshot = JSON.parse(JSON.stringify(current)) as PanelModel;
     historyRef.current.push(snapshot);
     setModel(next);
-    setSelectedElementId(null);
-  }, [setModel, setSelectedElementId]);
+    clearSelection();
+  }, [clearSelection, setModel]);
 
   const beginMove = React.useCallback(() => {
     moveHistoryPushedRef.current = false;
@@ -124,6 +128,24 @@ export function usePanelHistory(): PanelHistoryApi {
       moveElementAction(elementId, positionMm);
     },
     [moveElementAction, pushHistory]
+  );
+
+  const moveElements = React.useCallback<
+    PanelHistoryApi['moveElements']
+  >(
+    (updates) => {
+      if (!updates.length) {
+        return;
+      }
+      if (!moveHistoryPushedRef.current) {
+        const current = usePanelStore.getState().model;
+        pushHistory(current);
+        futureRef.current = [];
+        moveHistoryPushedRef.current = true;
+      }
+      moveElementsAction(updates);
+    },
+    [moveElementsAction, pushHistory]
   );
 
   const updateElement = React.useCallback<
@@ -164,6 +186,21 @@ export function usePanelHistory(): PanelHistoryApi {
     [pushHistory, removeElementAction]
   );
 
+  const removeElements = React.useCallback<
+    PanelHistoryApi['removeElements']
+  >(
+    (elementIds) => {
+      if (!elementIds.length) {
+        return;
+      }
+      const current = usePanelStore.getState().model;
+      pushHistory(current);
+      futureRef.current = [];
+      removeElementsAction(elementIds);
+    },
+    [pushHistory, removeElementsAction]
+  );
+
   return {
     clearHistory,
     updateModel,
@@ -173,9 +210,10 @@ export function usePanelHistory(): PanelHistoryApi {
     endMove,
     addElement,
     moveElement,
+    moveElements,
     updateElement,
     updateElementProperties,
-    removeElement
+    removeElement,
+    removeElements
   };
 }
-

@@ -98,3 +98,9 @@ export const empty = style({
   color: vars.color.textSecondary,
   textAlign: 'center'
 });
+
+export const selectionSummary = style({
+  fontSize: '13px',
+  color: vars.color.textPrimary,
+  lineHeight: 1.5
+});

@@ -1,9 +1,10 @@
 import React from 'react';
 
-import { findElementAtPoint } from '@lib/canvas/elementGeometry';
+import { findElementAtPoint, getElementBounds } from '@lib/canvas/elementGeometry';
 import { drawPanelScene, type PanelCanvasPalette } from '@lib/canvas/renderScene';
 import {
   computeCanvasTransform,
+  projectPanelPoint,
   screenPointToPanel
 } from '@lib/canvas/transform';
 import {
@@ -34,6 +35,13 @@ const elementFillColors: Record<PanelElementType, string> = {
 };
 
 const elementStrokeColor = '#0f172a';
+
+type MoveState = {
+  anchorId: string;
+  pointerOffset: Vector2;
+  startPositions: Record<string, Vector2>;
+  elementIds: string[];
+};
 
 type DraftPropertiesState = Partial<{
   [T in PanelElementType]: PanelElement['properties'];
@@ -71,12 +79,17 @@ interface PanelCanvasProps {
   onZoomChange: (zoom: number) => void;
   onPanChange: (pan: Vector2) => void;
   onSelectElement: (elementId: string | null) => void;
+  onAddSelectedElements: (elementIds: string[]) => void;
+  onSelectElements: (elementIds: string[]) => void;
+  onToggleElementSelection: (elementId: string) => void;
+  onClearSelection: () => void;
   displayOptions: Pick<
     PanelOptions,
     'showGrid' | 'showMountingHoles' | 'gridSizeMm' | 'snapToGrid'
   >;
-  selectedElementId: string | null;
+  selectedElementIds: string[];
   draftProperties: DraftPropertiesState;
+  onMoveElements: (updates: { id: string; positionMm: Vector2 }[]) => void;
 }
 
 export function PanelCanvas({
@@ -89,13 +102,18 @@ export function PanelCanvas({
   placementType,
   onPlaceElement,
   onMoveElement,
+  onMoveElements,
   onMoveStart,
   onMoveEnd,
   onZoomChange,
   onPanChange,
   onSelectElement,
+  onAddSelectedElements,
+  onSelectElements,
+  onToggleElementSelection,
+  onClearSelection,
   displayOptions,
-  selectedElementId,
+  selectedElementIds,
   draftProperties
 }: PanelCanvasProps) {
   const internalCanvasRef = React.useRef<HTMLCanvasElement | null>(null);
@@ -104,13 +122,10 @@ export function PanelCanvas({
   const panRef = React.useRef<Vector2>(pan);
   const pointerStartRef = React.useRef<Vector2 | null>(null);
   const pointerModeRef = React.useRef<
-    'idle' | 'pan' | 'click' | 'move'
+    'idle' | 'pan' | 'click' | 'move' | 'marquee'
   >('idle');
   const panStartRef = React.useRef<Vector2 | null>(null);
-  const moveElementRef = React.useRef<{
-    elementId: string;
-    offset: Vector2;
-  } | null>(null);
+  const moveStateRef = React.useRef<MoveState | null>(null);
   const [isPanning, setIsPanning] = React.useState(false);
   const [canvasSize, setCanvasSize] = React.useState<Vector2>({
     x: CANVAS_WIDTH_PX,
@@ -119,6 +134,18 @@ export function PanelCanvas({
   const [pointerPanelPos, setPointerPanelPos] = React.useState<Vector2 | null>(null);
   const [snapOverridden, setSnapOverridden] = React.useState(false);
   const animationFrameRef = React.useRef<number | null>(null);
+  const [selectionRect, setSelectionRect] = React.useState<{ start: Vector2; end: Vector2 } | null>(
+    null
+  );
+  const selectionModeRef = React.useRef<'replace' | 'add'>('replace');
+  const selectedElementSet = React.useMemo(
+    () => new Set(selectedElementIds),
+    [selectedElementIds]
+  );
+  const elementMap = React.useMemo(
+    () => new Map(model.elements.map((element) => [element.id, element])),
+    [model.elements]
+  );
 
   React.useLayoutEffect(() => {
     const container = containerRef.current;
@@ -194,6 +221,19 @@ export function PanelCanvas({
     }),
     [canvasSize.y]
   );
+  const selectionOverlay = React.useMemo(() => {
+    if (!selectionRect) {
+      return null;
+    }
+    const startPx = projectPanelPoint(selectionRect.start, transform);
+    const endPx = projectPanelPoint(selectionRect.end, transform);
+    return {
+      left: Math.min(startPx.x, endPx.x),
+      top: Math.min(startPx.y, endPx.y),
+      width: Math.abs(endPx.x - startPx.x),
+      height: Math.abs(endPx.y - startPx.y)
+    };
+  }, [selectionRect, transform]);
 
   const hudText = `${model.dimensions.widthHp} HP · ${model.dimensions.widthMm.toFixed(
     1
@@ -270,7 +310,7 @@ export function PanelCanvas({
       context.fillRect(0, 0, width, height);
 
       let selectionAnimation: { dashOffset: number; pulseScale: number } | undefined;
-      if (selectedElementId) {
+      if (selectedElementIds.length > 0) {
         const t = timeMs / 1000;
         const dashSpeed = 40; // dash movement speed in px/s (approx)
         const patternLength = 12; // 6 + 6 from setLineDash
@@ -287,7 +327,7 @@ export function PanelCanvas({
         transform,
         elements: model.elements,
         mountingHoles,
-        selectedElementId,
+        selectedElementIds,
         showGrid: displayOptions.showGrid,
         showMountingHoles: displayOptions.showMountingHoles,
         gridSizeMm: displayOptions.gridSizeMm,
@@ -321,7 +361,7 @@ export function PanelCanvas({
     displayOptions.gridSizeMm,
     displayOptions.showGrid,
     displayOptions.showMountingHoles,
-    selectedElementId,
+    selectedElementIds,
     zoom,
     canvasSize.x,
     canvasSize.y,
@@ -404,19 +444,18 @@ export function PanelCanvas({
   const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
     event.stopPropagation();
 
-    if (!canvasRef.current) {
+    const canvas = canvasRef.current;
+    if (!canvas) {
       return;
     }
 
-    canvasRef.current.setPointerCapture(event.pointerId);
+    canvas.setPointerCapture(event.pointerId);
 
+    const additiveModifier = event.shiftKey || event.metaKey || event.ctrlKey;
     const shouldPan =
       event.button === 1 ||
       event.button === 2 ||
-      event.shiftKey ||
-      event.altKey ||
-      event.metaKey ||
-      event.ctrlKey;
+      event.altKey;
     pointerModeRef.current = shouldPan ? 'pan' : 'click';
     pointerStartRef.current = { x: event.clientX, y: event.clientY };
     panStartRef.current = shouldPan ? { ...panRef.current } : null;
@@ -427,7 +466,7 @@ export function PanelCanvas({
       return;
     }
 
-    const rect = canvasRef.current.getBoundingClientRect();
+    const rect = canvas.getBoundingClientRect();
     const pointPx = {
       x: event.clientX - rect.left,
       y: event.clientY - rect.top
@@ -439,14 +478,40 @@ export function PanelCanvas({
 
     const element = findElementAtPoint(pointPanel, model.elements);
     if (element) {
-      const offset = {
-        x: element.positionMm.x - pointPanel.x,
-        y: element.positionMm.y - pointPanel.y
+      if (additiveModifier) {
+        onToggleElementSelection(element.id);
+        pointerModeRef.current = 'idle';
+        return;
+      }
+
+      const moveCandidates = selectedElementSet.has(element.id)
+        ? selectedElementIds.filter((id) => elementMap.has(id))
+        : [element.id];
+
+      if (!selectedElementSet.has(element.id)) {
+        onSelectElement(element.id);
+      }
+
+      const startPositions: Record<string, Vector2> = {};
+      moveCandidates.forEach((id) => {
+        const target = elementMap.get(id);
+        if (target) {
+          startPositions[id] = { ...target.positionMm };
+        }
+      });
+
+      const elementIds = Object.keys(startPositions);
+      moveStateRef.current = {
+        anchorId: element.id,
+        pointerOffset: {
+          x: element.positionMm.x - pointPanel.x,
+          y: element.positionMm.y - pointPanel.y
+        },
+        startPositions,
+        elementIds
       };
-      moveElementRef.current = { elementId: element.id, offset };
       pointerModeRef.current = 'move';
       onMoveStart?.(element.id);
-      onSelectElement(element.id);
       return;
     }
 
@@ -458,12 +523,18 @@ export function PanelCanvas({
       return;
     }
 
-    pointerModeRef.current = 'click';
-    onSelectElement(null);
+    selectionModeRef.current = additiveModifier ? 'add' : 'replace';
+    setSelectionRect({ start: pointPanel, end: pointPanel });
+    pointerModeRef.current = 'marquee';
   };
 
   const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
     event.stopPropagation();
+
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return;
+    }
 
     if (pointerModeRef.current === 'pan') {
       if (!pointerStartRef.current || !panStartRef.current) {
@@ -482,52 +553,111 @@ export function PanelCanvas({
       return;
     }
 
-    if (pointerModeRef.current !== 'move') {
-      const canvas = canvasRef.current;
-      if (!canvas) {
-        return;
-      }
-      const rect = canvas.getBoundingClientRect();
-      const pointPx = {
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top
-      };
-      setPointerPanelPos(screenPointToPanel(pointPx, transform));
-      return;
-    }
-
-    if (!canvasRef.current || !moveElementRef.current) {
-      return;
-    }
-
-    const rect = canvasRef.current.getBoundingClientRect();
+    const rect = canvas.getBoundingClientRect();
     const pointPx = {
       x: event.clientX - rect.left,
       y: event.clientY - rect.top
     };
     const pointPanel = screenPointToPanel(pointPx, transform);
-    if (!pointPanel) {
+
+    if (pointerModeRef.current === 'move') {
+      if (!pointPanel || !moveStateRef.current) {
+        return;
+      }
+      const { anchorId, pointerOffset, startPositions, elementIds } = moveStateRef.current;
+      const anchorStart = startPositions[anchorId];
+      if (!anchorStart) {
+        return;
+      }
+      const targetAnchor = {
+        x: pointPanel.x + pointerOffset.x,
+        y: pointPanel.y + pointerOffset.y
+      };
+      const snappedAnchor = maybeSnap(targetAnchor);
+      const delta = {
+        x: snappedAnchor.x - anchorStart.x,
+        y: snappedAnchor.y - anchorStart.y
+      };
+      const updates = elementIds.map((id) => {
+        const start = startPositions[id];
+        return {
+          id,
+          positionMm: {
+            x: start.x + delta.x,
+            y: start.y + delta.y
+          }
+        };
+      });
+      if (!updates.length) {
+        return;
+      }
+      if (updates.length === 1) {
+        onMoveElement(updates[0].id, updates[0].positionMm);
+      } else {
+        onMoveElements(updates);
+      }
       return;
     }
 
-    const nextPosition = maybeSnap({
-      x: pointPanel.x + moveElementRef.current.offset.x,
-      y: pointPanel.y + moveElementRef.current.offset.y
-    });
+    if (pointerModeRef.current === 'marquee') {
+      if (!pointPanel) {
+        return;
+      }
+      setSelectionRect((current) =>
+        current
+          ? {
+              start: current.start,
+              end: pointPanel
+            }
+          : current
+      );
+      setPointerPanelPos(pointPanel);
+      return;
+    }
 
-    onMoveElement(moveElementRef.current.elementId, nextPosition);
+    setPointerPanelPos(pointPanel);
   };
 
   const handlePointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
     event.stopPropagation();
 
-    if (pointerModeRef.current === 'click' && pointerStartRef.current) {
+    const canvas = canvasRef.current;
+
+    if (pointerModeRef.current === 'marquee' && selectionRect) {
+      const bounds = {
+        minX: Math.min(selectionRect.start.x, selectionRect.end.x),
+        maxX: Math.max(selectionRect.start.x, selectionRect.end.x),
+        minY: Math.min(selectionRect.start.y, selectionRect.end.y),
+        maxY: Math.max(selectionRect.start.y, selectionRect.end.y)
+      };
+      const selectedIds = model.elements
+        .filter((element) => {
+          const elementBounds = getElementBounds(element);
+          return !(
+            elementBounds.maxX < bounds.minX ||
+            elementBounds.minX > bounds.maxX ||
+            elementBounds.maxY < bounds.minY ||
+            elementBounds.minY > bounds.maxY
+          );
+        })
+        .map((element) => element.id);
+
+      if (selectedIds.length) {
+        if (selectionModeRef.current === 'add') {
+          onAddSelectedElements(selectedIds);
+        } else {
+          onSelectElements(selectedIds);
+        }
+      } else if (selectionModeRef.current !== 'add') {
+        onClearSelection();
+      }
+    } else if (pointerModeRef.current === 'click' && pointerStartRef.current && canvas) {
       const deltaX = event.clientX - pointerStartRef.current.x;
       const deltaY = event.clientY - pointerStartRef.current.y;
       const moved = Math.hypot(deltaX, deltaY);
 
-      if (moved < 3 && canvasRef.current) {
-        const rect = canvasRef.current.getBoundingClientRect();
+      if (moved < 3) {
+        const rect = canvas.getBoundingClientRect();
         const pointPx = {
           x: event.clientX - rect.left,
           y: event.clientY - rect.top
@@ -535,7 +665,11 @@ export function PanelCanvas({
         const pointPanel = screenPointToPanel(pointPx, transform);
         if (pointPanel) {
           const element = findElementAtPoint(pointPanel, model.elements);
-          onSelectElement(element ? element.id : null);
+          if (element) {
+            onSelectElement(element.id);
+          } else {
+            onClearSelection();
+          }
         }
       }
     }
@@ -543,12 +677,14 @@ export function PanelCanvas({
     pointerModeRef.current = 'idle';
     pointerStartRef.current = null;
     panStartRef.current = null;
-    moveElementRef.current = null;
+    moveStateRef.current = null;
+    setSelectionRect(null);
+    selectionModeRef.current = 'replace';
     setPointerPanelPos(null);
     setIsPanning(false);
     onMoveEnd?.();
-    if (canvasRef.current) {
-      canvasRef.current.releasePointerCapture(event.pointerId);
+    if (canvas) {
+      canvas.releasePointerCapture(event.pointerId);
     }
   };
 
@@ -558,7 +694,9 @@ export function PanelCanvas({
     pointerModeRef.current = 'idle';
     pointerStartRef.current = null;
     panStartRef.current = null;
-    moveElementRef.current = null;
+    moveStateRef.current = null;
+    setSelectionRect(null);
+    selectionModeRef.current = 'replace';
     setIsPanning(false);
     onMoveEnd?.();
   };
@@ -576,13 +714,24 @@ export function PanelCanvas({
       <canvas
         ref={canvasRef}
         className={canvasClassName}
-        role="presentation"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerLeave}
-        onContextMenu={handleContextMenu}
-      />
+      role="presentation"
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerLeave}
+      onContextMenu={handleContextMenu}
+    />
+      {selectionOverlay ? (
+        <div
+          className={styles.selectionRect}
+          style={{
+            left: `${selectionOverlay.left}px`,
+            top: `${selectionOverlay.top}px`,
+            width: `${selectionOverlay.width}px`,
+            height: `${selectionOverlay.height}px`
+          }}
+        />
+      ) : null}
       <div className={styles.hud}>
         {hudText}
         {pointerPanelPos

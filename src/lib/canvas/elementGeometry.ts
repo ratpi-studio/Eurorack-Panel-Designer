@@ -15,6 +15,13 @@ interface LabelSizeMm {
   heightMm: number;
 }
 
+export interface ElementBounds {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+}
+
 export function getLabelSizeMm(
   properties: LabelElementProperties
 ): LabelSizeMm {
@@ -97,4 +104,69 @@ export function findElementAtPoint(
   }
 
   return null;
+}
+
+function getRectBounds(
+  center: Vector2,
+  widthMm: number,
+  heightMm: number,
+  rotationDeg: number
+): ElementBounds {
+  const rotation = (rotationDeg * Math.PI) / 180;
+  if (rotation === 0) {
+    return {
+      minX: center.x - widthMm / 2,
+      maxX: center.x + widthMm / 2,
+      minY: center.y - heightMm / 2,
+      maxY: center.y + heightMm / 2
+    };
+  }
+  const halfWidth = widthMm / 2;
+  const halfHeight = heightMm / 2;
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  const dx = Math.abs(halfWidth * cos) + Math.abs(halfHeight * sin);
+  const dy = Math.abs(halfWidth * sin) + Math.abs(halfHeight * cos);
+  return {
+    minX: center.x - dx,
+    maxX: center.x + dx,
+    minY: center.y - dy,
+    maxY: center.y + dy
+  };
+}
+
+export function getElementBounds(element: PanelElement): ElementBounds {
+  const rotation = element.rotationDeg ?? 0;
+  switch (element.type) {
+    case PanelElementType.Jack:
+    case PanelElementType.Potentiometer:
+    case PanelElementType.Led: {
+      const radius = element.properties.diameterMm / 2;
+      return {
+        minX: element.positionMm.x - radius,
+        maxX: element.positionMm.x + radius,
+        minY: element.positionMm.y - radius,
+        maxY: element.positionMm.y + radius
+      };
+    }
+    case PanelElementType.Switch: {
+      return getRectBounds(
+        element.positionMm,
+        element.properties.widthMm,
+        element.properties.heightMm,
+        rotation
+      );
+    }
+    case PanelElementType.Label: {
+      const { widthMm, heightMm } = getLabelSizeMm(element.properties);
+      return getRectBounds(element.positionMm, widthMm, heightMm, rotation);
+    }
+    default:
+      return {
+        minX: element.positionMm.x,
+        maxX: element.positionMm.x,
+        minY: element.positionMm.y,
+        maxY: element.positionMm.y
+      };
+  }
 }

@@ -77,7 +77,7 @@ export function useProjects({
   const panelModel = usePanelStore((state) => state.model);
   const setModel = usePanelStore((state) => state.setModel);
   const setPlacementType = usePanelStore((state) => state.setPlacementType);
-  const setSelectedElementId = usePanelStore((state) => state.setSelectedElement);
+  const clearSelection = usePanelStore((state) => state.clearSelection);
 
   const [projectName, setProjectName] = React.useState(t.projects.defaultName);
   const [projects, setProjects] = React.useState<StoredProject[]>([]);
@@ -123,10 +123,11 @@ export function useProjects({
       }
       setModel(model);
       clearHistory();
-      setSelectedElementId(null);
+      clearSelection();
       setPlacementType(null);
       resetView();
       setActiveProjectName(name);
+      setProjectName(name);
       setSelectedSavedName(name);
       setStatus(t.projects.messages.loadSuccess(name), 'success');
     },
@@ -136,7 +137,7 @@ export function useProjects({
       setStatus,
       setModel,
       setPlacementType,
-      setSelectedElementId,
+      clearSelection,
       t.projects.messages
     ]
   );
@@ -180,7 +181,7 @@ export function useProjects({
           setModel(model);
           clearHistory();
           setProjectName(file.name.replace(/\.json$/i, ''));
-          setSelectedElementId(null);
+          clearSelection();
           setPlacementType(null);
           resetView();
           setStatus(t.projects.messages.importSuccess(file.name), 'success');
@@ -299,7 +300,7 @@ export function useProjects({
     });
     clearHistory();
     setPlacementType(null);
-    setSelectedElementId(null);
+    clearSelection();
     setProjectName(t.projects.defaultName);
     setStatus(t.projects.messages.reset, 'info');
     resetView();
@@ -309,7 +310,7 @@ export function useProjects({
     resetView,
     setModel,
     setPlacementType,
-    setSelectedElementId,
+    clearSelection,
     t.projects.defaultName,
     t.projects.messages.reset
   ]);
