@@ -9,7 +9,9 @@
     "start": "vite preview",
     "lint": "oxlint --react-plugin --import-plugin --tsconfig tsconfig.json src",
     "test": "vitest run",
-    "knip": "knip"
+    "knip": "knip",
+    "bump:sentry-release": "node ./scripts/bump-sentry-release.mjs",
+    "prepare": "simple-git-hooks"
   },
   "dependencies": {
     "@sentry/react": "^10.28.0",
@@ -30,9 +32,13 @@
     "@vanilla-extract/vite-plugin": "5.1.3",
     "@vitejs/plugin-react-swc": "4.2.2",
     "oxlint": "1.31.0",
+    "simple-git-hooks": "^2.13.1",
     "typescript": "5.9.3",
     "vite": "npm:rolldown-vite@latest",
     "vitest": "4.0.15"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "yarn bump:sentry-release"
   },
   "packageManager": "yarn@4.12.0"
 }

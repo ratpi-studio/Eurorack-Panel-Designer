@@ -1,4 +1,3 @@
-import React from 'react';
 import { Toaster } from 'react-hot-toast';
 
 import { PanelDesigner } from '@components/PanelDesigner/PanelDesigner';
