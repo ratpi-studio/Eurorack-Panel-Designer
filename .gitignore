@@ -28,6 +28,7 @@ tsconfig.tsbuildinfo
 # Environment files
 .env
 .env.*
+!.env.sentry
 !.env.example
 
 # Editor settings
