@@ -251,8 +251,48 @@ function drawElements(
         );
         break;
       }
-      case PanelElementType.Switch: {
+      case PanelElementType.Switch:
+      case PanelElementType.Rectangle: {
         drawRectangularElement(
+          context,
+          element,
+          transform.scale,
+          selectedElementIds.has(element.id),
+          elementFillColors[element.type],
+          elementStrokeColor,
+          selectionColor,
+          selectionAnimation
+        );
+        break;
+      }
+      case PanelElementType.Oval: {
+        drawOvalElement(
+          context,
+          element,
+          transform.scale,
+          selectedElementIds.has(element.id),
+          elementFillColors[element.type],
+          elementStrokeColor,
+          selectionColor,
+          selectionAnimation
+        );
+        break;
+      }
+      case PanelElementType.Slot: {
+        drawSlotElement(
+          context,
+          element,
+          transform.scale,
+          selectedElementIds.has(element.id),
+          elementFillColors[element.type],
+          elementStrokeColor,
+          selectionColor,
+          selectionAnimation
+        );
+        break;
+      }
+      case PanelElementType.Triangle: {
+        drawTriangleElement(
           context,
           element,
           transform.scale,
@@ -351,7 +391,10 @@ function drawRectangularElement(
   selectionColor: string,
   selectionAnimation?: SelectionAnimationState
 ) {
-  if (element.type !== PanelElementType.Switch) {
+  if (
+    element.type !== PanelElementType.Switch &&
+    element.type !== PanelElementType.Rectangle
+  ) {
     return;
   }
 
@@ -370,6 +413,122 @@ function drawRectangularElement(
       context,
       width + 12,
       height + 12,
+      selectionColor,
+      selectionAnimation
+    );
+  }
+}
+
+function drawOvalElement(
+  context: CanvasRenderingContext2D,
+  element: PanelElement,
+  scale: number,
+  isSelected: boolean,
+  fillColor: string,
+  strokeColor: string,
+  selectionColor: string,
+  selectionAnimation?: SelectionAnimationState
+) {
+  if (element.type !== PanelElementType.Oval) {
+    return;
+  }
+
+  const radiusX = (element.properties.widthMm / 2) * scale;
+  const radiusY = (element.properties.heightMm / 2) * scale;
+  context.fillStyle = fillColor;
+  context.strokeStyle = strokeColor;
+  context.lineWidth = 2;
+  context.beginPath();
+  context.ellipse(0, 0, radiusX, radiusY, 0, 0, Math.PI * 2);
+  context.fill();
+  context.stroke();
+
+  if (isSelected) {
+    drawSelectionRect(
+      context,
+      element.properties.widthMm * scale + 12,
+      element.properties.heightMm * scale + 12,
+      selectionColor,
+      selectionAnimation
+    );
+  }
+}
+
+function drawSlotElement(
+  context: CanvasRenderingContext2D,
+  element: PanelElement,
+  scale: number,
+  isSelected: boolean,
+  fillColor: string,
+  strokeColor: string,
+  selectionColor: string,
+  selectionAnimation?: SelectionAnimationState
+) {
+  if (element.type !== PanelElementType.Slot) {
+    return;
+  }
+
+  const width = element.properties.widthMm * scale;
+  const height = element.properties.heightMm * scale;
+  const radius = Math.min(width / 2, height / 2);
+  const rectHalfWidth = Math.max(width / 2 - radius, 0);
+
+  context.fillStyle = fillColor;
+  context.strokeStyle = strokeColor;
+  context.lineWidth = 2;
+  context.beginPath();
+  context.moveTo(-rectHalfWidth, -radius);
+  context.lineTo(rectHalfWidth, -radius);
+  context.arc(rectHalfWidth, 0, radius, -Math.PI / 2, Math.PI / 2);
+  context.lineTo(-rectHalfWidth, radius);
+  context.arc(-rectHalfWidth, 0, radius, Math.PI / 2, -Math.PI / 2);
+  context.closePath();
+  context.fill();
+  context.stroke();
+
+  if (isSelected) {
+    drawSelectionRect(
+      context,
+      element.properties.widthMm * scale + 12,
+      element.properties.heightMm * scale + 12,
+      selectionColor,
+      selectionAnimation
+    );
+  }
+}
+
+function drawTriangleElement(
+  context: CanvasRenderingContext2D,
+  element: PanelElement,
+  scale: number,
+  isSelected: boolean,
+  fillColor: string,
+  strokeColor: string,
+  selectionColor: string,
+  selectionAnimation?: SelectionAnimationState
+) {
+  if (element.type !== PanelElementType.Triangle) {
+    return;
+  }
+
+  const width = element.properties.widthMm * scale;
+  const height = element.properties.heightMm * scale;
+  context.fillStyle = fillColor;
+  context.strokeStyle = strokeColor;
+  context.lineWidth = 2;
+  context.beginPath();
+  context.moveTo(0, -height / 2);
+  context.lineTo(width / 2, height / 2);
+  context.lineTo(-width / 2, height / 2);
+  context.closePath();
+  context.fill();
+  context.stroke();
+
+  if (isSelected) {
+    drawSelectionRect(
+      context,
+      element.properties.widthMm * scale + 12,
+      element.properties.heightMm * scale + 12,
       selectionColor,
       selectionAnimation
     );

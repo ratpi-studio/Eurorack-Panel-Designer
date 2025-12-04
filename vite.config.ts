@@ -1,10 +1,10 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import react from '@vitejs/plugin-react-swc';
 import { defineConfig, loadEnv } from 'vite';
+import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 
 const sentryEnvFile = path.resolve(__dirname, '.env.sentry');
 
@@ -79,7 +79,33 @@ export default defineConfig(({ mode }) => {
         : [])
     ],
     build: {
-      sourcemap: true
+      sourcemap: true,
+      chunkSizeWarningLimit: 1200,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) {
+              return undefined;
+            }
+            if (/node_modules\/react/i.test(id)) {
+              return 'react-vendor';
+            }
+            if (id.includes('node_modules/three')) {
+              return 'three';
+            }
+            if (id.includes('node_modules/@sentry')) {
+              return 'sentry';
+            }
+            if (id.includes('node_modules/zustand')) {
+              return 'zustand';
+            }
+            if (id.includes('node_modules/react-hot-toast')) {
+              return 'react-hot-toast';
+            }
+            return 'vendor';
+          }
+        }
+      }
     },
     resolve: {
       alias: {

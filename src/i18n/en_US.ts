@@ -26,6 +26,7 @@ interface Translations {
     clear: string;
     select: string;
     place: string;
+    shapeLabelPrefix: string;
     items: Record<
       string,
       {
@@ -84,6 +85,7 @@ interface Translations {
       kicadSvgExport: string;
       kicadPcbExport: string;
       stlExport: string;
+      stlError: string;
       reset: string;
     };
     stlDialog: {
@@ -92,6 +94,7 @@ interface Translations {
       thicknessLabel: string;
       thicknessHint: string;
       previewLabel: string;
+      previewLoading: string;
       cancel: string;
       confirm: string;
     };
@@ -138,6 +141,7 @@ export const enUS: Translations = {
     clear: 'Clear',
     select: 'Select',
     place: 'Place…',
+    shapeLabelPrefix: 'Shape',
     items: {
       jack: {
         label: 'Jack',
@@ -163,6 +167,26 @@ export const enUS: Translations = {
         label: 'Text',
         description: 'Add a label',
         color: '#f8fafc'
+      },
+      rectangle: {
+        label: 'Rectangle',
+        description: 'Generic rectangular cutout',
+        color: '#4ade80'
+      },
+      oval: {
+        label: 'Oval',
+        description: 'Ellipse cutout',
+        color: '#c084fc'
+      },
+      slot: {
+        label: 'Slot',
+        description: 'Capsule / slotted cutout',
+        color: '#fb923c'
+      },
+      triangle: {
+        label: 'Triangle',
+        description: 'Triangular cutout',
+        color: '#22d3ee'
       }
     }
   },
@@ -216,6 +240,7 @@ export const enUS: Translations = {
       kicadSvgExport: 'KiCad Edge.Cuts SVG created.',
       kicadPcbExport: 'KiCad PCB export created.',
       stlExport: 'STL export created.',
+      stlError: 'Failed to generate STL export.',
       reset: 'Design reset.'
     },
     stlDialog: {
@@ -224,6 +249,7 @@ export const enUS: Translations = {
       thicknessLabel: 'Panel thickness (mm)',
       thicknessHint: 'Default is 2 mm.',
       previewLabel: 'Preview',
+      previewLoading: 'Loading preview…',
       cancel: 'Cancel',
       confirm: 'Export STL'
     }
