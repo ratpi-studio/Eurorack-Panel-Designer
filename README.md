@@ -1,4 +1,5 @@
 ![Vercel Deploy](https://deploy-badge.vercel.app/vercel/eurorack-panel-designer-oss8)
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/ratpi-studio/Eurorack-Panel-Designer?utm_source=oss&utm_medium=github&utm_campaign=ratpi-studio%2FEurorack-Panel-Designer&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
 [Online version](https://eurorack-panel-designer-oss8.vercel.app/)
 
