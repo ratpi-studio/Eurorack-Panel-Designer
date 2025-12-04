@@ -46,6 +46,11 @@ export function PanelDesigner() {
   const setPlacementType = usePanelStore((state) => state.setPlacementType);
   const selectedElementId = usePanelStore((state) => state.selectedElementId);
   const setSelectedElementId = usePanelStore((state) => state.setSelectedElement);
+  const selectedElementIds = usePanelStore((state) => state.selectedElementIds);
+  const setSelectedElementIds = usePanelStore((state) => state.setSelectedElementIds);
+  const addSelectedElements = usePanelStore((state) => state.addSelectedElements);
+  const toggleElementSelection = usePanelStore((state) => state.toggleElementSelection);
+  const clearSelection = usePanelStore((state) => state.clearSelection);
   const draftProperties = usePanelStore((state) => state.draftProperties);
   const setDraftProperties = usePanelStore((state) => state.setDraftProperties);
   const [zoom, setZoom] = React.useState(DEFAULT_ZOOM);
@@ -95,9 +100,11 @@ export function PanelDesigner() {
     endMove,
     addElement,
     moveElement,
+    moveElements,
     updateElement,
     updateElementProperties,
-    removeElement
+    removeElement,
+    removeElements
   } = usePanelHistory();
 
   const mountingHoles = React.useMemo(
@@ -115,9 +122,9 @@ export function PanelDesigner() {
         ...prev,
         dimensions: createPanelDimensions(mmToCm(widthMm))
       }));
-      setSelectedElementId(null);
+      clearSelection();
     },
-    [setSelectedElementId, updateModel]
+    [clearSelection, updateModel]
   );
 
   const handleSetWidthFromHp = React.useCallback(
@@ -135,9 +142,9 @@ export function PanelDesigner() {
           dimensions: createPanelDimensions(widthCm, currentMmPerHp)
         };
       });
-      setSelectedElementId(null);
+      clearSelection();
     },
-    [setSelectedElementId, updateModel]
+    [clearSelection, updateModel]
   );
 
   const resetView = React.useCallback(() => {
@@ -266,6 +273,17 @@ export function PanelDesigner() {
     [removeElement]
   );
 
+  const handleRemoveSelection = React.useCallback(() => {
+    if (!selectedElementIds.length) {
+      return;
+    }
+    if (selectedElementIds.length === 1) {
+      handleRemoveElement(selectedElementIds[0]);
+      return;
+    }
+    removeElements(selectedElementIds);
+  }, [handleRemoveElement, removeElements, selectedElementIds]);
+
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
@@ -277,14 +295,14 @@ export function PanelDesigner() {
 
       if (event.key === 'Escape') {
         setPlacementType(null);
-        setSelectedElementId(null);
+        clearSelection();
         return;
       }
 
       if (!isEditingField && (event.key === 'Backspace' || event.key === 'Delete')) {
-        if (selectedElementId) {
+        if (selectedElementIds.length > 0) {
           event.preventDefault();
-          handleRemoveElement(selectedElementId);
+          handleRemoveSelection();
         }
         return;
       }
@@ -303,7 +321,7 @@ export function PanelDesigner() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [handleRemoveElement, redo, selectedElementId, undo]);
+  }, [clearSelection, handleRemoveSelection, redo, selectedElementIds.length, setPlacementType, undo]);
 
   const selectedElement = React.useMemo(
     () => panelModel.elements.find((element) => element.id === selectedElementId) ?? null,
@@ -325,10 +343,10 @@ export function PanelDesigner() {
 
   const handleSelectPaletteType = React.useCallback(
     (type: PanelElementType | null) => {
-      setSelectedElementId(null);
+      clearSelection();
       setPlacementType(type);
     },
-    [setPlacementType, setSelectedElementId]
+    [clearSelection, setPlacementType]
   );
 
   const exportButtonLabel = React.useMemo(() => {
@@ -554,13 +572,18 @@ export function PanelDesigner() {
             placementType={placementType}
             onPlaceElement={handlePlaceElement}
             onMoveElement={handleMoveElement}
+            onMoveElements={moveElements}
             onMoveStart={beginMove}
             onMoveEnd={endMove}
             onZoomChange={handleZoomChange}
             onPanChange={handlePanChange}
             onSelectElement={setSelectedElementId}
+            onAddSelectedElements={addSelectedElements}
+            onSelectElements={setSelectedElementIds}
+            onToggleElementSelection={toggleElementSelection}
+            onClearSelection={clearSelection}
             displayOptions={panelModel.options}
-            selectedElementId={selectedElementId}
+            selectedElementIds={selectedElementIds}
             draftProperties={draftProperties}
           />
           <div className={styles.shortcuts}>
@@ -738,6 +761,7 @@ export function PanelDesigner() {
             <div className={styles.card}>
               <ElementProperties
                 element={elementForProperties}
+                selectionCount={selectedElementIds.length}
                 onChangePosition={(positionMm) => {
                   if (selectedElement) {
                     updateElement(selectedElement.id, (element) => ({
@@ -765,7 +789,7 @@ export function PanelDesigner() {
                 }}
                 onRemove={() => {
                   if (selectedElement) {
-                    handleRemoveElement(selectedElement.id);
+                    handleRemoveSelection();
                   } else {
                     setPlacementType(null);
                   }

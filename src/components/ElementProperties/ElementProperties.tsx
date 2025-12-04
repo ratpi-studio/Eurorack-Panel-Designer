@@ -11,6 +11,7 @@ import * as styles from './ElementProperties.css';
 
 interface ElementPropertiesProps {
   element: PanelElement | null;
+  selectionCount: number;
   onChangePosition: (position: Vector2) => void;
   onChangeRotation: (rotationDeg: number) => void;
   onChangeProperties: (properties: PanelElement['properties']) => void;
@@ -24,6 +25,7 @@ function sanitizeNumber(value: string): number | null {
 
 export function ElementProperties({
   element,
+  selectionCount,
   onChangePosition,
   onChangeRotation,
   onChangeProperties,
@@ -75,6 +77,23 @@ export function ElementProperties({
 
     setInputs(base);
   }, [element]);
+
+  if (selectionCount > 1) {
+    return (
+      <div className={styles.root}>
+        <div className={styles.header}>
+          <div>
+            <div className={styles.title}>{t.properties.title}</div>
+            <div className={styles.subtitle}>{t.properties.multiSelection(selectionCount)}</div>
+          </div>
+          <button type="button" className={styles.removeButton} onClick={onRemove}>
+            {t.properties.delete}
+          </button>
+        </div>
+        <div className={styles.selectionSummary}>{t.properties.multiSelectionHint}</div>
+      </div>
+    );
+  }
 
   if (!element) {
     return (
