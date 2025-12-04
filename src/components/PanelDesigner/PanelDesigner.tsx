@@ -17,7 +17,6 @@ import {
   type Vector2
 } from '@lib/panelTypes';
 import { createPanelDimensions, hpToMm, mmToCm } from '@lib/units';
-import { StlPreview } from '@components/StlPreview/StlPreview';
 import { type ExportFormat } from '@lib/exportPreferences';
 import { usePanelStore } from '@store/panelStore';
 import { usePanelHistory } from '@store/usePanelHistory';
@@ -30,6 +29,11 @@ const DEFAULT_PAN: Vector2 = { x: 0, y: 0 };
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 4;
 const GITHUB_REPO_URL = 'https://github.com/ratpi-studio/Eurorack-Panel-Designer';
+const LazyStlPreview = React.lazy(() =>
+  import('@components/StlPreview/StlPreview').then((module) => ({
+    default: module.StlPreview
+  }))
+);
 
 function computeMountingHoles(model: PanelModel): MountingHole[] {
   return generateMountingHoles({
@@ -832,11 +836,19 @@ export function PanelDesigner() {
             </label>
             <div className={styles.previewSection}>
               <span className={styles.label}>{t.projects.stlDialog.previewLabel}</span>
-              <StlPreview
-                model={panelModel}
-                mountingHoles={mountingHoles}
-                thicknessMm={previewThickness}
-              />
+              <React.Suspense
+                fallback={
+                  <div className={styles.previewFallback}>
+                    {t.projects.stlDialog.previewLoading}
+                  </div>
+                }
+              >
+                <LazyStlPreview
+                  model={panelModel}
+                  mountingHoles={mountingHoles}
+                  thicknessMm={previewThickness}
+                />
+              </React.Suspense>
             </div>
             <div className={styles.modalActions}>
               <button

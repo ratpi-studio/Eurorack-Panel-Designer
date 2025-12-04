@@ -78,4 +78,59 @@ describe('buildPanelStl', () => {
     expect(stl.startsWith('solid eurorack_panel')).toBe(true);
     expect(stl.trimEnd().endsWith('endsolid eurorack_panel')).toBe(true);
   });
+
+  it('supports non-circular shape cutouts', () => {
+    const model = createEmptyPanel();
+    model.elements.push(
+      {
+        id: 'rect-1',
+        type: PanelElementType.Rectangle,
+        positionMm: { x: 20, y: 30 },
+        properties: {
+          widthMm: 6,
+          heightMm: 10
+        }
+      },
+      {
+        id: 'oval-1',
+        type: PanelElementType.Oval,
+        positionMm: { x: 40, y: 40 },
+        properties: {
+          widthMm: 12,
+          heightMm: 6
+        }
+      },
+      {
+        id: 'slot-1',
+        type: PanelElementType.Slot,
+        positionMm: { x: 60, y: 60 },
+        properties: {
+          widthMm: 14,
+          heightMm: 4
+        }
+      },
+      {
+        id: 'triangle-1',
+        type: PanelElementType.Triangle,
+        positionMm: { x: 80, y: 80 },
+        properties: {
+          widthMm: 10,
+          heightMm: 8
+        }
+      }
+    );
+
+    const mountingHoles = generateMountingHoles({
+      widthHp: model.dimensions.widthHp,
+      widthMm: model.dimensions.widthMm,
+      heightMm: model.dimensions.heightMm
+    });
+
+    const stl = buildPanelStl(model, mountingHoles, {
+      thicknessMm: 2
+    });
+
+    expect(stl.startsWith('solid eurorack_panel')).toBe(true);
+    expect(stl.includes('facet')).toBe(true);
+  });
 });

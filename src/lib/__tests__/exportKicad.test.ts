@@ -30,6 +30,42 @@ function createSampleModel(): PanelModel {
           widthMm: 8,
           heightMm: 10
         }
+      },
+      {
+        id: 'rectangle-1',
+        type: PanelElementType.Rectangle,
+        positionMm: { x: 25, y: 40 },
+        properties: {
+          widthMm: 6,
+          heightMm: 8
+        }
+      },
+      {
+        id: 'oval-1',
+        type: PanelElementType.Oval,
+        positionMm: { x: 35, y: 50 },
+        properties: {
+          widthMm: 12,
+          heightMm: 6
+        }
+      },
+      {
+        id: 'slot-1',
+        type: PanelElementType.Slot,
+        positionMm: { x: 45, y: 60 },
+        properties: {
+          widthMm: 14,
+          heightMm: 4
+        }
+      },
+      {
+        id: 'triangle-1',
+        type: PanelElementType.Triangle,
+        positionMm: { x: 55, y: 70 },
+        properties: {
+          widthMm: 10,
+          heightMm: 8
+        }
       }
     ],
     options: { ...DEFAULT_PANEL_OPTIONS }
@@ -61,6 +97,18 @@ describe('buildKicadEdgeCutsSvg', () => {
     expect(svg).toContain(
       `<rect x="11" y="25" width="8" height="10" stroke="black" stroke-width="0.1" fill="none" />`
     );
+    expect(svg).toContain(
+      `<rect x="22" y="36" width="6" height="8" stroke="black" stroke-width="0.1" fill="none" />`
+    );
+    expect(svg).toContain(
+      `<ellipse cx="35" cy="50" rx="6" ry="3" stroke="black" stroke-width="0.1" fill="none" />`
+    );
+    expect(svg).toContain(
+      `M 40 58 H 50 A 2 2 0 0 1 50 62 H 40 A 2 2 0 0 1 40 58 Z`
+    );
+    expect(svg).toContain(
+      `M 55 66 L 60 74 L 50 74 Z`
+    );
   });
 });
 
@@ -82,6 +130,12 @@ describe('buildKicadPcbFile', () => {
     );
     expect(pcb).toContain(
       `(gr_line (start 11 25) (end 19 25) (layer "Edge.Cuts") (width 0.15))`
+    );
+    expect(pcb).toContain(
+      `(gr_line (start 50 62) (end 40 62) (layer "Edge.Cuts") (width 0.15))`
+    );
+    expect(pcb).toContain(
+      `(gr_line (start 55 66) (end 60 74) (layer "Edge.Cuts") (width 0.15))`
     );
 
     const grLineCount = pcb.match(/\(gr_line /g)?.length ?? 0;

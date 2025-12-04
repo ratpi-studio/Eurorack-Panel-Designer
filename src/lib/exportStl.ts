@@ -30,6 +30,27 @@ interface RectangularHole {
   height: number;
 }
 
+interface OvalHole {
+  centerX: number;
+  centerY: number;
+  radiusX: number;
+  radiusY: number;
+}
+
+interface SlotHole {
+  centerX: number;
+  centerY: number;
+  width: number;
+  height: number;
+}
+
+interface TriangleHole {
+  centerX: number;
+  centerY: number;
+  width: number;
+  height: number;
+}
+
 function getCircularHoles(
   model: PanelModel,
   mountingHoles: MountingHole[]
@@ -65,7 +86,10 @@ function getRectangularHoles(model: PanelModel): RectangularHole[] {
   const rectangularHoles: RectangularHole[] = [];
 
   for (const element of model.elements) {
-    if (element.type !== PanelElementType.Switch) {
+    if (
+      element.type !== PanelElementType.Switch &&
+      element.type !== PanelElementType.Rectangle
+    ) {
       continue;
     }
     const props = element.properties as { widthMm: number; heightMm: number };
@@ -78,6 +102,104 @@ function getRectangularHoles(model: PanelModel): RectangularHole[] {
   }
 
   return rectangularHoles;
+}
+
+function getOvalHoles(model: PanelModel): OvalHole[] {
+  const ovalHoles: OvalHole[] = [];
+
+  for (const element of model.elements) {
+    if (element.type !== PanelElementType.Oval) {
+      continue;
+    }
+    const props = element.properties;
+    if (props.widthMm <= 0 || props.heightMm <= 0) {
+      continue;
+    }
+    ovalHoles.push({
+      centerX: element.positionMm.x,
+      centerY: element.positionMm.y,
+      radiusX: props.widthMm / 2,
+      radiusY: props.heightMm / 2
+    });
+  }
+
+  return ovalHoles;
+}
+
+function getSlotHoles(model: PanelModel): SlotHole[] {
+  const slotHoles: SlotHole[] = [];
+
+  for (const element of model.elements) {
+    if (element.type !== PanelElementType.Slot) {
+      continue;
+    }
+    const props = element.properties;
+    if (props.widthMm <= 0 || props.heightMm <= 0) {
+      continue;
+    }
+    slotHoles.push({
+      centerX: element.positionMm.x,
+      centerY: element.positionMm.y,
+      width: props.widthMm,
+      height: props.heightMm
+    });
+  }
+
+  return slotHoles;
+}
+
+function getTriangleHoles(model: PanelModel): TriangleHole[] {
+  const triangleHoles: TriangleHole[] = [];
+
+  for (const element of model.elements) {
+    if (element.type !== PanelElementType.Triangle) {
+      continue;
+    }
+    const props = element.properties;
+    if (props.widthMm <= 0 || props.heightMm <= 0) {
+      continue;
+    }
+    triangleHoles.push({
+      centerX: element.positionMm.x,
+      centerY: element.positionMm.y,
+      width: props.widthMm,
+      height: props.heightMm
+    });
+  }
+
+  return triangleHoles;
+}
+
+function createSlotHolePath(hole: SlotHole): Path {
+  const path = new Path();
+  const radius = Math.min(hole.width / 2, hole.height / 2);
+  const straightHalf = Math.max(hole.width / 2 - radius, 0);
+  const left = hole.centerX - straightHalf;
+  const right = hole.centerX + straightHalf;
+  const top = hole.centerY - radius;
+  const bottom = hole.centerY + radius;
+
+  path.moveTo(left, top);
+  path.lineTo(right, top);
+  path.absarc(right, hole.centerY, radius, -Math.PI / 2, Math.PI / 2, true);
+  path.lineTo(left, bottom);
+  path.absarc(left, hole.centerY, radius, Math.PI / 2, -Math.PI / 2, true);
+  path.lineTo(left, top);
+
+  return path;
+}
+
+function createTriangleHolePath(hole: TriangleHole): Path {
+  const path = new Path();
+  const halfWidth = hole.width / 2;
+  const halfHeight = hole.height / 2;
+
+  path.moveTo(hole.centerX, hole.centerY - halfHeight);
+  path.lineTo(hole.centerX + halfWidth, hole.centerY + halfHeight);
+  path.lineTo(hole.centerX - halfWidth, hole.centerY + halfHeight);
+  path.lineTo(hole.centerX, hole.centerY - halfHeight);
+
+  return path;
 }
 
 function buildPanelShape(
@@ -122,6 +244,35 @@ function buildPanelShape(
     path.lineTo(hole.x + hole.width, hole.y);
     path.lineTo(hole.x, hole.y);
     shape.holes.push(path);
+  }
+
+  // Oval holes
+  const ovalHoles = getOvalHoles(model);
+  for (const hole of ovalHoles) {
+    const path = new Path();
+    path.absellipse(
+      hole.centerX,
+      hole.centerY,
+      hole.radiusX,
+      hole.radiusY,
+      0,
+      Math.PI * 2,
+      true,
+      0
+    );
+    shape.holes.push(path);
+  }
+
+  // Slot holes
+  const slotHoles = getSlotHoles(model);
+  for (const hole of slotHoles) {
+    shape.holes.push(createSlotHolePath(hole));
+  }
+
+  // Triangle holes
+  const triangleHoles = getTriangleHoles(model);
+  for (const hole of triangleHoles) {
+    shape.holes.push(createTriangleHolePath(hole));
   }
 
   return shape;

@@ -50,13 +50,73 @@ function convertToElementSpace(
     return translated;
   }
 
-  const cos = Math.cos(rotation);
-  const sin = Math.sin(rotation);
+  return rotatePoint(translated, rotation);
+}
 
-  return {
-    x: translated.x * cos - translated.y * sin,
-    y: translated.x * sin + translated.y * cos
-  };
+function isPointInOval(
+  point: Vector2,
+  widthMm: number,
+  heightMm: number
+): boolean {
+  const halfWidth = widthMm / 2;
+  const halfHeight = heightMm / 2;
+  if (halfWidth <= 0 || halfHeight <= 0) {
+    return false;
+  }
+  const normalized =
+    (point.x / halfWidth) * (point.x / halfWidth) +
+    (point.y / halfHeight) * (point.y / halfHeight);
+  return normalized <= 1;
+}
+
+function isPointInSlot(point: Vector2, widthMm: number, heightMm: number): boolean {
+  const halfWidth = widthMm / 2;
+  const halfHeight = heightMm / 2;
+  if (halfWidth <= 0 || halfHeight <= 0) {
+    return false;
+  }
+  const radius = Math.min(halfHeight, halfWidth);
+  const rectHalfWidth = Math.max(halfWidth - radius, 0);
+
+  if (Math.abs(point.y) <= radius && Math.abs(point.x) <= rectHalfWidth) {
+    return true;
+  }
+  const dx = Math.abs(point.x) - rectHalfWidth;
+  if (dx <= 0) {
+    return Math.abs(point.y) <= radius;
+  }
+  return dx * dx + point.y * point.y <= radius * radius;
+}
+
+function isPointInTriangle(point: Vector2, widthMm: number, heightMm: number): boolean {
+  const halfWidth = widthMm / 2;
+  const halfHeight = heightMm / 2;
+  if (halfWidth <= 0 || halfHeight <= 0) {
+    return false;
+  }
+
+  const a = { x: 0, y: -halfHeight };
+  const b = { x: halfWidth, y: halfHeight };
+  const c = { x: -halfWidth, y: halfHeight };
+
+  const v0 = { x: c.x - a.x, y: c.y - a.y };
+  const v1 = { x: b.x - a.x, y: b.y - a.y };
+  const v2 = { x: point.x - a.x, y: point.y - a.y };
+
+  const dot00 = v0.x * v0.x + v0.y * v0.y;
+  const dot01 = v0.x * v1.x + v0.y * v1.y;
+  const dot02 = v0.x * v2.x + v0.y * v2.y;
+  const dot11 = v1.x * v1.x + v1.y * v1.y;
+  const dot12 = v1.x * v2.x + v1.y * v2.y;
+
+  const denom = dot00 * dot11 - dot01 * dot01;
+  if (denom === 0) {
+    return false;
+  }
+  const invDenom = 1 / denom;
+  const u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+  const v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+  return u >= 0 && v >= 0 && u + v <= 1;
 }
 
 function isPointInsideElement(
@@ -72,7 +132,8 @@ function isPointInsideElement(
       const radius = element.properties.diameterMm / 2;
       return localPoint.x ** 2 + localPoint.y ** 2 <= radius ** 2;
     }
-    case PanelElementType.Switch: {
+    case PanelElementType.Switch:
+    case PanelElementType.Rectangle: {
       const halfWidth = element.properties.widthMm / 2;
       const halfHeight = element.properties.heightMm / 2;
       return (
@@ -80,6 +141,24 @@ function isPointInsideElement(
         Math.abs(localPoint.y) <= halfHeight
       );
     }
+    case PanelElementType.Oval:
+      return isPointInOval(
+        localPoint,
+        element.properties.widthMm,
+        element.properties.heightMm
+      );
+    case PanelElementType.Slot:
+      return isPointInSlot(
+        localPoint,
+        element.properties.widthMm,
+        element.properties.heightMm
+      );
+    case PanelElementType.Triangle:
+      return isPointInTriangle(
+        localPoint,
+        element.properties.widthMm,
+        element.properties.heightMm
+      );
     case PanelElementType.Label: {
       const { widthMm, heightMm } = getLabelSizeMm(element.properties);
       return (
@@ -135,6 +214,50 @@ function getRectBounds(
   };
 }
 
+function getTriangleBounds(
+  center: Vector2,
+  widthMm: number,
+  heightMm: number,
+  rotationDeg: number
+): ElementBounds {
+  const rotation = (rotationDeg * Math.PI) / 180;
+  const halfWidth = widthMm / 2;
+  const halfHeight = heightMm / 2;
+  const localPoints: Vector2[] = [
+    { x: 0, y: -halfHeight },
+    { x: halfWidth, y: halfHeight },
+    { x: -halfWidth, y: halfHeight }
+  ];
+
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+
+  localPoints.forEach((point) => {
+    const rotated = rotatePoint(point, rotation);
+    const world = {
+      x: center.x + rotated.x,
+      y: center.y + rotated.y
+    };
+    minX = Math.min(minX, world.x);
+    maxX = Math.max(maxX, world.x);
+    minY = Math.min(minY, world.y);
+    maxY = Math.max(maxY, world.y);
+  });
+
+  if (!Number.isFinite(minX) || !Number.isFinite(minY)) {
+    return {
+      minX: center.x,
+      maxX: center.x,
+      minY: center.y,
+      maxY: center.y
+    };
+  }
+
+  return { minX, maxX, minY, maxY };
+}
+
 export function getElementBounds(element: PanelElement): ElementBounds {
   const rotation = element.rotationDeg ?? 0;
   switch (element.type) {
@@ -149,8 +272,19 @@ export function getElementBounds(element: PanelElement): ElementBounds {
         maxY: element.positionMm.y + radius
       };
     }
-    case PanelElementType.Switch: {
+    case PanelElementType.Switch:
+    case PanelElementType.Rectangle:
+    case PanelElementType.Oval:
+    case PanelElementType.Slot: {
       return getRectBounds(
+        element.positionMm,
+        element.properties.widthMm,
+        element.properties.heightMm,
+        rotation
+      );
+    }
+    case PanelElementType.Triangle: {
+      return getTriangleBounds(
         element.positionMm,
         element.properties.widthMm,
         element.properties.heightMm,
@@ -162,11 +296,21 @@ export function getElementBounds(element: PanelElement): ElementBounds {
       return getRectBounds(element.positionMm, widthMm, heightMm, rotation);
     }
     default:
-      return {
-        minX: element.positionMm.x,
-        maxX: element.positionMm.x,
-        minY: element.positionMm.y,
-        maxY: element.positionMm.y
-      };
+      return assertUnreachable(element);
   }
+}
+
+function assertUnreachable(value: never): never {
+  throw new Error(`Unhandled panel element: ${String(value)}`);
+}
+function rotatePoint(point: Vector2, rotationRad: number): Vector2 {
+  if (rotationRad === 0) {
+    return { ...point };
+  }
+  const cos = Math.cos(rotationRad);
+  const sin = Math.sin(rotationRad);
+  return {
+    x: point.x * cos - point.y * sin,
+    y: point.x * sin + point.y * cos
+  };
 }
