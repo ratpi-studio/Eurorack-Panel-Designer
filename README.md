@@ -62,6 +62,13 @@ yarn build
 
 The `VITE_SENTRY_RELEASE` value is injected into the bundle so events are associated with the exact release that received the uploaded source maps. When the env vars are omitted the build succeeds but release creation/map upload are skipped.
 
+### Local release tracking & pre-commit hook
+
+- `.env.sentry` is tracked and contains the authoritative `SENTRY_RELEASE` / `VITE_SENTRY_RELEASE` pair used locally.
+- A `simple-git-hooks` pre-commit hook runs `yarn bump:sentry-release`, which increments the value in `.env.sentry` and stages the file automatically so every commit gets a unique release identifier.
+- Run `yarn bump:sentry-release` manually if you need a bump outside of the hook or reset the file.
+- Vite reads `.env.sentry` as a fallback, so running `yarn dev` or `yarn build` locally automatically picks up the release number even if you don’t export the env vars manually.
+
 ## Usage tips
 
 - Adjust panel width through either the mm or HP input; the other unit updates instantly and the canvas resizes.
