@@ -35,6 +35,28 @@ function elementToSvg(element: PanelElement): string {
       const y = element.positionMm.y - props.heightMm / 2;
       return `<rect x="${x}" y="${y}" width="${props.widthMm}" height="${props.heightMm}" stroke="${stroke}" stroke-width="${strokeWidth}" fill="none" />`;
     }
+    case PanelElementType.Rectangle: {
+      const props = element.properties as { widthMm: number; heightMm: number };
+      const x = element.positionMm.x - props.widthMm / 2;
+      const y = element.positionMm.y - props.heightMm / 2;
+      return `<rect x="${x}" y="${y}" width="${props.widthMm}" height="${props.heightMm}" stroke="${stroke}" stroke-width="${strokeWidth}" fill="none" />`;
+    }
+    case PanelElementType.Oval: {
+      const props = element.properties as { widthMm: number; heightMm: number };
+      const rx = props.widthMm / 2;
+      const ry = props.heightMm / 2;
+      return `<ellipse cx="${element.positionMm.x}" cy="${element.positionMm.y}" rx="${rx}" ry="${ry}" stroke="${stroke}" stroke-width="${strokeWidth}" fill="none" />`;
+    }
+    case PanelElementType.Slot: {
+      const props = element.properties as { widthMm: number; heightMm: number };
+      const d = slotPath(element.positionMm.x, element.positionMm.y, props.widthMm, props.heightMm);
+      return `<path d="${d}" stroke="${stroke}" stroke-width="${strokeWidth}" fill="none" />`;
+    }
+    case PanelElementType.Triangle: {
+      const props = element.properties as { widthMm: number; heightMm: number };
+      const d = trianglePath(element.positionMm.x, element.positionMm.y, props.widthMm, props.heightMm);
+      return `<path d="${d}" stroke="${stroke}" stroke-width="${strokeWidth}" fill="none" />`;
+    }
     case PanelElementType.Label: {
       const props = element.properties as { fontSizePt: number; text: string };
       const fontSizePx = props.fontSizePt * 1.333; // rough pt→px
@@ -73,6 +95,39 @@ function elementCutout(element: PanelElement): string | null {
       const y = element.positionMm.y - props.heightMm / 2;
       return rectPath(x, y, props.widthMm, props.heightMm);
     }
+    case PanelElementType.Rectangle: {
+      const props = element.properties as { widthMm: number; heightMm: number };
+      const x = element.positionMm.x - props.widthMm / 2;
+      const y = element.positionMm.y - props.heightMm / 2;
+      return rectPath(x, y, props.widthMm, props.heightMm);
+    }
+    case PanelElementType.Oval: {
+      const props = element.properties as { widthMm: number; heightMm: number };
+      return ellipsePath(
+        element.positionMm.x,
+        element.positionMm.y,
+        props.widthMm / 2,
+        props.heightMm / 2
+      );
+    }
+    case PanelElementType.Slot: {
+      const props = element.properties as { widthMm: number; heightMm: number };
+      return slotPath(
+        element.positionMm.x,
+        element.positionMm.y,
+        props.widthMm,
+        props.heightMm
+      );
+    }
+    case PanelElementType.Triangle: {
+      const props = element.properties as { widthMm: number; heightMm: number };
+      return trianglePath(
+        element.positionMm.x,
+        element.positionMm.y,
+        props.widthMm,
+        props.heightMm
+      );
+    }
     case PanelElementType.Label:
     default:
       return null;
@@ -87,6 +142,34 @@ function circlePath(cx: number, cy: number, r: number): string {
   const startX = cx - r;
   const startY = cy;
   return `M ${startX} ${startY} A ${r} ${r} 0 1 0 ${cx + r} ${cy} A ${r} ${r} 0 1 0 ${startX} ${startY} Z`;
+}
+
+function ellipsePath(cx: number, cy: number, rx: number, ry: number): string {
+  const startX = cx - rx;
+  const startY = cy;
+  return `M ${startX} ${startY} A ${rx} ${ry} 0 1 0 ${cx + rx} ${cy} A ${rx} ${ry} 0 1 0 ${startX} ${startY} Z`;
+}
+
+function slotPath(cx: number, cy: number, width: number, height: number): string {
+  const radius = Math.min(height / 2, width / 2);
+  const straightHalf = Math.max(width / 2 - radius, 0);
+  const left = cx - straightHalf;
+  const right = cx + straightHalf;
+  const top = cy - radius;
+  const bottom = cy + radius;
+  return `M ${left} ${top} H ${right} A ${radius} ${radius} 0 0 1 ${right} ${bottom} H ${left} A ${radius} ${radius} 0 0 1 ${left} ${top} Z`;
+}
+
+function trianglePath(cx: number, cy: number, width: number, height: number): string {
+  const halfWidth = width / 2;
+  const halfHeight = height / 2;
+  const topX = cx;
+  const topY = cy - halfHeight;
+  const rightX = cx + halfWidth;
+  const rightY = cy + halfHeight;
+  const leftX = cx - halfWidth;
+  const leftY = cy + halfHeight;
+  return `M ${topX} ${topY} L ${rightX} ${rightY} L ${leftX} ${leftY} Z`;
 }
 
 export function buildPanelSvg(

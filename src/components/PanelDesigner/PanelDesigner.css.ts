@@ -403,3 +403,15 @@ export const previewSection = style({
   flexDirection: 'column',
   gap: vars.spacing.xs
 });
+
+export const previewFallback = style({
+  minHeight: '220px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: '10px',
+  backgroundColor: '#050c1b',
+  color: vars.color.textSecondary,
+  fontSize: '14px'
+});

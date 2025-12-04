@@ -14,7 +14,11 @@ export enum PanelElementType {
   Potentiometer = 'potentiometer',
   Switch = 'switch',
   Led = 'led',
-  Label = 'label'
+  Label = 'label',
+  Rectangle = 'rectangle',
+  Oval = 'oval',
+  Slot = 'slot',
+  Triangle = 'triangle'
 }
 
 interface PanelElementBase<
@@ -52,6 +56,10 @@ export type PanelElementPropertiesMap = {
   [PanelElementType.Switch]: RectangularElementProperties;
   [PanelElementType.Led]: CircularElementProperties;
   [PanelElementType.Label]: LabelElementProperties;
+  [PanelElementType.Rectangle]: RectangularElementProperties;
+  [PanelElementType.Oval]: RectangularElementProperties;
+  [PanelElementType.Slot]: RectangularElementProperties;
+  [PanelElementType.Triangle]: RectangularElementProperties;
 };
 
 type PanelElementForType<TType extends PanelElementType> = PanelElementBase<
@@ -64,7 +72,11 @@ export type PanelElement =
   | PanelElementForType<PanelElementType.Potentiometer>
   | PanelElementForType<PanelElementType.Switch>
   | PanelElementForType<PanelElementType.Led>
-  | PanelElementForType<PanelElementType.Label>;
+  | PanelElementForType<PanelElementType.Label>
+  | PanelElementForType<PanelElementType.Rectangle>
+  | PanelElementForType<PanelElementType.Oval>
+  | PanelElementForType<PanelElementType.Slot>
+  | PanelElementForType<PanelElementType.Triangle>;
 
 export interface PanelDimensions {
   widthCm: number;
@@ -154,6 +166,10 @@ export function sanitizePropertiesForType<TType extends PanelElementType>(
       }
       return null;
     case PanelElementType.Switch:
+    case PanelElementType.Rectangle:
+    case PanelElementType.Oval:
+    case PanelElementType.Slot:
+    case PanelElementType.Triangle:
       if (isRectangularElementProperties(properties)) {
         return { ...properties } as PanelElementPropertiesMap[TType];
       }
@@ -191,6 +207,22 @@ export function withElementProperties(
     case PanelElementType.Switch: {
       const nextProperties = sanitizePropertiesForType(
         PanelElementType.Switch,
+        properties
+      );
+      if (!nextProperties) {
+        return element;
+      }
+      return {
+        ...element,
+        properties: nextProperties
+      };
+    }
+    case PanelElementType.Rectangle:
+    case PanelElementType.Oval:
+    case PanelElementType.Slot:
+    case PanelElementType.Triangle: {
+      const nextProperties = sanitizePropertiesForType(
+        element.type,
         properties
       );
       if (!nextProperties) {
