@@ -2439,6 +2439,7 @@ __metadata:
     react: "npm:19.2.1"
     react-dom: "npm:19.2.1"
     react-hot-toast: "npm:^2.4.1"
+    simple-git-hooks: "npm:^2.13.1"
     three: "npm:^0.170.0"
     typescript: "npm:5.9.3"
     vite: "npm:rolldown-vite@latest"
@@ -3828,6 +3829,15 @@ __metadata:
   version: 4.1.0
   resolution: "signal-exit@npm:4.1.0"
   checksum: 10c0/41602dce540e46d599edba9d9860193398d135f7ff72cab629db5171516cfae628d21e7bfccde1bbfdf11c48726bc2a6d1a8fb8701125852fbfda7cf19c6aa83
+  languageName: node
+  linkType: hard
+
+"simple-git-hooks@npm:^2.13.1":
+  version: 2.13.1
+  resolution: "simple-git-hooks@npm:2.13.1"
+  bin:
+    simple-git-hooks: cli.js
+  checksum: 10c0/09631ce2cce5c6cf91f5a990bbefce88f95589ce112a601e2745b8e10ea951668c13f89b3fab2044506646380dcc91b618bb400d35142873a1990c4528b456bb
   languageName: node
   linkType: hard
 
