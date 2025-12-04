@@ -33,7 +33,7 @@ interface PanelSceneDrawingOptions {
   transform: CanvasTransform;
   elements: PanelElement[];
   mountingHoles: MountingHole[];
-  selectedElementId: string | null;
+  selectedElementIds: string[];
   showGrid: boolean;
   showMountingHoles: boolean;
   gridSizeMm: number;
@@ -50,7 +50,7 @@ export function drawPanelScene({
   transform,
   elements,
   mountingHoles,
-  selectedElementId,
+  selectedElementIds,
   showGrid,
   showMountingHoles,
   gridSizeMm,
@@ -71,11 +71,12 @@ export function drawPanelScene({
     drawMountingHoles(context, mountingHoles, transform, palette);
   }
 
+  const selectionSet = new Set(selectedElementIds);
   drawElements(
     context,
     elements,
     transform,
-    selectedElementId,
+    selectionSet,
     elementFillColors,
     elementStrokeColor,
     palette.selection,
@@ -217,7 +218,7 @@ function drawElements(
   context: CanvasRenderingContext2D,
   elements: PanelElement[],
   transform: CanvasTransform,
-  selectedElementId: string | null,
+  selectedElementIds: Set<string>,
   elementFillColors: Record<PanelElementType, string>,
   elementStrokeColor: string,
   selectionColor: string,
@@ -242,7 +243,7 @@ function drawElements(
           context,
           element,
           transform.scale,
-          selectedElementId === element.id,
+          selectedElementIds.has(element.id),
           elementFillColors[element.type],
           elementStrokeColor,
           selectionColor,
@@ -255,7 +256,7 @@ function drawElements(
           context,
           element,
           transform.scale,
-          selectedElementId === element.id,
+          selectedElementIds.has(element.id),
           elementFillColors[element.type],
           elementStrokeColor,
           selectionColor,
@@ -268,7 +269,7 @@ function drawElements(
           context,
           element,
           transform.scale,
-          selectedElementId === element.id,
+          selectedElementIds.has(element.id),
           elementFillColors[element.type],
           selectionColor,
           fontFamily,
@@ -299,7 +300,7 @@ function drawGhostElement(
     context,
     [element],
     transform,
-    null,
+    new Set(),
     elementFillColors,
     elementStrokeColor,
     selectionColor,
