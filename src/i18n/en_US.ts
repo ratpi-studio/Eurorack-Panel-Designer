@@ -56,6 +56,8 @@ interface Translations {
     title: string;
     subtitle: string;
     nameLabel: string;
+    editNameLabel: string;
+    newProject: string;
     defaultName: string;
     save: string;
     exportJson: string;
@@ -76,6 +78,7 @@ interface Translations {
       loadSuccess: (name: string) => string;
       loadError: (name: string) => string;
       deleteSuccess: (name: string) => string;
+      deleteUndoSuccess: (name: string) => string;
       importSuccess: (filename: string) => string;
       importError: string;
       pngError: string;
@@ -87,6 +90,11 @@ interface Translations {
       stlExport: string;
       stlError: string;
       reset: string;
+      confirmSaveBeforeNew: string;
+      confirmDeleteSelected: (name: string) => string;
+      confirmReset: string;
+      confirmYes: string;
+      confirmNo: string;
     };
     stlDialog: {
       title: string;
@@ -211,7 +219,9 @@ export const enUS: Translations = {
     title: 'Projects',
     subtitle: 'Local save + export',
     nameLabel: 'Project name',
-    defaultName: 'Untitled panel',
+    editNameLabel: 'Edit project name',
+    newProject: 'New',
+    defaultName: 'Untitled Project',
     save: 'Save',
     exportJson: 'Export JSON',
     exportPng: 'Export PNG',
@@ -231,6 +241,7 @@ export const enUS: Translations = {
       loadSuccess: (name: string) => `Project "${name}" loaded.`,
       loadError: (name: string) => `Unable to load "${name}".`,
       deleteSuccess: (name: string) => `Project "${name}" deleted.`,
+      deleteUndoSuccess: (name: string) => `Project "${name}" restored.`,
       importSuccess: (filename: string) => `Imported from "${filename}".`,
       importError: 'Invalid JSON import.',
       pngError: 'Canvas not available for PNG export.',
@@ -241,7 +252,12 @@ export const enUS: Translations = {
       kicadPcbExport: 'KiCad PCB export created.',
       stlExport: 'STL export created.',
       stlError: 'Failed to generate STL export.',
-      reset: 'Design reset.'
+      reset: 'Design reset.',
+      confirmSaveBeforeNew: 'Save current project before creating a new one?',
+      confirmDeleteSelected: (name: string) => `Delete saved project "${name}"?`,
+      confirmReset: 'Reset the current design?',
+      confirmYes: 'Yes',
+      confirmNo: 'No'
     },
     stlDialog: {
       title: 'Export STL',

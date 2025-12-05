@@ -62,6 +62,10 @@ export function PanelDesigner() {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const [isExportMenuOpen, setIsExportMenuOpen] = React.useState(false);
   const [isStlModalOpen, setIsStlModalOpen] = React.useState(false);
+  const [confirmDialog, setConfirmDialog] = React.useState<{
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
   const [stlThicknessInput, setStlThicknessInput] = React.useState('2');
   const [isCompact, setIsCompact] = React.useState(false);
   const [showLeftPanel, setShowLeftPanel] = React.useState(true);
@@ -195,15 +199,15 @@ export function PanelDesigner() {
     projectName,
     setProjectName,
     projects,
-    activeProjectName,
+    hasUnsavedChanges,
     selectedSavedName,
     setSelectedSavedName,
     statusMessage,
     fileInputRef,
-    refreshProjects,
     handleSaveProject,
     handleLoadProject,
     handleDeleteProject,
+    handleUndoDeleteProject,
     handleExportJson,
     handleImportJson,
     handleExportPng,
@@ -220,6 +224,57 @@ export function PanelDesigner() {
     resetView,
     clearHistory
   });
+
+  const projectNameBeforeEditRef = React.useRef(projectName);
+  const projectNameInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [isEditingProjectName, setIsEditingProjectName] = React.useState(false);
+
+  const resolvedProjectName = React.useMemo(() => {
+    const trimmed = projectName.trim();
+    return trimmed || t.projects.defaultName;
+  }, [projectName, t.projects.defaultName]);
+
+  React.useEffect(() => {
+    if (!isEditingProjectName) {
+      return;
+    }
+    const input = projectNameInputRef.current;
+    if (!input) {
+      return;
+    }
+    input.focus();
+    input.select();
+  }, [isEditingProjectName]);
+
+  const handleStartEditingProjectName = React.useCallback(() => {
+    projectNameBeforeEditRef.current = resolvedProjectName;
+    setIsEditingProjectName(true);
+  }, [resolvedProjectName]);
+
+  const handleCommitProjectName = React.useCallback(() => {
+    const trimmed = projectName.trim();
+    setProjectName(trimmed || t.projects.defaultName);
+    setIsEditingProjectName(false);
+  }, [projectName, setProjectName, t.projects.defaultName]);
+
+  const handleCancelProjectNameEdit = React.useCallback(() => {
+    setProjectName(projectNameBeforeEditRef.current || t.projects.defaultName);
+    setIsEditingProjectName(false);
+  }, [setProjectName, t.projects.defaultName]);
+
+  const handleProjectNameKeyDown = React.useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        handleCommitProjectName();
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        handleCancelProjectNameEdit();
+      }
+    },
+    [handleCancelProjectNameEdit, handleCommitProjectName]
+  );
 
   const leftVisible = !isCompact || showLeftPanel;
   const rightVisible = !isCompact || showRightPanel;
@@ -316,6 +371,9 @@ export function PanelDesigner() {
         if (event.shiftKey) {
           redo();
         } else {
+          if (handleUndoDeleteProject()) {
+            return;
+          }
           undo();
         }
       }
@@ -325,7 +383,15 @@ export function PanelDesigner() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [clearSelection, handleRemoveSelection, redo, selectedElementIds.length, setPlacementType, undo]);
+  }, [
+    clearSelection,
+    handleRemoveSelection,
+    handleUndoDeleteProject,
+    redo,
+    selectedElementIds.length,
+    setPlacementType,
+    undo
+  ]);
 
   const selectedElement = React.useMemo(
     () => panelModel.elements.find((element) => element.id === selectedElementId) ?? null,
@@ -447,6 +513,28 @@ export function PanelDesigner() {
     setIsStlModalOpen(false);
   }, []);
 
+  const openConfirmDialog = React.useCallback((message: string, onConfirm: () => void) => {
+    setConfirmDialog({ message, onConfirm });
+  }, []);
+
+  const handleConfirmYes = React.useCallback(() => {
+    if (confirmDialog) {
+      confirmDialog.onConfirm();
+    }
+    setConfirmDialog(null);
+  }, [confirmDialog]);
+
+  const handleConfirmNo = React.useCallback(() => {
+    setConfirmDialog(null);
+  }, []);
+
+  const handleNewProject = React.useCallback(() => {
+    if (hasUnsavedChanges) {
+      handleSaveProject();
+    }
+    handleReset();
+  }, [handleReset, handleSaveProject, hasUnsavedChanges]);
+
   return (
     <>
       <main className={styles.page}>
@@ -529,13 +617,6 @@ export function PanelDesigner() {
                 />
               </div>
               <div className={styles.card}>
-                <DisplayOptions
-                  options={panelModel.options}
-                  onChange={handleDisplayOptionsChange}
-                  onResetView={resetView}
-                />
-              </div>
-              <div className={styles.card}>
                 <ElementPalette activeType={placementType} onSelect={handleSelectPaletteType} />
               </div>
             </div>
@@ -614,7 +695,7 @@ export function PanelDesigner() {
             <div className={styles.card}>
               {isCompact ? (
                 <div className={styles.drawerHeader}>
-                  <div className={styles.cardTitle}>{t.projects.title}</div>
+                  <div className={styles.cardTitle}>{resolvedProjectName}</div>
                   <button
                     type="button"
                     className={styles.secondaryButton}
@@ -624,35 +705,70 @@ export function PanelDesigner() {
                   </button>
                 </div>
               ) : null}
-              <div className={styles.cardHeader}>
-                <div>
-                  <div className={styles.cardTitle}>{t.projects.title}</div>
-                  <div className={styles.cardSubtitle}>{t.projects.subtitle}</div>
-                </div>
+              <div className={styles.projectHeader}>
+                {isEditingProjectName ? (
+                  <div className={styles.projectNameEditRow}>
+                    <input
+                      ref={projectNameInputRef}
+                      className={styles.projectNameInput}
+                      type="text"
+                      value={projectName}
+                      onChange={(event) => setProjectName(event.target.value)}
+                      onBlur={handleCommitProjectName}
+                      onKeyDown={handleProjectNameKeyDown}
+                      aria-label={t.projects.nameLabel}
+                      placeholder={t.projects.nameLabel}
+                    />
+                    {hasUnsavedChanges ? (
+                      <span className={styles.dirtyStar} aria-hidden="true">
+                        *
+                      </span>
+                    ) : null}
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className={styles.projectNameButton}
+                    onClick={handleStartEditingProjectName}
+                    title={t.projects.nameLabel}
+                  >
+                    <span className={styles.projectNameContent}>
+                      <span className={styles.projectNameText}>{resolvedProjectName}</span>
+                      {hasUnsavedChanges ? (
+                        <span className={styles.dirtyStar} aria-hidden="true">
+                          *
+                        </span>
+                      ) : null}
+                    </span>
+                  </button>
+                )}
                 <button
                   type="button"
-                  className={styles.secondaryButton}
-                  onClick={() => refreshProjects()}
+                  className={styles.iconButton}
+                  onClick={
+                    isEditingProjectName ? handleCommitProjectName : handleStartEditingProjectName
+                  }
+                  aria-label={t.projects.editNameLabel}
                 >
-                  {t.projects.refresh}
+                  <svg
+                    className={styles.editIcon}
+                    viewBox="0 0 20 20"
+                    role="img"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M15.73 2.29a1 1 0 0 0-1.41 0l-1.73 1.73 3.39 3.39 1.73-1.73a1 1 0 0 0 0-1.41zM2 14.67 3.91 18l3.32-1.91 7.13-7.13-3.39-3.39L2 14.67z"
+                      fill="currentColor"
+                    />
+                  </svg>
                 </button>
               </div>
-              <label className={styles.fieldRow}>
-                <span className={styles.label}>{t.projects.nameLabel}</span>
-                <input
-                  className={styles.textInput}
-                  type="text"
-                  value={projectName}
-                  onChange={(event) => setProjectName(event.target.value)}
-                  placeholder={t.projects.nameLabel}
-                />
-              </label>
               <div className={styles.buttonRow}>
+                <button type="button" className={styles.secondaryButton} onClick={handleNewProject}>
+                  {t.projects.newProject}
+                </button>
                 <button type="button" className={styles.primaryButton} onClick={handleSaveProject}>
                   {t.projects.save}
-                </button>
-                <button type="button" className={styles.secondaryButton} onClick={handleExportJson}>
-                  {t.projects.exportJson}
                 </button>
                 <div className={styles.exportSplitButton}>
                   <button
@@ -672,6 +788,16 @@ export function PanelDesigner() {
                   </button>
                   {isExportMenuOpen ? (
                     <div className={styles.exportMenu}>
+                      <button
+                        type="button"
+                        className={styles.exportMenuItem}
+                        onClick={() => {
+                          setIsExportMenuOpen(false);
+                          handleExportJson();
+                        }}
+                      >
+                        {t.projects.exportJson}
+                      </button>
                       <button
                         type="button"
                         className={styles.exportMenuItem}
@@ -710,9 +836,6 @@ export function PanelDesigner() {
                     </div>
                   ) : null}
                 </div>
-                <button type="button" className={styles.secondaryButton} onClick={handleReset}>
-                  {t.projects.reset}
-                </button>
               </div>
               <label className={styles.fieldRow}>
                 <span className={styles.label}>{t.projects.savedLabel}</span>
@@ -741,17 +864,25 @@ export function PanelDesigner() {
                 <button
                   type="button"
                   className={styles.secondaryButton}
-                  disabled={!selectedSavedName}
-                  onClick={() => selectedSavedName && handleDeleteProject(selectedSavedName)}
+                  onClick={() => fileInputRef.current?.click()}
                 >
-                  {t.projects.delete}
+                  {t.projects.importJson}
                 </button>
                 <button
                   type="button"
                   className={styles.secondaryButton}
-                  onClick={() => fileInputRef.current?.click()}
+                    onClick={() => {
+                      if (selectedSavedName) {
+                        const name = selectedSavedName;
+                        openConfirmDialog(t.projects.messages.confirmDeleteSelected(name), () =>
+                          handleDeleteProject(name)
+                        );
+                      } else {
+                        openConfirmDialog(t.projects.messages.confirmReset, () => handleReset());
+                      }
+                    }}
                 >
-                  {t.projects.importJson}
+                  {t.projects.delete}
                 </button>
                 <input
                   ref={fileInputRef}
@@ -761,6 +892,13 @@ export function PanelDesigner() {
                   onChange={handleImportJson}
                 />
               </div>
+            </div>
+            <div className={styles.card}>
+              <DisplayOptions
+                options={panelModel.options}
+                onChange={handleDisplayOptionsChange}
+                onResetView={resetView}
+              />
             </div>
             <div className={styles.card}>
               <ElementProperties
@@ -864,6 +1002,26 @@ export function PanelDesigner() {
                 onClick={handleConfirmStlExport}
               >
                 {t.projects.stlDialog.confirm}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {confirmDialog ? (
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true">
+          <div
+            className={styles.modal}
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
+          >
+            <p className={styles.modalDescription}>{confirmDialog.message}</p>
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.secondaryButton} onClick={handleConfirmNo}>
+                {t.projects.messages.confirmNo}
+              </button>
+              <button type="button" className={styles.primaryButton} onClick={handleConfirmYes}>
+                {t.projects.messages.confirmYes}
               </button>
             </div>
           </div>

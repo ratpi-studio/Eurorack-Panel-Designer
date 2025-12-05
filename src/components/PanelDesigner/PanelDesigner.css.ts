@@ -29,17 +29,6 @@ export const logo = style({
   height: '56px'
 });
 
-const subtitle = style({
-  margin: 0,
-  color: vars.color.textSecondary
-});
-
-export const status = style({
-  color: vars.color.textSecondary,
-  fontSize: '14px',
-  minHeight: '20px'
-});
-
 export const githubLink = style({
   display: 'inline-flex',
   alignItems: 'center',
@@ -110,22 +99,72 @@ export const sectionStack = style({
   minHeight: 0
 });
 
-const projectCard = card;
-
-export const cardHeader = style({
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: vars.spacing.sm
-});
-
 export const cardTitle = style({
   fontWeight: 600
 });
 
-export const cardSubtitle = style({
-  color: vars.color.textSecondary,
-  fontSize: '14px'
+export const projectHeader = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.spacing.xs
+});
+
+export const projectNameButton = style({
+  flex: 1,
+  display: 'flex',
+  alignItems: 'center',
+  padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
+  borderRadius: '8px',
+  border: `1px solid transparent`,
+  backgroundColor: 'transparent',
+  color: vars.color.textPrimary,
+  textAlign: 'left',
+  cursor: 'text',
+  selectors: {
+    '&:hover': {
+      borderColor: vars.color.border,
+      backgroundColor: '#0b1426'
+    }
+  }
+});
+
+export const projectNameText = style({
+  fontWeight: 700,
+  fontSize: '16px',
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis'
+});
+
+export const projectNameContent = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: vars.spacing.xs,
+  minWidth: 0
+});
+
+export const projectNameEditRow = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: vars.spacing.xs,
+  width: '100%'
+});
+
+export const dirtyStar = style({
+  color: vars.color.accent,
+  fontWeight: 800,
+  flexShrink: 0
+});
+
+export const projectNameInput = style({
+  flex: 1,
+  borderRadius: '8px',
+  border: `1px solid ${vars.color.border}`,
+  backgroundColor: '#0b1426',
+  color: vars.color.textPrimary,
+  padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
+  fontWeight: 700,
+  fontSize: '16px'
 });
 
 export const fieldRow = style({
@@ -173,6 +212,22 @@ export const secondaryButton = style({
   backgroundColor: vars.color.surface,
   color: vars.color.textPrimary,
   border: `1px solid ${vars.color.border}`
+});
+
+export const iconButton = style({
+  ...baseButton,
+  backgroundColor: vars.color.surface,
+  color: vars.color.textPrimary,
+  border: `1px solid ${vars.color.border}`,
+  padding: vars.spacing.xs,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center'
+});
+
+export const editIcon = style({
+  width: '16px',
+  height: '16px'
 });
 
 export const exportSplitButton = style({
