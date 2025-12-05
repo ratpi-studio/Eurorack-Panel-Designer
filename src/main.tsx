@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import * as Sentry from '@sentry/react';
 
 import { App } from './App';
 
@@ -24,20 +25,21 @@ async function bootstrap() {
   const shouldEnableSentry = Boolean(SENTRY_DSN) && import.meta.env.MODE !== 'test';
 
   if (shouldEnableSentry) {
-    const { init, ErrorBoundary } = await import('@sentry/react');
-    init({
+    Sentry.init({
       dsn: SENTRY_DSN,
       sendDefaultPii: true,
       enabled: import.meta.env.MODE !== 'test',
       environment: import.meta.env.MODE,
-      ...(release ? { release } : {})
+      ...(release ? { release } : {}),
+      integrations: [Sentry.browserTracingIntegration()],
+      tracesSampleRate: 1.0,
     });
 
     root.render(
       <React.StrictMode>
-        <ErrorBoundary fallback={<ErrorFallback />}>
+        <Sentry.ErrorBoundary fallback={<ErrorFallback />}>
           <App />
-        </ErrorBoundary>
+        </Sentry.ErrorBoundary>
       </React.StrictMode>
     );
     return;
