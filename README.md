@@ -47,30 +47,7 @@ Single-page web app to sketch Eurorack front panels. The canvas mirrors a real 3
 | `yarn test`   | Execute Vitest unit tests.               |
 | `yarn lint`   | Run oxlint with the project config.      |
 
-## Sentry monitoring
-
-Sentry is initialized in `src/main.tsx` with DSN `https://05489173dd52acef4232f82e99d559a2@o4509397199486976.ingest.de.sentry.io/4510476688359504`. Builds automatically include source maps and will upload them when the Sentry env vars are set:
-
-```bash
-export SENTRY_AUTH_TOKEN=xxx   # Org-scoped token with project:releases + org:read
-export SENTRY_ORG=your-org-slug
-export SENTRY_PROJECT=eurorack-panel-designer
-export SENTRY_RELEASE=$(git rev-parse HEAD)
-export VITE_SENTRY_RELEASE=$SENTRY_RELEASE
-yarn build
-```
-
-The `VITE_SENTRY_RELEASE` value is injected into the bundle so events are associated with the exact release that received the uploaded source maps. When the env vars are omitted the build succeeds but release creation/map upload are skipped.
-
-### Local release tracking & pre-commit hook
-
-- `.env.sentry` is tracked and contains the authoritative `SENTRY_RELEASE` / `VITE_SENTRY_RELEASE` pair used locally.
-- A `simple-git-hooks` pre-commit hook runs `yarn bump:sentry-release`, which increments the value in `.env.sentry` and stages the file automatically so every commit gets a unique release identifier.
-- Run `yarn bump:sentry-release` manually if you need a bump outside of the hook or reset the file.
-- Vite reads `.env.sentry` as a fallback, so running `yarn dev` or `yarn build` locally automatically picks up the release number even if you don’t export the env vars manually.
-
 ## Usage tips
-
 - Adjust panel width through either the mm or HP input; the other unit updates instantly and the canvas resizes.
 - Pick an element in the palette, click on the canvas to place it, then drag to reposition. Use the right-hand panel to fine-tune coordinates, rotation, or dimensions.
 - Keep `Shift` pressed to temporarily disable snapping, `Esc` to cancel placement, `⌘/Ctrl + Z` and `⌘/Ctrl + Shift + Z` for undo/redo.
