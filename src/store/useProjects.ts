@@ -46,14 +46,15 @@ interface UseProjectsResult {
   setProjectName: React.Dispatch<React.SetStateAction<string>>;
   projects: StoredProject[];
   activeProjectName: string | null;
+  hasUnsavedChanges: boolean;
   selectedSavedName: string;
   setSelectedSavedName: React.Dispatch<React.SetStateAction<string>>;
   statusMessage: StatusMessage | null;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
-  refreshProjects: () => void;
   handleSaveProject: () => void;
   handleLoadProject: (name: string) => void;
   handleDeleteProject: (name: string) => void;
+  handleUndoDeleteProject: () => boolean;
   handleExportJson: () => void;
   handleImportJson: (event: React.ChangeEvent<HTMLInputElement>) => void;
   handleExportPng: () => void;
@@ -83,6 +84,9 @@ export function useProjects({
   const [activeProjectName, setActiveProjectName] = React.useState<string | null>(null);
   const [selectedSavedName, setSelectedSavedName] = React.useState<string>('');
   const [statusMessage, setStatusMessage] = React.useState<StatusMessage | null>(null);
+  const [lastDeletedProject, setLastDeletedProject] = React.useState<StoredProject | null>(null);
+  const [lastSavedSnapshot, setLastSavedSnapshot] = React.useState<string | null>(null);
+  const [lastSavedName, setLastSavedName] = React.useState<string>(t.projects.defaultName);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [exportFormat, setExportFormatState] = React.useState<ExportFormat>(() => {
     const stored = getPreferredExportFormat();
@@ -97,6 +101,25 @@ export function useProjects({
     refreshProjects();
   }, [refreshProjects]);
 
+  const serializedModel = React.useMemo(() => serializePanelModel(panelModel), [panelModel]);
+
+  const hasUnsavedChanges = React.useMemo(() => {
+    if (!lastSavedSnapshot) {
+      return true;
+    }
+    const trimmedName = projectName.trim() || t.projects.defaultName;
+    const savedName = (lastSavedName || t.projects.defaultName).trim();
+    return serializedModel !== lastSavedSnapshot || trimmedName !== savedName;
+  }, [lastSavedName, lastSavedSnapshot, projectName, serializedModel, t.projects.defaultName]);
+
+  const markSavedState = React.useCallback(
+    (name: string, snapshot: string) => {
+      setLastSavedSnapshot(snapshot);
+      setLastSavedName(name);
+    },
+    []
+  );
+
   const setStatus = React.useCallback(
     (message: string, variant: StatusVariant) => {
       setStatusMessage({ message, variant });
@@ -107,11 +130,22 @@ export function useProjects({
   const handleSaveProject = React.useCallback(() => {
     const trimmedName = projectName.trim() || t.projects.defaultName;
     const saved = saveProject(trimmedName, panelModel);
+    markSavedState(trimmedName, serializedModel);
     setProjects(saved);
     setActiveProjectName(trimmedName);
+    setLastDeletedProject(null);
     setSelectedSavedName(trimmedName);
     setStatus(t.projects.messages.saveSuccess(trimmedName), 'success');
-  }, [panelModel, projectName, setStatus, t.projects.defaultName, t.projects.messages, t.projects.messages.saveSuccess]);
+  }, [
+    markSavedState,
+    panelModel,
+    projectName,
+    serializedModel,
+    setStatus,
+    t.projects.defaultName,
+    t.projects.messages,
+    t.projects.messages.saveSuccess
+  ]);
 
   const handleLoadProject = React.useCallback(
     (name: string) => {
@@ -127,11 +161,14 @@ export function useProjects({
       resetView();
       setActiveProjectName(name);
       setProjectName(name);
+      markSavedState(name, serializePanelModel(model));
+      setLastDeletedProject(null);
       setSelectedSavedName(name);
       setStatus(t.projects.messages.loadSuccess(name), 'success');
     },
     [
       clearHistory,
+      markSavedState,
       resetView,
       setStatus,
       setModel,
@@ -139,21 +176,6 @@ export function useProjects({
       clearSelection,
       t.projects.messages
     ]
-  );
-
-  const handleDeleteProject = React.useCallback(
-    (name: string) => {
-      const next = deleteProject(name);
-      setProjects(next);
-      if (activeProjectName && activeProjectName.toLowerCase() === name.toLowerCase()) {
-        setActiveProjectName(null);
-      }
-      if (selectedSavedName && selectedSavedName.toLowerCase() === name.toLowerCase()) {
-        setSelectedSavedName('');
-      }
-      setStatus(t.projects.messages.deleteSuccess(name), 'success');
-    },
-    [activeProjectName, selectedSavedName, setStatus, t.projects.messages]
   );
 
   const handleExportJson = React.useCallback(() => {
@@ -177,9 +199,11 @@ export function useProjects({
         .text()
         .then((text) => {
           const model = deserializePanelModel(text);
+          const nextName = file.name.replace(/\.json$/i, '');
           setModel(model);
           clearHistory();
-          setProjectName(file.name.replace(/\.json$/i, ''));
+          setProjectName(nextName);
+          markSavedState(nextName, serializePanelModel(model));
           clearSelection();
           setPlacementType(null);
           resetView();
@@ -196,9 +220,12 @@ export function useProjects({
     },
     [
       clearHistory,
+      markSavedState,
       resetView,
       setStatus,
       setModel,
+      setPlacementType,
+      clearSelection,
       t.projects.messages,
       t.projects.messages.importError,
       t.projects.messages.importSuccess
@@ -298,20 +325,58 @@ export function useProjects({
     setPreferredExportFormat(format);
   }, []);
 
+  const handleDeleteProject = React.useCallback(
+    (name: string) => {
+      const match = projects.find(
+        (project) => project.name.toLowerCase() === name.toLowerCase()
+      );
+      setLastDeletedProject(match ?? null);
+      const next = deleteProject(name);
+      setProjects(next);
+      if (activeProjectName && activeProjectName.toLowerCase() === name.toLowerCase()) {
+        setActiveProjectName(null);
+      }
+      if (selectedSavedName && selectedSavedName.toLowerCase() === name.toLowerCase()) {
+        setSelectedSavedName('');
+      }
+      setStatus(t.projects.messages.deleteSuccess(name), 'success');
+    },
+    [activeProjectName, projects, selectedSavedName, setStatus, t.projects.messages]
+  );
+
+  const handleUndoDeleteProject = React.useCallback(() => {
+    if (!lastDeletedProject) {
+      return false;
+    }
+    const restoredModel = deserializePanelModel(lastDeletedProject.payload);
+    const restoredSnapshot = serializePanelModel(restoredModel);
+    const saved = saveProject(lastDeletedProject.name, restoredModel);
+    markSavedState(lastDeletedProject.name, restoredSnapshot);
+    setProjects(saved);
+    setLastDeletedProject(null);
+    setSelectedSavedName(lastDeletedProject.name);
+    setStatus(t.projects.messages.deleteUndoSuccess(lastDeletedProject.name), 'success');
+    return true;
+  }, [lastDeletedProject, markSavedState, setStatus, t.projects.messages]);
+
   const handleReset = React.useCallback(() => {
-    setModel({
+    const resetModel = {
       dimensions: createPanelDimensions(10),
       elements: [],
       options: { ...DEFAULT_PANEL_OPTIONS }
-    });
+    };
+    setModel(resetModel);
     clearHistory();
     setPlacementType(null);
     clearSelection();
     setProjectName(t.projects.defaultName);
+    markSavedState(t.projects.defaultName, serializePanelModel(resetModel));
+    setLastDeletedProject(null);
     setStatus(t.projects.messages.reset, 'info');
     resetView();
   }, [
     clearHistory,
+    markSavedState,
     setStatus,
     resetView,
     setModel,
@@ -326,14 +391,15 @@ export function useProjects({
     setProjectName,
     projects,
     activeProjectName,
+    hasUnsavedChanges,
     selectedSavedName,
     setSelectedSavedName,
     statusMessage,
     fileInputRef,
-    refreshProjects,
     handleSaveProject,
     handleLoadProject,
     handleDeleteProject,
+    handleUndoDeleteProject,
     handleExportJson,
     handleImportJson,
     handleExportPng,
