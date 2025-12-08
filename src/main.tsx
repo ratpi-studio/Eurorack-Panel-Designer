@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import * as Sentry from '@sentry/react';
+import { inject } from '@vercel/analytics';
 
 import { App } from './App';
 
@@ -16,6 +17,9 @@ const ErrorFallback = () => (
 );
 
 async function bootstrap() {
+  // Initialize Vercel Web Analytics
+  inject();
+
   const rootElement = document.getElementById('root');
   if (!rootElement) {
     throw new Error('Root element "#root" is missing in index.html');
