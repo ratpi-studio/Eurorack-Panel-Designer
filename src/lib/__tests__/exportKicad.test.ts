@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { buildKicadEdgeCutsSvg, buildKicadPcbFile } from '@lib/exportKicad';
 import { generateMountingHoles } from '@lib/mountingHoles';
 import {
+  DEFAULT_MOUNTING_HOLE_CONFIG,
   DEFAULT_PANEL_OPTIONS,
   DEFAULT_MM_PER_HP,
   PanelElementType,
@@ -68,7 +69,8 @@ function createSampleModel(): PanelModel {
         }
       }
     ],
-    options: { ...DEFAULT_PANEL_OPTIONS }
+    options: { ...DEFAULT_PANEL_OPTIONS },
+    mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG }
   };
 }
 

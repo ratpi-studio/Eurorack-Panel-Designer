@@ -68,10 +68,44 @@ const canvasPalette: ExtendedCanvasPalette = {
   text: themeValues.color.textSecondary
 };
 
+const MOUNTING_HOLE_HIT_PADDING_MM = 1;
+
+function isPointInMountingHole(point: Vector2, hole: MountingHole, paddingMm = 0): boolean {
+  if (hole.shape === 'slot' && hole.slotLengthMm) {
+    const radius = hole.diameterMm / 2 + paddingMm;
+    const halfLength = Math.max(hole.slotLengthMm / 2 + paddingMm, radius);
+    const innerHalf = Math.max(halfLength - radius, 0);
+    const dx = Math.abs(point.x - hole.center.x);
+    const dy = Math.abs(point.y - hole.center.y);
+
+    if (dx <= innerHalf) {
+      return dy <= radius;
+    }
+
+    const distX = dx - innerHalf;
+    return distX * distX + dy * dy <= radius * radius;
+  }
+
+  const radius = hole.diameterMm / 2 + paddingMm;
+  const dx = point.x - hole.center.x;
+  const dy = point.y - hole.center.y;
+  return dx * dx + dy * dy <= radius * radius;
+}
+
+function findMountingHoleAtPoint(point: Vector2, holes: MountingHole[]): MountingHole | null {
+  for (const hole of holes) {
+    if (isPointInMountingHole(point, hole, MOUNTING_HOLE_HIT_PADDING_MM)) {
+      return hole;
+    }
+  }
+  return null;
+}
+
 interface PanelCanvasProps {
   canvasRef?: React.RefObject<HTMLCanvasElement | null>;
   model: PanelModel;
   mountingHoles: MountingHole[];
+  mountingHolesSelected: boolean;
   zoom: number;
   pan: Vector2;
   zoomLimits: { min: number; max: number };
@@ -87,6 +121,8 @@ interface PanelCanvasProps {
   onSelectElements: (elementIds: string[]) => void;
   onToggleElementSelection: (elementId: string) => void;
   onClearSelection: () => void;
+  onSelectMountingHoles: () => void;
+  onClearMountingHoleSelection: () => void;
   displayOptions: Pick<
     PanelOptions,
     'showGrid' | 'showMountingHoles' | 'gridSizeMm' | 'snapToGrid'
@@ -100,6 +136,7 @@ export function PanelCanvas({
   canvasRef: forwardedCanvasRef,
   model,
   mountingHoles,
+  mountingHolesSelected,
   zoom,
   pan,
   zoomLimits,
@@ -116,6 +153,8 @@ export function PanelCanvas({
   onSelectElements,
   onToggleElementSelection,
   onClearSelection,
+  onSelectMountingHoles,
+  onClearMountingHoleSelection,
   displayOptions,
   selectedElementIds,
   draftProperties
@@ -141,6 +180,7 @@ export function PanelCanvas({
   const [selectionRect, setSelectionRect] = React.useState<{ start: Vector2; end: Vector2 } | null>(
     null
   );
+  const [isHoveringInteractive, setIsHoveringInteractive] = React.useState(false);
   const selectionModeRef = React.useRef<'replace' | 'add'>('replace');
   const selectedElementSet = React.useMemo(
     () => new Set(selectedElementIds),
@@ -331,6 +371,7 @@ export function PanelCanvas({
         transform,
         elements: model.elements,
         mountingHoles,
+        mountingHolesSelected,
         selectedElementIds,
         showGrid: displayOptions.showGrid,
         showMountingHoles: displayOptions.showMountingHoles,
@@ -366,6 +407,7 @@ export function PanelCanvas({
     displayOptions.showGrid,
     displayOptions.showMountingHoles,
     selectedElementIds,
+    mountingHolesSelected,
     zoom,
     canvasSize.x,
     canvasSize.y,
@@ -445,6 +487,25 @@ export function PanelCanvas({
     };
   }, [handleWheel]);
 
+  const updateHoverState = React.useCallback(
+    (pointPanel: Vector2 | null) => {
+      if (!pointPanel) {
+        setIsHoveringInteractive(false);
+        return;
+      }
+      const pointerMode = pointerModeRef.current;
+      if (pointerMode !== 'idle' && pointerMode !== 'click') {
+        setIsHoveringInteractive(false);
+        return;
+      }
+      const element = findElementAtPoint(pointPanel, model.elements);
+      const hole =
+        displayOptions.showMountingHoles && findMountingHoleAtPoint(pointPanel, mountingHoles);
+      setIsHoveringInteractive(Boolean(element || hole));
+    },
+    [displayOptions.showMountingHoles, model.elements, mountingHoles]
+  );
+
   const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
     event.stopPropagation();
 
@@ -463,6 +524,7 @@ export function PanelCanvas({
     pointerModeRef.current = shouldPan ? 'pan' : 'click';
     pointerStartRef.current = { x: event.clientX, y: event.clientY };
     panStartRef.current = shouldPan ? { ...panRef.current } : null;
+    setIsHoveringInteractive(false);
 
     if (shouldPan) {
       event.preventDefault();
@@ -482,6 +544,7 @@ export function PanelCanvas({
 
     const element = findElementAtPoint(pointPanel, model.elements);
     if (element) {
+      onClearMountingHoleSelection();
       if (additiveModifier) {
         onToggleElementSelection(element.id);
         pointerModeRef.current = 'idle';
@@ -519,8 +582,16 @@ export function PanelCanvas({
       return;
     }
 
+    const hitHole = findMountingHoleAtPoint(pointPanel, mountingHoles);
+    if (hitHole) {
+      pointerModeRef.current = 'idle';
+      onSelectMountingHoles();
+      return;
+    }
+
     if (placementType) {
       const snappedPoint = maybeSnap(pointPanel);
+      onClearMountingHoleSelection();
       const newId = onPlaceElement(placementType, snappedPoint);
       onSelectElement(newId);
       pointerModeRef.current = 'idle';
@@ -529,6 +600,7 @@ export function PanelCanvas({
 
     selectionModeRef.current = additiveModifier ? 'add' : 'replace';
     setSelectionRect({ start: pointPanel, end: pointPanel });
+    onClearMountingHoleSelection();
     pointerModeRef.current = 'marquee';
   };
 
@@ -563,6 +635,7 @@ export function PanelCanvas({
       y: event.clientY - rect.top
     };
     const pointPanel = screenPointToPanel(pointPx, transform);
+    updateHoverState(pointPanel);
 
     if (pointerModeRef.current === 'move') {
       if (!pointPanel || !moveStateRef.current) {
@@ -654,6 +727,7 @@ export function PanelCanvas({
         }
       } else if (selectionModeRef.current !== 'add') {
         onClearSelection();
+        onClearMountingHoleSelection();
       }
     } else if (pointerModeRef.current === 'click' && pointerStartRef.current && canvas) {
       const deltaX = event.clientX - pointerStartRef.current.x;
@@ -671,8 +745,10 @@ export function PanelCanvas({
           const element = findElementAtPoint(pointPanel, model.elements);
           if (element) {
             onSelectElement(element.id);
+            onClearMountingHoleSelection();
           } else {
             onClearSelection();
+            onClearMountingHoleSelection();
           }
         }
       }
@@ -686,6 +762,7 @@ export function PanelCanvas({
     selectionModeRef.current = 'replace';
     setPointerPanelPos(null);
     setIsPanning(false);
+    setIsHoveringInteractive(false);
     onMoveEnd?.();
     if (canvas) {
       canvas.releasePointerCapture(event.pointerId);
@@ -702,6 +779,7 @@ export function PanelCanvas({
     setSelectionRect(null);
     selectionModeRef.current = 'replace';
     setIsPanning(false);
+    setIsHoveringInteractive(false);
     onMoveEnd?.();
   };
 
@@ -709,9 +787,13 @@ export function PanelCanvas({
     event.preventDefault();
   };
 
-  const canvasClassName = isPanning
-    ? `${styles.canvas} ${styles.canvasPanning}`
-    : styles.canvas;
+  const canvasClassName = [
+    styles.canvas,
+    isPanning ? styles.canvasPanning : '',
+    !isPanning && isHoveringInteractive ? styles.canvasInteractive : ''
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div ref={containerRef} className={styles.root} style={canvasStyle}>

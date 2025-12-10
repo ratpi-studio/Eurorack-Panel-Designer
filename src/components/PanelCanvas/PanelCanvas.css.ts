@@ -26,6 +26,10 @@ export const canvasPanning = style({
   cursor: 'grabbing'
 });
 
+export const canvasInteractive = style({
+  cursor: 'pointer'
+});
+
 export const hud = style({
   position: 'absolute',
   left: vars.spacing.md,

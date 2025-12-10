@@ -33,6 +33,7 @@ interface PanelSceneDrawingOptions {
   transform: CanvasTransform;
   elements: PanelElement[];
   mountingHoles: MountingHole[];
+  mountingHolesSelected?: boolean;
   selectedElementIds: string[];
   showGrid: boolean;
   showMountingHoles: boolean;
@@ -50,6 +51,7 @@ export function drawPanelScene({
   transform,
   elements,
   mountingHoles,
+  mountingHolesSelected,
   selectedElementIds,
   showGrid,
   showMountingHoles,
@@ -68,7 +70,7 @@ export function drawPanelScene({
   }
 
   if (showMountingHoles) {
-    drawMountingHoles(context, mountingHoles, transform, palette);
+    drawMountingHoles(context, mountingHoles, transform, palette, mountingHolesSelected ?? false);
   }
 
   const selectionSet = new Set(selectedElementIds);
@@ -194,17 +196,34 @@ function drawMountingHoles(
   context: CanvasRenderingContext2D,
   holes: MountingHole[],
   transform: CanvasTransform,
-  palette: PanelCanvasPalette
+  palette: PanelCanvasPalette,
+  highlight: boolean
 ) {
   context.save();
   context.fillStyle = palette.mountingHoleFill;
-  context.strokeStyle = palette.mountingHoleStroke;
   context.lineWidth = 1;
 
   holes.forEach((hole) => {
     const center = projectPanelPoint(hole.center, transform);
-    const radius = Math.max((hole.diameterMm / 2) * transform.scale, 1);
+    const strokeColor = highlight ? palette.selection : palette.mountingHoleStroke;
+    context.strokeStyle = strokeColor;
+    if (hole.shape === 'slot' && hole.slotLengthMm) {
+      const radius = Math.max((hole.diameterMm / 2) * transform.scale, 1);
+      const halfLength = Math.max((hole.slotLengthMm / 2) * transform.scale, radius);
+      const offset = Math.max(halfLength - radius, 0);
+      context.beginPath();
+      context.moveTo(center.x - offset, center.y - radius);
+      context.lineTo(center.x + offset, center.y - radius);
+      context.arc(center.x + offset, center.y, radius, -Math.PI / 2, Math.PI / 2, false);
+      context.lineTo(center.x - offset, center.y + radius);
+      context.arc(center.x - offset, center.y, radius, Math.PI / 2, -Math.PI / 2, false);
+      context.closePath();
+      context.fill();
+      context.stroke();
+      return;
+    }
 
+    const radius = Math.max((hole.diameterMm / 2) * transform.scale, 1);
     context.beginPath();
     context.arc(center.x, center.y, radius, 0, Math.PI * 2);
     context.fill();

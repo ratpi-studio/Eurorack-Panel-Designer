@@ -1,8 +1,10 @@
 import {
   PanelElementType,
   SERIALIZATION_VERSION,
+  normalizePanelModel,
   type PanelElement,
   type PanelModel,
+  type PanelModelInput,
   type PanelOptions,
   type SerializedPanel,
   type Vector2
@@ -33,7 +35,10 @@ export function parseSerializedPanel(
     throw new SerializationError('Payload does not match the panel schema');
   }
 
-  return parsed;
+  return {
+    version: parsed.version,
+    model: normalizePanelModel(parsed.model as PanelModelInput)
+  };
 }
 
 export function deserializePanelModel(
@@ -57,15 +62,19 @@ function isSerializedPanel(value: unknown): value is SerializedPanel {
     return false;
   }
 
-  return isPanelModel(model);
+  if (version >= 2) {
+    return isPanelModel(model);
+  }
+
+  return isPanelModelInput(model);
 }
 
-function isPanelModel(value: unknown): value is PanelModel {
+function isPanelModelInput(value: unknown): value is PanelModelInput {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
 
-  const candidate = value as PanelModel;
+  const candidate = value as PanelModelInput;
   if (!candidate.dimensions || !candidate.options || !candidate.elements) {
     return false;
   }
@@ -88,7 +97,19 @@ function isPanelModel(value: unknown): value is PanelModel {
     return false;
   }
 
+  if (!Array.isArray(candidate.elements)) {
+    return false;
+  }
+
   return candidate.elements.every(isPanelElement);
+}
+
+function isPanelModel(value: unknown): value is PanelModel {
+  if (!isPanelModelInput(value)) {
+    return false;
+  }
+  const candidate = value as PanelModel;
+  return Boolean(candidate.mountingHoleConfig) && isMountingHoleConfig(candidate.mountingHoleConfig);
 }
 
 function isPanelOptions(value: unknown): value is PanelOptions {
@@ -128,4 +149,19 @@ function isVector2(value: unknown): value is Vector2 {
 
   const vector = value as Vector2;
   return typeof vector.x === 'number' && typeof vector.y === 'number';
+}
+
+function isMountingHoleConfig(value: unknown): value is PanelModel['mountingHoleConfig'] {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const config = value as PanelModel['mountingHoleConfig'];
+  return (
+    typeof config.diameterMm === 'number' &&
+    typeof config.horizontalOffsetMm === 'number' &&
+    typeof config.verticalOffsetMm === 'number' &&
+    typeof config.spacingHp === 'number' &&
+    typeof config.slotLengthMm === 'number' &&
+    (config.shape === 'circle' || config.shape === 'slot')
+  );
 }
