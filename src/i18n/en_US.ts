@@ -30,6 +30,16 @@ interface Translations {
     typeSlot: string;
     close: string;
   };
+  elementHoles: {
+    title: string;
+    description: string;
+    enableLabel: string;
+    countLabel: string;
+    diameterLabel: string;
+    offsetLabel: string;
+    rotationLabel: string;
+    defaultRotationLabel: string;
+  };
   palette: {
     title: string;
     subtitle: string;
@@ -169,6 +179,16 @@ export const enUS: Translations = {
     typeCircle: 'Round',
     typeSlot: 'Slot',
     close: 'Close'
+  },
+  elementHoles: {
+    title: 'Element screw holes',
+    description: 'Automatically add screw holes around each new element.',
+    enableLabel: 'Mounting holes',
+    countLabel: 'Hole count',
+    diameterLabel: 'Hole diameter (mm)',
+    offsetLabel: 'Distance from edge (mm)',
+    defaultRotationLabel: 'Default rotation (°)',
+    rotationLabel: 'Element rotation'
   },
   palette: {
     title: 'Palette',

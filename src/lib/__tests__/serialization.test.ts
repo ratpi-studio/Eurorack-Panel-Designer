@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   DEFAULT_PANEL_OPTIONS,
   PanelElementType,
@@ -31,7 +32,8 @@ const sampleModel: PanelModel = {
     }
   ],
   options: { ...DEFAULT_PANEL_OPTIONS },
-  mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG }
+  mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG },
+  elementHoleConfig: { ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG }
 };
 
 describe('serialization helpers', () => {
