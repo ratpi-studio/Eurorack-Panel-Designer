@@ -1,5 +1,13 @@
 # Changelog
 
+# Changelog
+
+## 0.2.0 - 2024-12-29
+
+- Added automatic “mounting holes” controls inside the element properties panel with snap-aware rotation slider.
+- Sidebars now scroll independently while the main canvas stays fixed.
+- Introduced optional per-element screw-hole generation plus updated exports/rendering to match.
+
 ## 0.1.1 - 2024-12-29
 
 - Added mounting-hole configuration panel in the UI to tweak diameter and switch between round and slotted hardware.
@@ -10,4 +18,3 @@
 ## 0.1.0 - 2024-12-10
 
 - Initial public release.
-

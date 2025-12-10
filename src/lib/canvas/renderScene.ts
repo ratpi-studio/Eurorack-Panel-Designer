@@ -33,6 +33,7 @@ interface PanelSceneDrawingOptions {
   transform: CanvasTransform;
   elements: PanelElement[];
   mountingHoles: MountingHole[];
+  elementMountingHoles?: MountingHole[];
   mountingHolesSelected?: boolean;
   selectedElementIds: string[];
   showGrid: boolean;
@@ -51,6 +52,7 @@ export function drawPanelScene({
   transform,
   elements,
   mountingHoles,
+  elementMountingHoles,
   mountingHolesSelected,
   selectedElementIds,
   showGrid,
@@ -71,6 +73,9 @@ export function drawPanelScene({
 
   if (showMountingHoles) {
     drawMountingHoles(context, mountingHoles, transform, palette, mountingHolesSelected ?? false);
+    if (elementMountingHoles?.length) {
+      drawMountingHoles(context, elementMountingHoles, transform, palette, false);
+    }
   }
 
   const selectionSet = new Set(selectedElementIds);

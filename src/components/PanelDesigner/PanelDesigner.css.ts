@@ -5,6 +5,8 @@ import { vars } from '@styles/theme.css';
 export const page = style({
   flex: 1,
   minHeight: 0,
+  height: '100%',
+  overflow: 'hidden',
   padding: vars.spacing.lg,
   gap: vars.spacing.lg,
   display: 'flex',
@@ -14,7 +16,8 @@ export const page = style({
 export const header = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: vars.spacing.xs
+  gap: vars.spacing.xs,
+  flexShrink: 0
 });
 
 export const headerTop = style({
@@ -307,6 +310,8 @@ export const hiddenInput = style({
 export const canvasSection = style({
   flex: 1,
   minHeight: 0,
+  height: '100%',
+  overflow: 'hidden',
   display: 'grid',
   gridTemplateColumns: 'minmax(260px, 320px) 1fr minmax(260px, 320px)',
   gap: vars.spacing.md,
@@ -328,6 +333,7 @@ export const leftColumn = style({
   flexDirection: 'column',
   gap: vars.spacing.md,
   minHeight: 0,
+  height: '100%',
   overflow: 'auto',
   paddingRight: vars.spacing.sm
 });
@@ -372,6 +378,7 @@ export const rightColumn = style({
   flexDirection: 'column',
   gap: vars.spacing.md,
   minHeight: 0,
+  height: '100%',
   overflow: 'auto',
   paddingRight: vars.spacing.sm
 });
