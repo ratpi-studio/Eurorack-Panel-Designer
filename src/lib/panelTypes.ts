@@ -96,11 +96,31 @@ export interface PanelModel {
   dimensions: PanelDimensions;
   elements: PanelElement[];
   options: PanelOptions;
+  mountingHoleConfig: MountingHoleConfig;
 }
+
+export type PanelModelInput = Omit<PanelModel, 'mountingHoleConfig'> & {
+  mountingHoleConfig?: MountingHoleConfig;
+};
+
+export function normalizePanelModel(model: PanelModelInput): PanelModel {
+  const overrides = model.mountingHoleConfig ?? DEFAULT_MOUNTING_HOLE_CONFIG;
+  return {
+    ...model,
+    mountingHoleConfig: {
+      ...DEFAULT_MOUNTING_HOLE_CONFIG,
+      ...overrides
+    }
+  };
+}
+
+export type MountingHoleShape = 'circle' | 'slot';
 
 export interface MountingHole {
   center: Vector2;
   diameterMm: number;
+  shape: MountingHoleShape;
+  slotLengthMm?: number;
 }
 
 export interface MountingHoleConfig {
@@ -108,6 +128,8 @@ export interface MountingHoleConfig {
   horizontalOffsetMm: number;
   verticalOffsetMm: number;
   spacingHp: number;
+  shape: MountingHoleShape;
+  slotLengthMm: number;
 }
 
 export const DEFAULT_PANEL_OPTIONS: PanelOptions = {
@@ -121,7 +143,9 @@ export const DEFAULT_MOUNTING_HOLE_CONFIG: MountingHoleConfig = {
   diameterMm: 3.4,
   horizontalOffsetMm: 7.5,
   verticalOffsetMm: 3,
-  spacingHp: 10
+  spacingHp: 10,
+  shape: 'circle',
+  slotLengthMm: 8
 };
 
 export interface SerializedPanel {
@@ -129,7 +153,7 @@ export interface SerializedPanel {
   model: PanelModel;
 }
 
-export const SERIALIZATION_VERSION = 1;
+export const SERIALIZATION_VERSION = 2;
 
 function isCircularElementProperties(
   properties: PanelElement['properties']

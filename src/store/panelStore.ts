@@ -3,13 +3,16 @@ import { persist } from 'zustand/middleware';
 
 import { createPanelElement } from '@lib/elements';
 import {
+  DEFAULT_MOUNTING_HOLE_CONFIG,
   DEFAULT_PANEL_OPTIONS,
   PanelElementType,
+  normalizePanelModel,
   sanitizePropertiesForType,
   withElementProperties,
   type PanelElement,
   type PanelElementPropertiesMap,
   type PanelModel,
+  type PanelModelInput,
   type Vector2
 } from '@lib/panelTypes';
 import { createPanelDimensions } from '@lib/units';
@@ -54,11 +57,13 @@ type PanelActions = {
   reset: () => void;
 };
 
-const createInitialModel = (): PanelModel => ({
-  dimensions: createPanelDimensions(DEFAULT_PANEL_WIDTH_CM),
-  elements: [],
-  options: { ...DEFAULT_PANEL_OPTIONS }
-});
+const createInitialModel = (): PanelModel =>
+  normalizePanelModel({
+    dimensions: createPanelDimensions(DEFAULT_PANEL_WIDTH_CM),
+    elements: [],
+    options: { ...DEFAULT_PANEL_OPTIONS },
+    mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG }
+  });
 
 export const usePanelStore = create<PanelState & PanelActions>()(
   persist(
@@ -68,7 +73,7 @@ export const usePanelStore = create<PanelState & PanelActions>()(
       selectedElementIds: [],
       placementType: null,
       draftProperties: {},
-      setModel: (model) => set({ model }),
+      setModel: (model) => set({ model: normalizePanelModel(model) }),
       setPlacementType: (type) => set({ placementType: type }),
       setSelectedElement: (id) =>
         set(() => ({
@@ -217,7 +222,29 @@ export const usePanelStore = create<PanelState & PanelActions>()(
     }),
     {
       name: 'panel-designer-store',
-      version: 1
+      version: 2,
+      migrate: (state, version) => {
+        const typedState = state as (PanelState & PanelActions) | undefined;
+        if (!typedState) {
+          return typedState;
+        }
+        if (version && version < 2) {
+          const nextModel = typedState.model
+            ? normalizePanelModel(typedState.model as PanelModelInput)
+            : createInitialModel();
+          return {
+            ...typedState,
+            model: nextModel
+          };
+        }
+        if (typedState.model) {
+          return {
+            ...typedState,
+            model: normalizePanelModel(typedState.model as PanelModelInput)
+          };
+        }
+        return typedState;
+      }
     }
   )
 );

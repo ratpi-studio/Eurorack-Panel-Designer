@@ -201,6 +201,20 @@ const baseButton = {
   fontWeight: 600
 } as const;
 
+export const changelogButton = style({
+  ...baseButton,
+  backgroundColor: '#0b1426',
+  color: vars.color.textPrimary,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: '999px',
+  padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
+  selectors: {
+    '&:hover': {
+      backgroundColor: '#101c33'
+    }
+  }
+});
+
 export const primaryButton = style({
   ...baseButton,
   backgroundColor: vars.color.accent,
@@ -469,4 +483,57 @@ export const previewFallback = style({
   backgroundColor: '#050c1b',
   color: vars.color.textSecondary,
   fontSize: '14px'
+});
+
+export const changelogList = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: vars.spacing.sm
+});
+
+export const changelogEntry = style({
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: '8px',
+  padding: vars.spacing.sm,
+  backgroundColor: '#050c1b',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: vars.spacing.xs
+});
+
+export const changelogEntryMeta = style({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: vars.spacing.sm
+});
+
+export const changelogVersion = style({
+  fontWeight: 600
+});
+
+export const changelogDate = style({
+  color: vars.color.textSecondary,
+  fontSize: '12px'
+});
+
+export const changelogHighlights = style({
+  margin: 0,
+  paddingLeft: '20px',
+  color: vars.color.textSecondary,
+  fontSize: '14px',
+  lineHeight: 1.4,
+  listStylePosition: 'outside'
+});
+
+export const changelogLink = style({
+  color: vars.color.accent,
+  fontWeight: 600,
+  textDecoration: 'none',
+  alignSelf: 'flex-start',
+  selectors: {
+    '&:hover': {
+      textDecoration: 'underline'
+    }
+  }
 });

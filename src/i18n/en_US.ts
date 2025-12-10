@@ -20,6 +20,16 @@ interface Translations {
     gridSpacing: string;
     reset: string;
   };
+  mountingHoles: {
+    title: string;
+    description: string;
+    diameterLabel: string;
+    slotLengthLabel: string;
+    shapeLabel: string;
+    typeCircle: string;
+    typeSlot: string;
+    close: string;
+  };
   palette: {
     title: string;
     subtitle: string;
@@ -107,6 +117,13 @@ interface Translations {
       confirm: string;
     };
   };
+  changelog: {
+    buttonLabel: string;
+    title: string;
+    description: string;
+    close: string;
+    viewFull: string;
+  };
   shortcuts: {
     shift: string;
     disableSnap: string;
@@ -142,6 +159,16 @@ export const enUS: Translations = {
     holes: 'Mounting holes',
     gridSpacing: 'Grid spacing (mm)',
     reset: 'Reset view'
+  },
+  mountingHoles: {
+    title: 'Mounting holes',
+    description: 'Adjust rail hardware size and shape.',
+    diameterLabel: 'Diameter (mm)',
+    slotLengthLabel: 'Slot length (mm)',
+    shapeLabel: 'Shape',
+    typeCircle: 'Round',
+    typeSlot: 'Slot',
+    close: 'Close'
   },
   palette: {
     title: 'Palette',
@@ -269,6 +296,13 @@ export const enUS: Translations = {
       cancel: 'Cancel',
       confirm: 'Export STL'
     }
+  },
+  changelog: {
+    buttonLabel: 'Changelog',
+    title: 'Changelog',
+    description: 'Here is what changed recently in Eurorack Panel Designer.',
+    close: 'Close',
+    viewFull: 'Open full changelog'
   },
   shortcuts: {
     shift: 'Shift',

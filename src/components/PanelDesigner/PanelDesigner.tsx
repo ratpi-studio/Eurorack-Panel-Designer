@@ -5,6 +5,7 @@ import { PanelControls } from '@components/PanelControls/PanelControls';
 import { DisplayOptions } from '@components/DisplayOptions/DisplayOptions';
 import { ElementPalette } from '@components/ElementPalette/ElementPalette';
 import { ElementProperties } from '@components/ElementProperties/ElementProperties';
+import { MountingHoleSettings } from '@components/MountingHoleSettings/MountingHoleSettings';
 import { useI18n } from '@i18n/I18nContext';
 import { createPanelElement } from '@lib/elements';
 import { generateMountingHoles } from '@lib/mountingHoles';
@@ -13,10 +14,12 @@ import {
   withElementProperties,
   type PanelElement,
   type MountingHole,
+  type MountingHoleConfig,
   type PanelModel,
   type Vector2
 } from '@lib/panelTypes';
 import { createPanelDimensions, hpToMm, mmToCm } from '@lib/units';
+import { changelogEntries } from '@lib/changelog';
 import { type ExportFormat } from '@lib/exportPreferences';
 import { usePanelStore } from '@store/panelStore';
 import { usePanelHistory } from '@store/usePanelHistory';
@@ -39,7 +42,8 @@ function computeMountingHoles(model: PanelModel): MountingHole[] {
   return generateMountingHoles({
     widthHp: model.dimensions.widthHp,
     widthMm: model.dimensions.widthMm,
-    heightMm: model.dimensions.heightMm
+    heightMm: model.dimensions.heightMm,
+    config: model.mountingHoleConfig
   });
 }
 
@@ -54,7 +58,7 @@ export function PanelDesigner() {
   const setSelectedElementIds = usePanelStore((state) => state.setSelectedElementIds);
   const addSelectedElements = usePanelStore((state) => state.addSelectedElements);
   const toggleElementSelection = usePanelStore((state) => state.toggleElementSelection);
-  const clearSelection = usePanelStore((state) => state.clearSelection);
+  const clearElementSelection = usePanelStore((state) => state.clearSelection);
   const draftProperties = usePanelStore((state) => state.draftProperties);
   const setDraftProperties = usePanelStore((state) => state.setDraftProperties);
   const [zoom, setZoom] = React.useState(DEFAULT_ZOOM);
@@ -62,6 +66,7 @@ export function PanelDesigner() {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const [isExportMenuOpen, setIsExportMenuOpen] = React.useState(false);
   const [isStlModalOpen, setIsStlModalOpen] = React.useState(false);
+  const [isChangelogOpen, setIsChangelogOpen] = React.useState(false);
   const [confirmDialog, setConfirmDialog] = React.useState<{
     message: string;
     onConfirm: () => void;
@@ -70,6 +75,7 @@ export function PanelDesigner() {
   const [isCompact, setIsCompact] = React.useState(false);
   const [showLeftPanel, setShowLeftPanel] = React.useState(true);
   const [showRightPanel, setShowRightPanel] = React.useState(true);
+  const [mountingHolesSelected, setMountingHolesSelected] = React.useState(false);
   const previewThickness = React.useMemo(() => {
     const parsed = Number.parseFloat(stlThicknessInput);
     if (!Number.isFinite(parsed) || parsed <= 0) {
@@ -77,6 +83,21 @@ export function PanelDesigner() {
     }
     return parsed;
   }, [stlThicknessInput]);
+
+  const handleClearMountingHoleSelection = React.useCallback(() => {
+    setMountingHolesSelected(false);
+  }, []);
+
+  const clearSelection = React.useCallback(() => {
+    clearElementSelection();
+    handleClearMountingHoleSelection();
+  }, [clearElementSelection, handleClearMountingHoleSelection]);
+
+  const handleSelectMountingHoles = React.useCallback(() => {
+    clearElementSelection();
+    setPlacementType(null);
+    setMountingHolesSelected(true);
+  }, [clearElementSelection, setPlacementType]);
 
   React.useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) {
@@ -120,7 +141,8 @@ export function PanelDesigner() {
     [
       panelModel.dimensions.heightMm,
       panelModel.dimensions.widthHp,
-      panelModel.dimensions.widthMm
+      panelModel.dimensions.widthMm,
+      panelModel.mountingHoleConfig
     ]
   );
 
@@ -513,8 +535,29 @@ export function PanelDesigner() {
     setIsStlModalOpen(false);
   }, []);
 
+  const handleMountingHoleConfigChange = React.useCallback(
+    (updates: Partial<MountingHoleConfig>) => {
+      updateModel((prev) => ({
+        ...prev,
+        mountingHoleConfig: {
+          ...prev.mountingHoleConfig,
+          ...updates
+        }
+      }));
+    },
+    [updateModel]
+  );
+
   const openConfirmDialog = React.useCallback((message: string, onConfirm: () => void) => {
     setConfirmDialog({ message, onConfirm });
+  }, []);
+
+  const openChangelog = React.useCallback(() => {
+    setIsChangelogOpen(true);
+  }, []);
+
+  const closeChangelog = React.useCallback(() => {
+    setIsChangelogOpen(false);
   }, []);
 
   const handleConfirmYes = React.useCallback(() => {
@@ -577,6 +620,13 @@ export function PanelDesigner() {
                 alt="Buy me a coffee on Ko-fi"
               />
             </a>
+            <button
+              type="button"
+              className={styles.changelogButton}
+              onClick={openChangelog}
+            >
+              {t.changelog.buttonLabel}
+            </button>
           </div>
         </div>
         </section>
@@ -651,6 +701,7 @@ export function PanelDesigner() {
             canvasRef={canvasRef}
             model={panelModel}
             mountingHoles={mountingHoles}
+            mountingHolesSelected={mountingHolesSelected}
             zoom={zoom}
             pan={pan}
             zoomLimits={{ min: MIN_ZOOM, max: MAX_ZOOM }}
@@ -667,6 +718,8 @@ export function PanelDesigner() {
             onSelectElements={setSelectedElementIds}
             onToggleElementSelection={toggleElementSelection}
             onClearSelection={clearSelection}
+            onSelectMountingHoles={handleSelectMountingHoles}
+            onClearMountingHoleSelection={handleClearMountingHoleSelection}
             displayOptions={panelModel.options}
             selectedElementIds={selectedElementIds}
             draftProperties={draftProperties}
@@ -900,6 +953,15 @@ export function PanelDesigner() {
                 onResetView={resetView}
               />
             </div>
+            {mountingHolesSelected ? (
+              <div className={styles.card}>
+                <MountingHoleSettings
+                  config={panelModel.mountingHoleConfig}
+                  onChange={handleMountingHoleConfigChange}
+                  onClose={handleClearMountingHoleSelection}
+                />
+              </div>
+            ) : null}
             <div className={styles.card}>
               <ElementProperties
                 element={elementForProperties}
@@ -1022,6 +1084,55 @@ export function PanelDesigner() {
               </button>
               <button type="button" className={styles.primaryButton} onClick={handleConfirmYes}>
                 {t.projects.messages.confirmYes}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {isChangelogOpen ? (
+        <div
+          className={styles.modalBackdrop}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="changelog-title"
+          onClick={closeChangelog}
+        >
+          <div
+            className={styles.modal}
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
+          >
+            <h2 id="changelog-title" className={styles.modalTitle}>
+              {t.changelog.title}
+            </h2>
+            <p className={styles.modalDescription}>{t.changelog.description}</p>
+            <div className={styles.changelogList}>
+              {changelogEntries.map((entry) => (
+                <div key={entry.version} className={styles.changelogEntry}>
+                  <div className={styles.changelogEntryMeta}>
+                    <span className={styles.changelogVersion}>v{entry.version}</span>
+                    <span className={styles.changelogDate}>{entry.date}</span>
+                  </div>
+                  <ul className={styles.changelogHighlights}>
+                    {entry.highlights.map((note) => (
+                      <li key={note}>{note}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+              <a
+                className={styles.changelogLink}
+                href="/CHANGELOG.md"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {t.changelog.viewFull}
+              </a>
+            </div>
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.secondaryButton} onClick={closeChangelog}>
+                {t.changelog.close}
               </button>
             </div>
           </div>

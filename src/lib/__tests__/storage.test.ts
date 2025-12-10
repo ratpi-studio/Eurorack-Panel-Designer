@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { DEFAULT_PANEL_OPTIONS, type PanelModel } from '../panelTypes';
+import {
+  DEFAULT_MOUNTING_HOLE_CONFIG,
+  DEFAULT_PANEL_OPTIONS,
+  type PanelModel
+} from '../panelTypes';
 import { createPanelDimensions } from '../units';
 import {
   deleteProject,
@@ -40,7 +44,8 @@ class MemoryStorage implements Storage {
 const sampleModel: PanelModel = {
   dimensions: createPanelDimensions(12),
   elements: [],
-  options: { ...DEFAULT_PANEL_OPTIONS }
+  options: { ...DEFAULT_PANEL_OPTIONS },
+  mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG }
 };
 
 describe('storage helpers', () => {

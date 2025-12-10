@@ -64,7 +64,7 @@ function collectCircularCutouts(
   mountingHoles: MountingHole[]
 ): CircularCutout[] {
   const holes: CircularCutout[] = mountingHoles
-    .filter((hole) => hole.diameterMm > 0)
+    .filter((hole) => hole.diameterMm > 0 && hole.shape !== 'slot')
     .map((hole) => ({
       cx: hole.center.x,
       cy: hole.center.y,
@@ -141,8 +141,18 @@ function collectOvalCutouts(model: PanelModel): OvalCutout[] {
   return holes;
 }
 
-function collectSlotCutouts(model: PanelModel): SlotCutout[] {
-  const holes: SlotCutout[] = [];
+function collectSlotCutouts(
+  model: PanelModel,
+  mountingHoles: MountingHole[]
+): SlotCutout[] {
+  const holes: SlotCutout[] = mountingHoles
+    .filter((hole) => hole.shape === 'slot' && (hole.slotLengthMm ?? hole.diameterMm) > 0)
+    .map((hole) => ({
+      cx: hole.center.x,
+      cy: hole.center.y,
+      width: hole.slotLengthMm ?? hole.diameterMm,
+      height: hole.diameterMm
+    }));
 
   for (const element of model.elements) {
     if (element.type !== PanelElementType.Slot) {
@@ -204,7 +214,7 @@ export function buildKicadEdgeCutsSvg(
   const circularCutouts = collectCircularCutouts(model, mountingHoles);
   const rectangularCutouts = collectRectangularCutouts(model);
   const ovalCutouts = collectOvalCutouts(model);
-  const slotCutouts = collectSlotCutouts(model);
+  const slotCutouts = collectSlotCutouts(model, mountingHoles);
   const triangleCutouts = collectTriangleCutouts(model);
 
   const circularSvgs = circularCutouts
@@ -418,7 +428,7 @@ export function buildKicadPcbFile(
   const circularCutouts = collectCircularCutouts(model, mountingHoles);
   const rectangularCutouts = collectRectangularCutouts(model);
   const ovalCutouts = collectOvalCutouts(model);
-  const slotCutouts = collectSlotCutouts(model);
+  const slotCutouts = collectSlotCutouts(model, mountingHoles);
   const triangleCutouts = collectTriangleCutouts(model);
 
   const outlineLines = rectangleLines(0, 0, width, height);

@@ -55,11 +55,13 @@ function getCircularHoles(
   model: PanelModel,
   mountingHoles: MountingHole[]
 ): CircularHole[] {
-  const circularHoles: CircularHole[] = mountingHoles.map((hole) => ({
-    centerX: hole.center.x,
-    centerY: hole.center.y,
-    radius: hole.diameterMm / 2
-  }));
+  const circularHoles: CircularHole[] = mountingHoles
+    .filter((hole) => hole.shape !== 'slot')
+    .map((hole) => ({
+      centerX: hole.center.x,
+      centerY: hole.center.y,
+      radius: hole.diameterMm / 2
+    }));
 
   for (const element of model.elements) {
     switch (element.type) {
@@ -126,8 +128,18 @@ function getOvalHoles(model: PanelModel): OvalHole[] {
   return ovalHoles;
 }
 
-function getSlotHoles(model: PanelModel): SlotHole[] {
-  const slotHoles: SlotHole[] = [];
+function getSlotHoles(
+  model: PanelModel,
+  mountingHoles: MountingHole[]
+): SlotHole[] {
+  const slotHoles: SlotHole[] = mountingHoles
+    .filter((hole) => hole.shape === 'slot' && (hole.slotLengthMm ?? hole.diameterMm) > 0)
+    .map((hole) => ({
+      centerX: hole.center.x,
+      centerY: hole.center.y,
+      width: hole.slotLengthMm ?? hole.diameterMm,
+      height: hole.diameterMm
+    }));
 
   for (const element of model.elements) {
     if (element.type !== PanelElementType.Slot) {
@@ -264,7 +276,7 @@ function buildPanelShape(
   }
 
   // Slot holes
-  const slotHoles = getSlotHoles(model);
+  const slotHoles = getSlotHoles(model, mountingHoles);
   for (const hole of slotHoles) {
     shape.holes.push(createSlotHolePath(hole));
   }

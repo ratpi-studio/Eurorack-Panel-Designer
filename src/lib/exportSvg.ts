@@ -189,6 +189,14 @@ export function buildPanelSvg(
   const elementsSvg = model.elements.map(elementToSvg).join('\n    ');
   const holeOutlines = mountingHoles
     .map((hole) => {
+      if (hole.shape === 'slot' && hole.slotLengthMm) {
+        return `<path d="${slotPath(
+          hole.center.x,
+          hole.center.y,
+          hole.slotLengthMm,
+          hole.diameterMm
+        )}" stroke="${stroke}" stroke-width="${strokeWidth}" fill="none" />`;
+      }
       const r = hole.diameterMm / 2;
       return `<circle cx="${hole.center.x}" cy="${hole.center.y}" r="${r}" stroke="${stroke}" stroke-width="${strokeWidth}" fill="none" />`;
     })
@@ -196,7 +204,11 @@ export function buildPanelSvg(
 
   const cutoutPaths = [
     rectPath(0, 0, width, height),
-    ...mountingHoles.map((hole) => circlePath(hole.center.x, hole.center.y, hole.diameterMm / 2)),
+    ...mountingHoles.map((hole) =>
+      hole.shape === 'slot' && hole.slotLengthMm
+        ? slotPath(hole.center.x, hole.center.y, hole.slotLengthMm, hole.diameterMm)
+        : circlePath(hole.center.x, hole.center.y, hole.diameterMm / 2)
+    ),
     ...model.elements.map(elementCutout).filter((p): p is string => Boolean(p))
   ].join(' ');
 
