@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { buildPanelStl } from '@lib/exportStl';
 import { generateMountingHoles } from '@lib/mountingHoles';
 import {
+  DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   PanelElementType,
   type PanelModel
@@ -19,7 +20,8 @@ function createEmptyPanel(): PanelModel {
       snapToGrid: true,
       gridSizeMm: 5
     },
-    mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG }
+    mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG },
+    elementHoleConfig: { ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG }
   };
 }
 

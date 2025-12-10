@@ -29,6 +29,7 @@ interface PanelElementBase<
   type: TType;
   positionMm: Vector2;
   rotationDeg?: number;
+  mountingHoleRotationDeg?: number;
   properties: TProperties;
 }
 
@@ -92,24 +93,39 @@ export interface PanelOptions {
   gridSizeMm: number;
 }
 
+export interface ElementMountingHoleConfig {
+  enabled: boolean;
+  count: number;
+  diameterMm: number;
+  offsetMm: number;
+  rotationDeg: number;
+}
+
 export interface PanelModel {
   dimensions: PanelDimensions;
   elements: PanelElement[];
   options: PanelOptions;
   mountingHoleConfig: MountingHoleConfig;
+  elementHoleConfig: ElementMountingHoleConfig;
 }
 
-export type PanelModelInput = Omit<PanelModel, 'mountingHoleConfig'> & {
+export type PanelModelInput = Omit<PanelModel, 'mountingHoleConfig' | 'elementHoleConfig'> & {
   mountingHoleConfig?: MountingHoleConfig;
+  elementHoleConfig?: ElementMountingHoleConfig;
 };
 
 export function normalizePanelModel(model: PanelModelInput): PanelModel {
   const overrides = model.mountingHoleConfig ?? DEFAULT_MOUNTING_HOLE_CONFIG;
+  const elementOverrides = model.elementHoleConfig ?? DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG;
   return {
     ...model,
     mountingHoleConfig: {
       ...DEFAULT_MOUNTING_HOLE_CONFIG,
       ...overrides
+    },
+    elementHoleConfig: {
+      ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
+      ...elementOverrides
     }
   };
 }
@@ -148,12 +164,20 @@ export const DEFAULT_MOUNTING_HOLE_CONFIG: MountingHoleConfig = {
   slotLengthMm: 8
 };
 
+export const DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG: ElementMountingHoleConfig = {
+  enabled: false,
+  count: 2,
+  diameterMm: 2.5,
+  offsetMm: 3,
+  rotationDeg: 0
+};
+
 export interface SerializedPanel {
   version: number;
   model: PanelModel;
 }
 
-export const SERIALIZATION_VERSION = 2;
+export const SERIALIZATION_VERSION = 3;
 
 function isCircularElementProperties(
   properties: PanelElement['properties']

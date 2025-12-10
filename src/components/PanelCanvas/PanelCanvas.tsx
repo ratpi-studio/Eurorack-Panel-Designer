@@ -105,6 +105,7 @@ interface PanelCanvasProps {
   canvasRef?: React.RefObject<HTMLCanvasElement | null>;
   model: PanelModel;
   mountingHoles: MountingHole[];
+  elementMountingHoles: MountingHole[];
   mountingHolesSelected: boolean;
   zoom: number;
   pan: Vector2;
@@ -136,6 +137,7 @@ export function PanelCanvas({
   canvasRef: forwardedCanvasRef,
   model,
   mountingHoles,
+  elementMountingHoles,
   mountingHolesSelected,
   zoom,
   pan,
@@ -371,6 +373,7 @@ export function PanelCanvas({
         transform,
         elements: model.elements,
         mountingHoles,
+        elementMountingHoles,
         mountingHolesSelected,
         selectedElementIds,
         showGrid: displayOptions.showGrid,
@@ -403,6 +406,7 @@ export function PanelCanvas({
     transform,
     model.elements,
     mountingHoles,
+    elementMountingHoles,
     displayOptions.gridSizeMm,
     displayOptions.showGrid,
     displayOptions.showMountingHoles,

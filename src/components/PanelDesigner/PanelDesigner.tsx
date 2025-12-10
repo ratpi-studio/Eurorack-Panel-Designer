@@ -6,12 +6,14 @@ import { DisplayOptions } from '@components/DisplayOptions/DisplayOptions';
 import { ElementPalette } from '@components/ElementPalette/ElementPalette';
 import { ElementProperties } from '@components/ElementProperties/ElementProperties';
 import { MountingHoleSettings } from '@components/MountingHoleSettings/MountingHoleSettings';
+import { ElementMountingHoles } from '@components/ElementMountingHoles/ElementMountingHoles';
 import { useI18n } from '@i18n/I18nContext';
 import { createPanelElement } from '@lib/elements';
 import { generateMountingHoles } from '@lib/mountingHoles';
 import {
   PanelElementType,
   withElementProperties,
+  type ElementMountingHoleConfig,
   type PanelElement,
   type MountingHole,
   type MountingHoleConfig,
@@ -20,6 +22,7 @@ import {
 } from '@lib/panelTypes';
 import { createPanelDimensions, hpToMm, mmToCm } from '@lib/units';
 import { changelogEntries } from '@lib/changelog';
+import { computeElementMountingHoles } from '@lib/elementMountingHoles';
 import { type ExportFormat } from '@lib/exportPreferences';
 import { usePanelStore } from '@store/panelStore';
 import { usePanelHistory } from '@store/usePanelHistory';
@@ -146,6 +149,11 @@ export function PanelDesigner() {
     ]
   );
 
+  const elementMountingHoles = React.useMemo(
+    () => computeElementMountingHoles(panelModel.elements, panelModel.elementHoleConfig),
+    [panelModel.elements, panelModel.elementHoleConfig]
+  );
+
   const handleSetWidthFromMm = React.useCallback(
     (widthMm: number) => {
       updateModel((prev) => ({
@@ -217,6 +225,12 @@ export function PanelDesigner() {
     [updateModel]
   );
 
+  const combinedMountingHoles = React.useMemo(
+    () =>
+      elementMountingHoles.length ? [...mountingHoles, ...elementMountingHoles] : mountingHoles,
+    [elementMountingHoles, mountingHoles]
+  );
+
   const {
     projectName,
     setProjectName,
@@ -242,7 +256,7 @@ export function PanelDesigner() {
     handleReset
   } = useProjects({
     canvasRef,
-    mountingHoles,
+    mountingHoles: combinedMountingHoles,
     resetView,
     clearHistory
   });
@@ -340,6 +354,7 @@ export function PanelDesigner() {
     [updateElement]
   );
 
+
   const handleUpdateProperties = React.useCallback(
     (elementId: string, properties: PanelElement['properties']) => {
       updateElementProperties(elementId, properties);
@@ -431,7 +446,21 @@ export function PanelDesigner() {
     };
   }, [draftProperties, placementType]);
 
-  const elementForProperties = selectedElement ?? draftElement;
+const elementForProperties = selectedElement ?? draftElement;
+
+const handleSelectedElementHoleRotationChange = React.useCallback(
+  (rotationDeg: number) => {
+    const target = selectedElement;
+    if (!target) {
+      return;
+    }
+    handleUpdateElement(target.id, (element) => ({
+      ...element,
+      mountingHoleRotationDeg: rotationDeg
+    }));
+  },
+  [handleUpdateElement, selectedElement]
+);
 
   const handleSelectPaletteType = React.useCallback(
     (type: PanelElementType | null) => {
@@ -541,6 +570,19 @@ export function PanelDesigner() {
         ...prev,
         mountingHoleConfig: {
           ...prev.mountingHoleConfig,
+          ...updates
+        }
+      }));
+    },
+    [updateModel]
+  );
+
+  const handleElementHoleConfigChange = React.useCallback(
+    (updates: Partial<ElementMountingHoleConfig>) => {
+      updateModel((prev) => ({
+        ...prev,
+        elementHoleConfig: {
+          ...prev.elementHoleConfig,
           ...updates
         }
       }));
@@ -701,6 +743,7 @@ export function PanelDesigner() {
             canvasRef={canvasRef}
             model={panelModel}
             mountingHoles={mountingHoles}
+            elementMountingHoles={elementMountingHoles}
             mountingHolesSelected={mountingHolesSelected}
             zoom={zoom}
             pan={pan}
@@ -999,6 +1042,15 @@ export function PanelDesigner() {
                   }
                 }}
               />
+              {selectedElement ? (
+                <ElementMountingHoles
+                  config={panelModel.elementHoleConfig}
+                  onChangeConfig={handleElementHoleConfigChange}
+                  onChangeElementRotation={handleSelectedElementHoleRotationChange}
+                  element={selectedElement}
+                  snapEnabled={panelModel.options.snapToGrid}
+                />
+              ) : null}
             </div>
           </aside>
         ) : null}
