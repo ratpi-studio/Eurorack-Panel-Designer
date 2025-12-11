@@ -7,6 +7,7 @@ import { ElementPalette } from '@components/ElementPalette/ElementPalette';
 import { ElementProperties } from '@components/ElementProperties/ElementProperties';
 import { MountingHoleSettings } from '@components/MountingHoleSettings/MountingHoleSettings';
 import { ElementMountingHoles } from '@components/ElementMountingHoles/ElementMountingHoles';
+import { ReferenceImageControls } from '@components/ReferenceImageControls/ReferenceImageControls';
 import { useI18n } from '@i18n/I18nContext';
 import { createPanelElement } from '@lib/elements';
 import { generateMountingHoles } from '@lib/mountingHoles';
@@ -23,6 +24,7 @@ import {
 import { createPanelDimensions, hpToMm, mmToCm } from '@lib/units';
 import { changelogEntries } from '@lib/changelog';
 import { computeElementMountingHoles } from '@lib/elementMountingHoles';
+import type { ReferenceImage } from '@lib/referenceImage';
 import { computeClearanceLines, applyClearanceLinePosition } from '@lib/clearance';
 import { type ExportFormat } from '@lib/exportPreferences';
 import { usePanelStore } from '@store/panelStore';
@@ -65,6 +67,11 @@ export function PanelDesigner() {
   const clearElementSelection = usePanelStore((state) => state.clearSelection);
   const draftProperties = usePanelStore((state) => state.draftProperties);
   const setDraftProperties = usePanelStore((state) => state.setDraftProperties);
+  const referenceImage = usePanelStore((state) => state.referenceImage);
+  const referenceImageSelected = usePanelStore((state) => state.referenceImageSelected);
+  const setReferenceImage = usePanelStore((state) => state.setReferenceImage);
+  const updateReferenceImage = usePanelStore((state) => state.updateReferenceImage);
+  const selectReferenceImage = usePanelStore((state) => state.selectReferenceImage);
   const [zoom, setZoom] = React.useState(DEFAULT_ZOOM);
   const [pan, setPan] = React.useState<Vector2>({ ...DEFAULT_PAN });
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
@@ -92,16 +99,29 @@ export function PanelDesigner() {
     setMountingHolesSelected(false);
   }, []);
 
+  const handleClearReferenceSelection = React.useCallback(() => {
+    selectReferenceImage(false);
+  }, [selectReferenceImage]);
+
   const clearSelection = React.useCallback(() => {
     clearElementSelection();
     handleClearMountingHoleSelection();
-  }, [clearElementSelection, handleClearMountingHoleSelection]);
+    handleClearReferenceSelection();
+  }, [clearElementSelection, handleClearMountingHoleSelection, handleClearReferenceSelection]);
 
   const handleSelectMountingHoles = React.useCallback(() => {
     clearElementSelection();
     setPlacementType(null);
     setMountingHolesSelected(true);
-  }, [clearElementSelection, setPlacementType]);
+    selectReferenceImage(false);
+  }, [clearElementSelection, selectReferenceImage, setPlacementType]);
+
+  const handleSelectReferenceImage = React.useCallback(() => {
+    clearElementSelection();
+    setPlacementType(null);
+    setMountingHolesSelected(false);
+    selectReferenceImage(true);
+  }, [clearElementSelection, selectReferenceImage, setPlacementType]);
 
   React.useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) {
@@ -269,6 +289,7 @@ export function PanelDesigner() {
 
   const projectNameBeforeEditRef = React.useRef(projectName);
   const projectNameInputRef = React.useRef<HTMLInputElement | null>(null);
+  const referenceImageInputRef = React.useRef<HTMLInputElement | null>(null);
   const isClearanceDragActiveRef = React.useRef(false);
   const clearanceHistoryPushedRef = React.useRef(false);
   const [isEditingProjectName, setIsEditingProjectName] = React.useState(false);
@@ -388,6 +409,11 @@ export function PanelDesigner() {
     removeElements(selectedElementIds);
   }, [handleRemoveElement, removeElements, selectedElementIds]);
 
+  const handleRemoveReferenceImage = React.useCallback(() => {
+    setReferenceImage(null);
+    selectReferenceImage(false);
+  }, [selectReferenceImage, setReferenceImage]);
+
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
@@ -404,6 +430,11 @@ export function PanelDesigner() {
       }
 
       if (!isEditingField && (event.key === 'Backspace' || event.key === 'Delete')) {
+        if (referenceImageSelected && referenceImage) {
+          event.preventDefault();
+          handleRemoveReferenceImage();
+          return;
+        }
         if (selectedElementIds.length > 0) {
           event.preventDefault();
           handleRemoveSelection();
@@ -431,7 +462,10 @@ export function PanelDesigner() {
   }, [
     clearSelection,
     handleRemoveSelection,
+    handleRemoveReferenceImage,
     handleUndoDeleteProject,
+    referenceImage,
+    referenceImageSelected,
     redo,
     selectedElementIds.length,
     setPlacementType,
@@ -454,21 +488,21 @@ export function PanelDesigner() {
     };
   }, [draftProperties, placementType]);
 
-const elementForProperties = selectedElement ?? draftElement;
+  const elementForProperties = selectedElement ?? draftElement;
 
-const handleSelectedElementHoleRotationChange = React.useCallback(
-  (rotationDeg: number) => {
-    const target = selectedElement;
-    if (!target) {
-      return;
-    }
-    handleUpdateElement(target.id, (element) => ({
-      ...element,
-      mountingHoleRotationDeg: rotationDeg
-    }));
-  },
-  [handleUpdateElement, selectedElement]
-);
+  const handleSelectedElementHoleRotationChange = React.useCallback(
+    (rotationDeg: number) => {
+      const target = selectedElement;
+      if (!target) {
+        return;
+      }
+      handleUpdateElement(target.id, (element) => ({
+        ...element,
+        mountingHoleRotationDeg: rotationDeg
+      }));
+    },
+    [handleUpdateElement, selectedElement]
+  );
 
   const handleSelectPaletteType = React.useCallback(
     (type: PanelElementType | null) => {
@@ -476,6 +510,70 @@ const handleSelectedElementHoleRotationChange = React.useCallback(
       setPlacementType(type);
     },
     [clearSelection, setPlacementType]
+  );
+
+  const handleImportReferenceImageClick = React.useCallback(() => {
+    referenceImageInputRef.current?.click();
+  }, []);
+
+  const handleReferenceFileChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) {
+        return;
+      }
+      setPlacementType(null);
+      setMountingHolesSelected(false);
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        const img = new Image();
+        img.onload = () => {
+          const aspect = img.width > 0 && img.height > 0 ? img.width / img.height : 1;
+          const maxWidth = panelModel.dimensions.widthMm * 0.8;
+          const maxHeight = panelModel.dimensions.heightMm * 0.8;
+          let widthMm = Math.min(maxWidth, Math.max(40, panelModel.dimensions.widthMm * 0.6));
+          let heightMm = widthMm / aspect;
+          if (heightMm > maxHeight) {
+            heightMm = maxHeight;
+            widthMm = heightMm * aspect;
+          }
+          const positionMm = {
+            x: panelModel.dimensions.widthMm / 2,
+            y: panelModel.dimensions.heightMm / 2
+          };
+          setReferenceImage({
+            dataUrl,
+            positionMm,
+            widthMm,
+            heightMm,
+            rotationDeg: 0,
+            opacity: 0.35,
+            naturalWidth: img.width,
+            naturalHeight: img.height
+          });
+          selectReferenceImage(true);
+        };
+        img.src = dataUrl;
+      };
+      reader.readAsDataURL(file);
+      event.target.value = '';
+    },
+    [
+      panelModel.dimensions.heightMm,
+      panelModel.dimensions.widthMm,
+      selectReferenceImage,
+      setReferenceImage,
+      setPlacementType,
+      setMountingHolesSelected
+    ]
+  );
+
+  const handleReferenceImageChange = React.useCallback(
+    (updates: Partial<ReferenceImage>) => {
+      updateReferenceImage(updates);
+    },
+    [updateReferenceImage]
   );
 
   const exportButtonLabel = React.useMemo(() => {
@@ -786,6 +884,8 @@ const handleSelectedElementHoleRotationChange = React.useCallback(
             model={panelModel}
             mountingHoles={mountingHoles}
             elementMountingHoles={elementMountingHoles}
+            referenceImage={referenceImage}
+            referenceImageSelected={referenceImageSelected}
             mountingHolesSelected={mountingHolesSelected}
             zoom={zoom}
             pan={pan}
@@ -803,6 +903,9 @@ const handleSelectedElementHoleRotationChange = React.useCallback(
             onSelectElements={setSelectedElementIds}
             onToggleElementSelection={toggleElementSelection}
             onClearSelection={clearSelection}
+            onSelectReferenceImage={handleSelectReferenceImage}
+            onClearReferenceSelection={handleClearReferenceSelection}
+            onUpdateReferenceImage={handleReferenceImageChange}
             onSelectMountingHoles={handleSelectMountingHoles}
             onClearMountingHoleSelection={handleClearMountingHoleSelection}
             displayOptions={panelModel.options}
@@ -1013,18 +1116,25 @@ const handleSelectedElementHoleRotationChange = React.useCallback(
                 <button
                   type="button"
                   className={styles.secondaryButton}
-                    onClick={() => {
-                      if (selectedSavedName) {
-                        const name = selectedSavedName;
-                        openConfirmDialog(t.projects.messages.confirmDeleteSelected(name), () =>
-                          handleDeleteProject(name)
-                        );
-                      } else {
-                        openConfirmDialog(t.projects.messages.confirmReset, () => handleReset());
-                      }
-                    }}
+                  onClick={() => {
+                    if (selectedSavedName) {
+                      const name = selectedSavedName;
+                      openConfirmDialog(t.projects.messages.confirmDeleteSelected(name), () =>
+                        handleDeleteProject(name)
+                      );
+                    } else {
+                      openConfirmDialog(t.projects.messages.confirmReset, () => handleReset());
+                    }
+                  }}
                 >
                   {t.projects.delete}
+                </button>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={handleImportReferenceImageClick}
+                >
+                  {t.properties.importImage}
                 </button>
                 <input
                   ref={fileInputRef}
@@ -1032,6 +1142,13 @@ const handleSelectedElementHoleRotationChange = React.useCallback(
                   accept="application/json"
                   className={styles.hiddenInput}
                   onChange={handleImportJson}
+                />
+                <input
+                  ref={referenceImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  className={styles.hiddenInput}
+                  onChange={handleReferenceFileChange}
                 />
               </div>
             </div>
@@ -1052,57 +1169,68 @@ const handleSelectedElementHoleRotationChange = React.useCallback(
               </div>
             ) : null}
             <div className={styles.card}>
-              <ElementProperties
-                element={elementForProperties}
-                selectionCount={selectedElementIds.length}
-                onChangePosition={(positionMm) => {
-                  if (selectedElement) {
-                    updateElement(selectedElement.id, (element) => ({
-                      ...element,
-                      positionMm
-                    }));
-                  }
-                }}
-                onChangeRotation={(rotationDeg) => {
-                  if (selectedElement) {
-                    handleUpdateElement(selectedElement.id, (element) => ({
-                      ...element,
-                      rotationDeg
-                    }));
-                  }
-                }}
-                onChangeProperties={(properties) => {
-                  if (selectedElement) {
-                    handleUpdateProperties(selectedElement.id, properties);
-                    return;
-                  }
-                  if (placementType) {
-                    setDraftProperties(placementType, properties);
-                  }
-                }}
-                onRemove={() => {
-                  if (selectedElement) {
-                    handleRemoveSelection();
-                  } else {
-                    setPlacementType(null);
-                  }
-                }}
-              />
-              {selectedElement ? (
-                <ElementMountingHoles
-                  config={panelModel.elementHoleConfig}
-                  onChangeConfig={handleElementHoleConfigChange}
-                  onChangeElementRotation={handleSelectedElementHoleRotationChange}
-                  element={selectedElement}
-                  onToggleElementEnabled={(enabled) => {
-                    handleUpdateElement(selectedElement.id, (element) => ({
-                      ...element,
-                      mountingHolesEnabled: enabled
-                    }));
-                  }}
-                  snapEnabled={panelModel.options.snapToGrid}
+              {referenceImage && referenceImageSelected ? (
+                <ReferenceImageControls
+                  image={referenceImage}
+                  onChange={handleReferenceImageChange}
+                  onReplace={handleImportReferenceImageClick}
+                  onRemove={handleRemoveReferenceImage}
                 />
-              ) : null}
+              ) : (
+                <>
+                  <ElementProperties
+                    element={elementForProperties}
+                    selectionCount={selectedElementIds.length}
+                    onChangePosition={(positionMm) => {
+                      if (selectedElement) {
+                        updateElement(selectedElement.id, (element) => ({
+                          ...element,
+                          positionMm
+                        }));
+                      }
+                    }}
+                    onChangeRotation={(rotationDeg) => {
+                      if (selectedElement) {
+                        handleUpdateElement(selectedElement.id, (element) => ({
+                          ...element,
+                          rotationDeg
+                        }));
+                      }
+                    }}
+                    onChangeProperties={(properties) => {
+                      if (selectedElement) {
+                        handleUpdateProperties(selectedElement.id, properties);
+                        return;
+                      }
+                      if (placementType) {
+                        setDraftProperties(placementType, properties);
+                      }
+                    }}
+                    onRemove={() => {
+                      if (selectedElement) {
+                        handleRemoveSelection();
+                      } else {
+                        setPlacementType(null);
+                      }
+                    }}
+                  />
+                  {selectedElement ? (
+                    <ElementMountingHoles
+                      config={panelModel.elementHoleConfig}
+                      onChangeConfig={handleElementHoleConfigChange}
+                      onChangeElementRotation={handleSelectedElementHoleRotationChange}
+                      element={selectedElement}
+                      onToggleElementEnabled={(enabled) => {
+                        handleUpdateElement(selectedElement.id, (element) => ({
+                          ...element,
+                          mountingHolesEnabled: enabled
+                        }));
+                      }}
+                      snapEnabled={panelModel.options.snapToGrid}
+                    />
+                  ) : null}
+                </>
+              )}
             </div>
           </aside>
         ) : null}

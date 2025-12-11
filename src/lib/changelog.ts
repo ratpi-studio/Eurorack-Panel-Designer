@@ -6,11 +6,20 @@ export interface ChangelogEntry {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: '0.4.0',
+    date: '2025-12-12',
+    highlights: [
+      'Reference images can be imported via the Projects panel and dragged on the canvas.',
+      'Dedicated reference image controls for position, size, rotation, and opacity.'
+    ]
+  },
+  {
     version: '0.3.0',
     date: '2025-12-11',
     highlights: [
       'Added draggable clearance guide lines with distance labels to the nearest edge.',
-      'Mounting holes can now be toggled per element rather than globally.'
+      'Mounting holes can now be toggled per element rather than globally.',
+      'PNG export now crops to only the panel area.'
     ]
   },
   {
