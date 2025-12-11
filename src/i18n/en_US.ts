@@ -60,6 +60,7 @@ interface Translations {
     title: string;
     subtitle: string;
     delete: string;
+    importImage: string;
     empty: string;
     multiSelection: (count: number) => string;
     multiSelectionHint: string;
@@ -71,6 +72,17 @@ interface Translations {
     height: string;
     text: string;
     fontSize: string;
+  };
+  referenceImage: {
+    title: string;
+    positionX: string;
+    positionY: string;
+    width: string;
+    height: string;
+    rotation: string;
+    opacity: string;
+    replace: string;
+    remove: string;
   };
   projects: {
     title: string;
@@ -190,6 +202,17 @@ export const enUS: Translations = {
     defaultRotationLabel: 'Default rotation (°)',
     rotationLabel: 'Element rotation'
   },
+  referenceImage: {
+    title: 'Reference image',
+    positionX: 'Position X (mm)',
+    positionY: 'Position Y (mm)',
+    width: 'Width (mm)',
+    height: 'Height (mm)',
+    rotation: 'Rotation (°)',
+    opacity: 'Opacity',
+    replace: 'Replace',
+    remove: 'Remove'
+  },
   palette: {
     title: 'Palette',
     subtitle: 'Pick an element to place',
@@ -249,6 +272,7 @@ export const enUS: Translations = {
     title: 'Properties',
     subtitle: 'Selection',
     delete: 'Delete',
+    importImage: 'Image',
     empty: 'Select an element to view its properties.',
     multiSelection: (count: number) => `${count} elements selected`,
     multiSelectionHint:

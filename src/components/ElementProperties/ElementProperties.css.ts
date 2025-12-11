@@ -20,6 +20,27 @@ export const header = style({
   gap: vars.spacing.sm
 });
 
+export const actions = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.spacing.xs
+});
+
+export const importButton = style({
+  border: `1px solid ${vars.color.border}`,
+  backgroundColor: vars.color.surface,
+  color: vars.color.textPrimary,
+  fontWeight: 600,
+  borderRadius: '8px',
+  padding: `8px ${vars.spacing.sm}`,
+  cursor: 'pointer',
+  selectors: {
+    '&:hover': {
+      borderColor: vars.color.accent
+    }
+  }
+});
+
 export const title = style({
   fontSize: '14px',
   letterSpacing: '0.04em',

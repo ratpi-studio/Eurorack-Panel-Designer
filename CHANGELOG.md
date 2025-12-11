@@ -2,10 +2,16 @@
 
 # Changelog
 
+## 0.4.0 - 2025-12-12
+
+- Added a global “Image” button in Projects to import a reference image layer at any time.
+- Reference images now render on the canvas with selection/drag support and dedicated controls.
+
 ## 0.3.0 - 2025-12-11
 
 - Added draggable clearance guide lines with live distance labels to top/bottom edges.
 - Mounting holes are now enabled per-element instead of globally, keeping other elements untouched.
+- PNG export now crops to just the panel area (no surrounding workspace).
 - General polish and version bump.
 
 ## 0.2.0 - 2024-12-29

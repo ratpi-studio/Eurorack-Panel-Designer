@@ -93,9 +93,11 @@ export function ElementProperties({
             <div className={styles.title}>{t.properties.title}</div>
             <div className={styles.subtitle}>{t.properties.multiSelection(selectionCount)}</div>
           </div>
-          <button type="button" className={styles.removeButton} onClick={onRemove}>
-            {t.properties.delete}
-          </button>
+          <div className={styles.actions}>
+            <button type="button" className={styles.removeButton} onClick={onRemove}>
+              {t.properties.delete}
+            </button>
+          </div>
         </div>
         <div className={styles.selectionSummary}>{t.properties.multiSelectionHint}</div>
       </div>
@@ -173,11 +175,13 @@ export function ElementProperties({
           <div className={styles.title}>{t.properties.title}</div>
           <div className={styles.subtitle}>{element.type}</div>
         </div>
-        {!isDraft ? (
-          <button type="button" className={styles.removeButton} onClick={onRemove}>
-            {t.properties.delete}
-          </button>
-        ) : null}
+        <div className={styles.actions}>
+          {!isDraft ? (
+            <button type="button" className={styles.removeButton} onClick={onRemove}>
+              {t.properties.delete}
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className={styles.grid}>

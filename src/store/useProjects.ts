@@ -4,12 +4,21 @@ import { useI18n } from '@i18n/I18nContext';
 import { buildKicadEdgeCutsSvg, buildKicadPcbFile } from '@lib/exportKicad';
 import { buildPanelSvg } from '@lib/exportSvg';
 import {
+  computeClearanceLines
+} from '@lib/clearance';
+import {
+  computeElementMountingHoles
+} from '@lib/elementMountingHoles';
+import {
   DEFAULT_CLEARANCE_CONFIG,
   DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   DEFAULT_PANEL_OPTIONS,
   type MountingHole
 } from '@lib/panelTypes';
+import { drawPanelScene } from '@lib/canvas/renderScene';
+import { computeCanvasTransform } from '@lib/canvas/transform';
+import { themeValues } from '@styles/theme.css';
 import {
   DEFAULT_EXPORT_FORMAT,
   getPreferredExportFormat,
@@ -130,6 +139,81 @@ export function useProjects({
     []
   );
 
+  const buildPanelPngDataUrl = React.useCallback(() => {
+    const EXPORT_SCALE = 4; // px per mm
+    const widthPx = Math.max(1, Math.round(panelModel.dimensions.widthMm * EXPORT_SCALE));
+    const heightPx = Math.max(1, Math.round(panelModel.dimensions.heightMm * EXPORT_SCALE));
+    const offscreen = document.createElement('canvas');
+    offscreen.width = widthPx;
+    offscreen.height = heightPx;
+    const context = offscreen.getContext('2d');
+    if (!context) {
+      return null;
+    }
+
+    const exportPalette = {
+      panelFill: '#111827',
+      panelBorder: '#334155',
+      grid: 'rgba(148, 163, 184, 0.2)',
+      gridCenter: 'rgba(148, 163, 184, 0.45)',
+      mountingHoleFill: '#0f172a',
+      mountingHoleStroke: '#94a3b8',
+      selection: '#ffffff',
+      clearanceLine: 'rgba(244, 114, 182, 0.4)',
+      clearanceLabel: '#fbcfe8'
+    } as const;
+
+    const elementFillColors = {
+      jack: '#38bdf8',
+      potentiometer: '#f472b6',
+      switch: '#facc15',
+      led: '#f87171',
+      label: '#f8fafc',
+      rectangle: '#4ade80',
+      oval: '#c084fc',
+      slot: '#fb923c',
+      triangle: '#22d3ee'
+    } as const;
+
+    const elementMountingHoles = computeElementMountingHoles(
+      panelModel.elements,
+      panelModel.elementHoleConfig
+    );
+
+    const clearanceLines = computeClearanceLines(
+      panelModel.clearance,
+      panelModel.dimensions.heightMm
+    );
+
+    const transform = computeCanvasTransform({
+      canvasSizePx: { x: widthPx, y: heightPx },
+      panelSizeMm: { x: panelModel.dimensions.widthMm, y: panelModel.dimensions.heightMm },
+      zoom: 1,
+      pan: { x: 0, y: 0 },
+      paddingPx: 0
+    });
+
+    drawPanelScene({
+      context,
+      transform,
+      panelSizeMm: { x: panelModel.dimensions.widthMm, y: panelModel.dimensions.heightMm },
+      elements: panelModel.elements,
+      mountingHoles,
+      elementMountingHoles,
+      mountingHolesSelected: false,
+      selectedElementIds: [],
+      showGrid: panelModel.options.showGrid,
+      showMountingHoles: panelModel.options.showMountingHoles,
+      gridSizeMm: panelModel.options.gridSizeMm,
+      palette: exportPalette,
+      elementFillColors,
+      elementStrokeColor: '#0f172a',
+      fontFamily: themeValues.font.body
+    });
+
+    return offscreen.toDataURL('image/png');
+  }, [mountingHoles, panelModel]);
+
   const handleSaveProject = React.useCallback(() => {
     const trimmedName = projectName.trim() || t.projects.defaultName;
     const saved = saveProject(trimmedName, panelModel);
@@ -236,19 +320,18 @@ export function useProjects({
   );
 
   const handleExportPng = React.useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) {
+    const url = buildPanelPngDataUrl();
+    if (!url) {
       setStatus(t.projects.messages.pngError, 'error');
       return;
     }
-    const url = canvas.toDataURL('image/png');
     const link = document.createElement('a');
     const baseName = (projectName || 'panel').trim().replace(/\s+/g, '-');
     link.download = `${baseName || 'panel'}.png`;
     link.href = url;
     link.click();
     setStatus(t.projects.messages.pngSuccess, 'success');
-  }, [canvasRef, projectName, setStatus, t.projects.messages]);
+  }, [buildPanelPngDataUrl, projectName, setStatus, t.projects.messages]);
 
   const handleExportSvg = React.useCallback(() => {
     const svg = buildPanelSvg(panelModel, mountingHoles, {
