@@ -28,6 +28,7 @@ interface PanelElementBase<
   id: string;
   type: TType;
   positionMm: Vector2;
+  mountingHolesEnabled?: boolean;
   rotationDeg?: number;
   mountingHoleRotationDeg?: number;
   properties: TProperties;
@@ -101,22 +102,41 @@ export interface ElementMountingHoleConfig {
   rotationDeg: number;
 }
 
+export interface ClearanceConfig {
+  topOffsetMm: number;
+  bottomOffsetMm: number;
+  minSpacingMm: number;
+}
+
 export interface PanelModel {
   dimensions: PanelDimensions;
   elements: PanelElement[];
   options: PanelOptions;
   mountingHoleConfig: MountingHoleConfig;
   elementHoleConfig: ElementMountingHoleConfig;
+  clearance: ClearanceConfig;
 }
 
-export type PanelModelInput = Omit<PanelModel, 'mountingHoleConfig' | 'elementHoleConfig'> & {
+export type PanelModelInput = Omit<
+  PanelModel,
+  'mountingHoleConfig' | 'elementHoleConfig' | 'clearance'
+> & {
   mountingHoleConfig?: MountingHoleConfig;
   elementHoleConfig?: ElementMountingHoleConfig;
+  clearance?: ClearanceConfig;
 };
 
 export function normalizePanelModel(model: PanelModelInput): PanelModel {
   const overrides = model.mountingHoleConfig ?? DEFAULT_MOUNTING_HOLE_CONFIG;
   const elementOverrides = model.elementHoleConfig ?? DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG;
+  const clearanceOverrides = model.clearance ?? DEFAULT_CLEARANCE_CONFIG;
+  const elementEnableDefault = elementOverrides.enabled ?? false;
+  const normalizedElements =
+    model.elements?.map((element) =>
+      typeof element.mountingHolesEnabled === 'boolean'
+        ? element
+        : { ...element, mountingHolesEnabled: elementEnableDefault }
+    ) ?? [];
   return {
     ...model,
     mountingHoleConfig: {
@@ -126,7 +146,15 @@ export function normalizePanelModel(model: PanelModelInput): PanelModel {
     elementHoleConfig: {
       ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
       ...elementOverrides
-    }
+    },
+    elements: normalizedElements,
+    clearance: clampClearanceConfig(
+      {
+        ...DEFAULT_CLEARANCE_CONFIG,
+        ...clearanceOverrides
+      },
+      model.dimensions.heightMm
+    )
   };
 }
 
@@ -172,12 +200,37 @@ export const DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG: ElementMountingHoleConfig = {
   rotationDeg: 0
 };
 
+export const DEFAULT_CLEARANCE_CONFIG: ClearanceConfig = {
+  topOffsetMm: 10,
+  bottomOffsetMm: 10,
+  minSpacingMm: 5
+};
+
+export function clampClearanceConfig(
+  config: ClearanceConfig,
+  panelHeightMm: number
+): ClearanceConfig {
+  const safeHeight = Math.max(panelHeightMm, 0);
+  const clampValue = (value: number, min: number, max: number) =>
+    Math.min(Math.max(value, min), max);
+  const safeMinSpacing = clampValue(config.minSpacingMm, 0, safeHeight);
+  const maxOffsetSum = Math.max(safeHeight - safeMinSpacing, 0);
+  const topOffsetMm = clampValue(config.topOffsetMm, 0, maxOffsetSum);
+  const maxBottom = Math.max(maxOffsetSum - topOffsetMm, 0);
+  const bottomOffsetMm = clampValue(config.bottomOffsetMm, 0, maxBottom);
+  return {
+    topOffsetMm,
+    bottomOffsetMm,
+    minSpacingMm: safeMinSpacing
+  };
+}
+
 export interface SerializedPanel {
   version: number;
   model: PanelModel;
 }
 
-export const SERIALIZATION_VERSION = 3;
+export const SERIALIZATION_VERSION = 4;
 
 function isCircularElementProperties(
   properties: PanelElement['properties']

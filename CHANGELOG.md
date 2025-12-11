@@ -2,6 +2,12 @@
 
 # Changelog
 
+## 0.3.0 - 2025-12-11
+
+- Added draggable clearance guide lines with live distance labels to top/bottom edges.
+- Mounting holes are now enabled per-element instead of globally, keeping other elements untouched.
+- General polish and version bump.
+
 ## 0.2.0 - 2024-12-29
 
 - Added automatic “mounting holes” controls inside the element properties panel with snap-aware rotation slider.

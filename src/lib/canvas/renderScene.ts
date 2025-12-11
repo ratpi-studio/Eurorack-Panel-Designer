@@ -1,8 +1,10 @@
 import {
   PanelElementType,
   type MountingHole,
-  type PanelElement
+  type PanelElement,
+  type Vector2
 } from '@lib/panelTypes';
+import { type ClearanceLines } from '@lib/clearance';
 
 import {
   getLabelSizeMm,
@@ -21,6 +23,8 @@ export interface PanelCanvasPalette {
   mountingHoleFill: string;
   mountingHoleStroke: string;
   selection: string;
+  clearanceLine: string;
+  clearanceLabel: string;
 }
 
 interface SelectionAnimationState {
@@ -31,6 +35,7 @@ interface SelectionAnimationState {
 interface PanelSceneDrawingOptions {
   context: CanvasRenderingContext2D;
   transform: CanvasTransform;
+  panelSizeMm: Vector2;
   elements: PanelElement[];
   mountingHoles: MountingHole[];
   elementMountingHoles?: MountingHole[];
@@ -45,6 +50,7 @@ interface PanelSceneDrawingOptions {
   fontFamily: string;
   selectionAnimation?: SelectionAnimationState;
   ghostElement?: PanelElement | null;
+  clearanceLines?: ClearanceLines | null;
 }
 
 export function drawPanelScene({
@@ -63,12 +69,18 @@ export function drawPanelScene({
   elementStrokeColor,
   fontFamily,
   selectionAnimation,
-  ghostElement
+  ghostElement,
+  clearanceLines,
+  panelSizeMm
 }: PanelSceneDrawingOptions) {
   drawPanelArea(context, transform, palette);
 
   if (showGrid) {
     drawGrid(context, transform, gridSizeMm, palette);
+  }
+
+  if (clearanceLines) {
+    drawClearanceLines(context, transform, panelSizeMm, clearanceLines, palette, fontFamily);
   }
 
   if (showMountingHoles) {
@@ -122,6 +134,45 @@ function drawPanelArea(
   );
   context.fill();
   context.stroke();
+  context.restore();
+}
+
+function drawClearanceLines(
+  context: CanvasRenderingContext2D,
+  transform: CanvasTransform,
+  panelSizeMm: Vector2,
+  clearanceLines: ClearanceLines,
+  palette: PanelCanvasPalette,
+  fontFamily: string
+) {
+  context.save();
+  context.strokeStyle = palette.clearanceLine;
+  context.lineWidth = 2;
+  context.setLineDash([8, 6]);
+
+  const drawLine = (yMm: number, labelOffset: number, distanceMm: number) => {
+    const start = projectPanelPoint({ x: 0, y: yMm }, transform);
+    const end = projectPanelPoint({ x: panelSizeMm.x, y: yMm }, transform);
+    context.beginPath();
+    context.moveTo(start.x, start.y);
+    context.lineTo(end.x, end.y);
+    context.stroke();
+
+    context.save();
+    context.setLineDash([]);
+    context.font = `10px ${fontFamily}`;
+    context.fillStyle = palette.clearanceLabel;
+    context.textBaseline = 'bottom';
+    const distanceLabel = `${distanceMm.toFixed(1)} mm`;
+    context.fillText(`clearance · ${distanceLabel}`, start.x + 8, start.y - labelOffset);
+    context.restore();
+  };
+
+  const topDistance = Math.max(clearanceLines.topY, 0);
+  const bottomDistance = Math.max(panelSizeMm.y - clearanceLines.bottomY, 0);
+
+  drawLine(clearanceLines.topY, 2, topDistance);
+  drawLine(clearanceLines.bottomY, -12, bottomDistance);
   context.restore();
 }
 

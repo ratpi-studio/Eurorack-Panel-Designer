@@ -16,6 +16,7 @@ import {
   type PanelOptions,
   type Vector2
 } from '@lib/panelTypes';
+import { type ClearanceLines } from '@lib/clearance';
 import { createPanelElement } from '@lib/elements';
 import { snapPointToGrid } from '@lib/grid';
 import { themeValues } from '@styles/theme.css';
@@ -65,10 +66,13 @@ const canvasPalette: ExtendedCanvasPalette = {
   mountingHoleFill: '#0f172a',
   mountingHoleStroke: '#94a3b8',
   selection: '#ffffff',
-  text: themeValues.color.textSecondary
+  text: themeValues.color.textSecondary,
+  clearanceLine: 'rgba(244, 114, 182, 0.4)',
+  clearanceLabel: '#fbcfe8'
 };
 
 const MOUNTING_HOLE_HIT_PADDING_MM = 1;
+const CLEARANCE_LINE_HIT_MM = 3;
 
 function isPointInMountingHole(point: Vector2, hole: MountingHole, paddingMm = 0): boolean {
   if (hole.shape === 'slot' && hole.slotLengthMm) {
@@ -101,6 +105,19 @@ function findMountingHoleAtPoint(point: Vector2, holes: MountingHole[]): Mountin
   return null;
 }
 
+function findClearanceLineAtPoint(
+  point: Vector2,
+  lines: ClearanceLines
+): 'top' | 'bottom' | null {
+  const topDist = Math.abs(point.y - lines.topY);
+  const bottomDist = Math.abs(point.y - lines.bottomY);
+  const nearest = Math.min(topDist, bottomDist);
+  if (nearest > CLEARANCE_LINE_HIT_MM) {
+    return null;
+  }
+  return topDist <= bottomDist ? 'top' : 'bottom';
+}
+
 interface PanelCanvasProps {
   canvasRef?: React.RefObject<HTMLCanvasElement | null>;
   model: PanelModel;
@@ -131,6 +148,10 @@ interface PanelCanvasProps {
   selectedElementIds: string[];
   draftProperties: DraftPropertiesState;
   onMoveElements: (updates: { id: string; positionMm: Vector2 }[]) => void;
+  clearanceLines: ClearanceLines;
+  onClearanceLineChange: (line: 'top' | 'bottom', positionMm: number) => void;
+  onClearanceLineDragStart: () => void;
+  onClearanceLineDragEnd: () => void;
 }
 
 export function PanelCanvas({
@@ -159,16 +180,20 @@ export function PanelCanvas({
   onClearMountingHoleSelection,
   displayOptions,
   selectedElementIds,
-  draftProperties
+  draftProperties,
+  clearanceLines,
+  onClearanceLineChange,
+  onClearanceLineDragStart,
+  onClearanceLineDragEnd
 }: PanelCanvasProps) {
   const internalCanvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const canvasRef = forwardedCanvasRef ?? internalCanvasRef;
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const panRef = React.useRef<Vector2>(pan);
   const pointerStartRef = React.useRef<Vector2 | null>(null);
-  const pointerModeRef = React.useRef<
-    'idle' | 'pan' | 'click' | 'move' | 'marquee'
-  >('idle');
+  const pointerModeRef = React.useRef<'idle' | 'pan' | 'click' | 'move' | 'marquee' | 'clearance'>(
+    'idle'
+  );
   const panStartRef = React.useRef<Vector2 | null>(null);
   const moveStateRef = React.useRef<MoveState | null>(null);
   const [isPanning, setIsPanning] = React.useState(false);
@@ -249,13 +274,7 @@ export function PanelCanvas({
         pan,
         paddingPx: CANVAS_PADDING_PX
       }),
-    [
-      canvasSize,
-      model.dimensions.heightMm,
-      model.dimensions.widthMm,
-      pan,
-      zoom
-    ]
+    [canvasSize, model.dimensions.heightMm, model.dimensions.widthMm, pan, zoom]
   );
 
   const canvasStyle = React.useMemo(
@@ -267,6 +286,7 @@ export function PanelCanvas({
     }),
     [canvasSize.y]
   );
+
   const selectionOverlay = React.useMemo(() => {
     if (!selectionRect) {
       return null;
@@ -338,8 +358,7 @@ export function PanelCanvas({
     const renderFrame = (timeMs: number) => {
       const width = canvasSize.x;
       const height = canvasSize.y;
-      const pixelRatio =
-        typeof window !== 'undefined' ? window.devicePixelRatio : 1;
+      const pixelRatio = typeof window !== 'undefined' ? window.devicePixelRatio : 1;
       const scaledWidth = Math.round(width * pixelRatio);
       const scaledHeight = Math.round(height * pixelRatio);
 
@@ -358,19 +377,22 @@ export function PanelCanvas({
       let selectionAnimation: { dashOffset: number; pulseScale: number } | undefined;
       if (selectedElementIds.length > 0) {
         const t = timeMs / 1000;
-        const dashSpeed = 40; // dash movement speed in px/s (approx)
-        const patternLength = 12; // 6 + 6 from setLineDash
+        const dashSpeed = 40;
+        const patternLength = 12;
         const dashOffset = -((t * dashSpeed) % patternLength);
-        const pulseSpeed = 0.6; // Hz
+        const pulseSpeed = 0.6;
         const pulseAmplitude = 0.15;
-        const pulseScale =
-          1 + pulseAmplitude * Math.sin(2 * Math.PI * pulseSpeed * t);
+        const pulseScale = 1 + pulseAmplitude * Math.sin(2 * Math.PI * pulseSpeed * t);
         selectionAnimation = { dashOffset, pulseScale };
       }
 
       drawPanelScene({
         context,
         transform,
+        panelSizeMm: {
+          x: model.dimensions.widthMm,
+          y: model.dimensions.heightMm
+        },
         elements: model.elements,
         mountingHoles,
         elementMountingHoles,
@@ -384,7 +406,8 @@ export function PanelCanvas({
         elementStrokeColor,
         fontFamily: themeValues.font.body,
         selectionAnimation,
-        ghostElement
+        ghostElement,
+        clearanceLines
       });
 
       if (typeof window !== 'undefined') {
@@ -415,7 +438,8 @@ export function PanelCanvas({
     zoom,
     canvasSize.x,
     canvasSize.y,
-    ghostElement
+    ghostElement,
+    clearanceLines
   ]);
 
   const handleWheel = React.useCallback(
@@ -424,8 +448,7 @@ export function PanelCanvas({
         event.preventDefault();
       }
       (event as WheelEvent).stopImmediatePropagation?.();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (event as any).stopPropagation?.();
+      (event as unknown as { stopPropagation?: () => void }).stopPropagation?.();
 
       const canvas = canvasRef.current;
       if (!canvas) {
@@ -505,9 +528,10 @@ export function PanelCanvas({
       const element = findElementAtPoint(pointPanel, model.elements);
       const hole =
         displayOptions.showMountingHoles && findMountingHoleAtPoint(pointPanel, mountingHoles);
-      setIsHoveringInteractive(Boolean(element || hole));
+      const clearanceHit = findClearanceLineAtPoint(pointPanel, clearanceLines);
+      setIsHoveringInteractive(Boolean(element || hole || clearanceHit));
     },
-    [displayOptions.showMountingHoles, model.elements, mountingHoles]
+    [clearanceLines, displayOptions.showMountingHoles, model.elements, mountingHoles]
   );
 
   const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -521,10 +545,7 @@ export function PanelCanvas({
     canvas.setPointerCapture(event.pointerId);
 
     const additiveModifier = event.shiftKey || event.metaKey || event.ctrlKey;
-    const shouldPan =
-      event.button === 1 ||
-      event.button === 2 ||
-      event.altKey;
+    const shouldPan = event.button === 1 || event.button === 2 || event.altKey;
     pointerModeRef.current = shouldPan ? 'pan' : 'click';
     pointerStartRef.current = { x: event.clientX, y: event.clientY };
     panStartRef.current = shouldPan ? { ...panRef.current } : null;
@@ -593,6 +614,14 @@ export function PanelCanvas({
       return;
     }
 
+    const clearanceHit = findClearanceLineAtPoint(pointPanel, clearanceLines);
+    if (clearanceHit) {
+      pointerModeRef.current = 'clearance';
+      onClearanceLineDragStart();
+      onClearanceLineChange(clearanceHit, pointPanel.y);
+      return;
+    }
+
     if (placementType) {
       const snappedPoint = maybeSnap(pointPanel);
       onClearMountingHoleSelection();
@@ -640,6 +669,16 @@ export function PanelCanvas({
     };
     const pointPanel = screenPointToPanel(pointPx, transform);
     updateHoverState(pointPanel);
+
+    if (pointerModeRef.current === 'clearance') {
+      if (!pointPanel) {
+        return;
+      }
+      const activeLine = findClearanceLineAtPoint(pointPanel, clearanceLines) ?? 'top';
+      onClearanceLineChange(activeLine, pointPanel.y);
+      setPointerPanelPos(pointPanel);
+      return;
+    }
 
     if (pointerModeRef.current === 'move') {
       if (!pointPanel || !moveStateRef.current) {
@@ -758,6 +797,10 @@ export function PanelCanvas({
       }
     }
 
+    if (pointerModeRef.current === 'clearance') {
+      onClearanceLineDragEnd();
+    }
+
     pointerModeRef.current = 'idle';
     pointerStartRef.current = null;
     panStartRef.current = null;
@@ -804,13 +847,13 @@ export function PanelCanvas({
       <canvas
         ref={canvasRef}
         className={canvasClassName}
-      role="presentation"
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerLeave={handlePointerLeave}
-      onContextMenu={handleContextMenu}
-    />
+        role="presentation"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerLeave}
+        onContextMenu={handleContextMenu}
+      />
       {selectionOverlay ? (
         <div
           className={styles.selectionRect}
