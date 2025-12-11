@@ -5,12 +5,7 @@ import { vars } from '@styles/theme.css';
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: vars.spacing.md,
-  padding: vars.spacing.md,
-  borderRadius: '12px',
-  border: `1px solid ${vars.color.border}`,
-  backgroundColor: vars.color.surface,
-  boxShadow: '0 12px 30px rgba(2, 6, 23, 0.35)'
+  gap: vars.spacing.sm
 });
 
 export const header = style({
@@ -20,19 +15,25 @@ export const header = style({
   gap: vars.spacing.sm
 });
 
+export const title = style({
+  fontSize: '13px',
+  letterSpacing: '0.04em',
+  textTransform: 'uppercase',
+  color: vars.color.textSecondary
+});
+
 export const actions = style({
   display: 'flex',
-  alignItems: 'center',
   gap: vars.spacing.xs
 });
 
-export const importButton = style({
+export const secondary = style({
   border: `1px solid ${vars.color.border}`,
   backgroundColor: vars.color.surface,
   color: vars.color.textPrimary,
   fontWeight: 600,
   borderRadius: '8px',
-  padding: `8px ${vars.spacing.sm}`,
+  padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
   cursor: 'pointer',
   selectors: {
     '&:hover': {
@@ -41,25 +42,13 @@ export const importButton = style({
   }
 });
 
-export const title = style({
-  fontSize: '14px',
-  letterSpacing: '0.04em',
-  textTransform: 'uppercase',
-  color: vars.color.textSecondary
-});
-
-export const subtitle = style({
-  fontSize: '13px',
-  color: vars.color.textPrimary
-});
-
-export const removeButton = style({
+export const danger = style({
   border: 'none',
   backgroundColor: '#ef4444',
   color: '#0f172a',
   fontWeight: 600,
   borderRadius: '8px',
-  padding: `8px ${vars.spacing.sm}`,
+  padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
   cursor: 'pointer',
   selectors: {
     '&:hover': {
@@ -79,13 +68,6 @@ export const field = style({
   flexDirection: 'column',
   gap: '6px'
 });
-
-export const fieldWide = style([
-  field,
-  {
-    gridColumn: 'span 2'
-  }
-]);
 
 export const label = style({
   fontSize: '12px',
@@ -112,16 +94,7 @@ export const input = style({
   }
 });
 
-export const empty = style({
-  padding: vars.spacing.md,
-  borderRadius: '12px',
-  border: `1px dashed ${vars.color.border}`,
-  color: vars.color.textSecondary,
-  textAlign: 'center'
+export const slider = style({
+  width: '100%'
 });
 
-export const selectionSummary = style({
-  fontSize: '13px',
-  color: vars.color.textPrimary,
-  lineHeight: 1.5
-});

@@ -5,6 +5,7 @@ import {
   type Vector2
 } from '@lib/panelTypes';
 import { type ClearanceLines } from '@lib/clearance';
+import type { ReferenceImage } from '@lib/referenceImage';
 
 import {
   getLabelSizeMm,
@@ -37,6 +38,7 @@ interface PanelSceneDrawingOptions {
   transform: CanvasTransform;
   panelSizeMm: Vector2;
   elements: PanelElement[];
+  referenceImage?: { image: HTMLImageElement; info: ReferenceImage; selected: boolean } | null;
   mountingHoles: MountingHole[];
   elementMountingHoles?: MountingHole[];
   mountingHolesSelected?: boolean;
@@ -70,10 +72,15 @@ export function drawPanelScene({
   fontFamily,
   selectionAnimation,
   ghostElement,
+  referenceImage,
   clearanceLines,
   panelSizeMm
 }: PanelSceneDrawingOptions) {
   drawPanelArea(context, transform, palette);
+
+  if (referenceImage && referenceImage.image.complete) {
+    drawReferenceImage(context, transform, referenceImage.info, referenceImage.image, palette, referenceImage.selected);
+  }
 
   if (showGrid) {
     drawGrid(context, transform, gridSizeMm, palette);
@@ -173,6 +180,35 @@ function drawClearanceLines(
 
   drawLine(clearanceLines.topY, 2, topDistance);
   drawLine(clearanceLines.bottomY, -12, bottomDistance);
+  context.restore();
+}
+
+function drawReferenceImage(
+  context: CanvasRenderingContext2D,
+  transform: CanvasTransform,
+  info: ReferenceImage,
+  image: HTMLImageElement,
+  palette: PanelCanvasPalette,
+  selected: boolean
+) {
+  const centerPx = projectPanelPoint(info.positionMm, transform);
+  const halfWidthPx = (info.widthMm / 2) * transform.scale;
+  const halfHeightPx = (info.heightMm / 2) * transform.scale;
+
+  context.save();
+  context.translate(centerPx.x, centerPx.y);
+  const rotation = ((info.rotationDeg ?? 0) * Math.PI) / 180;
+  if (rotation !== 0) {
+    context.rotate(rotation);
+  }
+  context.globalAlpha = Math.min(Math.max(info.opacity, 0), 1);
+  context.drawImage(image, -halfWidthPx, -halfHeightPx, halfWidthPx * 2, halfHeightPx * 2);
+  if (selected) {
+    context.strokeStyle = palette.selection;
+    context.lineWidth = 1.5;
+    context.setLineDash([6, 4]);
+    context.strokeRect(-halfWidthPx, -halfHeightPx, halfWidthPx * 2, halfHeightPx * 2);
+  }
   context.restore();
 }
 

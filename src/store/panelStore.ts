@@ -18,6 +18,7 @@ import {
   type Vector2
 } from '@lib/panelTypes';
 import { createPanelDimensions } from '@lib/units';
+import type { ReferenceImage } from '@lib/referenceImage';
 
 const DEFAULT_PANEL_WIDTH_CM = 10;
 
@@ -29,6 +30,8 @@ type PanelState = {
   model: PanelModel;
   selectedElementId: string | null;
   selectedElementIds: string[];
+  referenceImage: ReferenceImage | null;
+  referenceImageSelected: boolean;
   placementType: PanelElementType | null;
   draftProperties: DraftPropertiesState;
 };
@@ -56,6 +59,9 @@ type PanelActions = {
   updateElement: (id: string, updater: (el: PanelElement) => PanelElement) => void;
   removeElement: (id: string) => void;
   removeElements: (ids: string[]) => void;
+  setReferenceImage: (image: ReferenceImage | null) => void;
+  updateReferenceImage: (updates: Partial<ReferenceImage>) => void;
+  selectReferenceImage: (selected: boolean) => void;
   reset: () => void;
 };
 
@@ -75,6 +81,8 @@ export const usePanelStore = create<PanelState & PanelActions>()(
       model: createInitialModel(),
       selectedElementId: null,
       selectedElementIds: [],
+      referenceImage: null,
+      referenceImageSelected: false,
       placementType: null,
       draftProperties: {},
       setModel: (model) => set({ model: normalizePanelModel(model) }),
@@ -82,14 +90,16 @@ export const usePanelStore = create<PanelState & PanelActions>()(
       setSelectedElement: (id) =>
         set(() => ({
           selectedElementId: id,
-          selectedElementIds: id ? [id] : []
+          selectedElementIds: id ? [id] : [],
+          referenceImageSelected: false
         })),
       setSelectedElementIds: (ids) =>
         set(() => {
           const unique = Array.from(new Set(ids.filter(Boolean)));
           return {
             selectedElementIds: unique,
-            selectedElementId: unique.length ? unique[unique.length - 1] : null
+            selectedElementId: unique.length ? unique[unique.length - 1] : null,
+            referenceImageSelected: false
           };
         }),
       addSelectedElements: (ids) =>
@@ -107,7 +117,8 @@ export const usePanelStore = create<PanelState & PanelActions>()(
           });
           return {
             selectedElementIds: nextIds,
-            selectedElementId: lastAdded ?? state.selectedElementId
+            selectedElementId: lastAdded ?? state.selectedElementId,
+            referenceImageSelected: false
           };
         }),
       toggleElementSelection: (id) =>
@@ -119,16 +130,19 @@ export const usePanelStore = create<PanelState & PanelActions>()(
           if (!exists) {
             return {
               selectedElementIds: [...state.selectedElementIds, id],
-              selectedElementId: id
+              selectedElementId: id,
+              referenceImageSelected: false
             };
           }
           const nextIds = state.selectedElementIds.filter((value) => value !== id);
           return {
             selectedElementIds: nextIds,
-            selectedElementId: nextIds.length ? nextIds[nextIds.length - 1] : null
+            selectedElementId: nextIds.length ? nextIds[nextIds.length - 1] : null,
+            referenceImageSelected: false
           };
         }),
-      clearSelection: () => set({ selectedElementId: null, selectedElementIds: [] }),
+      clearSelection: () =>
+        set({ selectedElementId: null, selectedElementIds: [], referenceImageSelected: false }),
       setDraftProperties: (type, properties) =>
         set((state) => {
           const sanitized = sanitizePropertiesForType(type, properties);
@@ -216,17 +230,41 @@ export const usePanelStore = create<PanelState & PanelActions>()(
             selectedElementId: nextSelection.length ? nextSelection[nextSelection.length - 1] : null
           };
         }),
+      setReferenceImage: (image) =>
+        set(() => ({
+          referenceImage: image,
+          referenceImageSelected: Boolean(image),
+          selectedElementId: null,
+          selectedElementIds: []
+        })),
+      updateReferenceImage: (updates) =>
+        set((state) => {
+          if (!state.referenceImage) {
+            return state;
+          }
+          return {
+            referenceImage: { ...state.referenceImage, ...updates }
+          };
+        }),
+      selectReferenceImage: (selected) =>
+        set(() => ({
+          referenceImageSelected: selected,
+          selectedElementId: selected ? null : null,
+          selectedElementIds: selected ? [] : []
+        })),
       reset: () =>
         set({
           model: createInitialModel(),
           selectedElementId: null,
           selectedElementIds: [],
+          referenceImage: null,
+          referenceImageSelected: false,
           placementType: null
         })
     }),
     {
       name: 'panel-designer-store',
-      version: 4,
+      version: 5,
       migrate: (state, version) => {
         const typedState = state as (PanelState & PanelActions) | undefined;
         if (!typedState) {
@@ -252,6 +290,16 @@ export const usePanelStore = create<PanelState & PanelActions>()(
         if (version && version < 4) {
           return {
             ...typedState,
+            model: typedState.model
+              ? normalizePanelModel(typedState.model as PanelModelInput)
+              : createInitialModel()
+          };
+        }
+        if (version && version < 5) {
+          return {
+            ...typedState,
+            referenceImage: null,
+            referenceImageSelected: false,
             model: typedState.model
               ? normalizePanelModel(typedState.model as PanelModelInput)
               : createInitialModel()
