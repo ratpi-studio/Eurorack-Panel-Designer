@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 
 import { createPanelElement } from '@lib/elements';
 import {
+  DEFAULT_CLEARANCE_CONFIG,
   DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   DEFAULT_PANEL_OPTIONS,
@@ -64,7 +65,8 @@ const createInitialModel = (): PanelModel =>
     elements: [],
     options: { ...DEFAULT_PANEL_OPTIONS },
     mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG },
-    elementHoleConfig: { ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG }
+    elementHoleConfig: { ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG },
+    clearance: { ...DEFAULT_CLEARANCE_CONFIG }
   });
 
 export const usePanelStore = create<PanelState & PanelActions>()(
@@ -224,7 +226,7 @@ export const usePanelStore = create<PanelState & PanelActions>()(
     }),
     {
       name: 'panel-designer-store',
-      version: 3,
+      version: 4,
       migrate: (state, version) => {
         const typedState = state as (PanelState & PanelActions) | undefined;
         if (!typedState) {
@@ -240,6 +242,14 @@ export const usePanelStore = create<PanelState & PanelActions>()(
           };
         }
         if (version && version < 3) {
+          return {
+            ...typedState,
+            model: typedState.model
+              ? normalizePanelModel(typedState.model as PanelModelInput)
+              : createInitialModel()
+          };
+        }
+        if (version && version < 4) {
           return {
             ...typedState,
             model: typedState.model

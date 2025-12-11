@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  DEFAULT_CLEARANCE_CONFIG,
   DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   DEFAULT_PANEL_OPTIONS,
@@ -47,7 +48,8 @@ const sampleModel: PanelModel = {
   elements: [],
   options: { ...DEFAULT_PANEL_OPTIONS },
   mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG },
-  elementHoleConfig: { ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG }
+  elementHoleConfig: { ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG },
+  clearance: { ...DEFAULT_CLEARANCE_CONFIG }
 };
 
 describe('storage helpers', () => {

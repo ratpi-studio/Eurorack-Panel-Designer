@@ -9,6 +9,7 @@ interface ElementMountingHolesProps {
   config: ElementMountingHoleConfig;
   onChangeConfig: (updates: Partial<ElementMountingHoleConfig>) => void;
   onChangeElementRotation: (rotationDeg: number) => void;
+  onToggleElementEnabled: (enabled: boolean) => void;
   snapEnabled: boolean;
   element: PanelElement | null;
 }
@@ -17,12 +18,18 @@ export function ElementMountingHoles({
   config,
   onChangeConfig,
   onChangeElementRotation,
+  onToggleElementEnabled,
   snapEnabled,
   element
 }: ElementMountingHolesProps) {
   const t = useI18n();
   const rotationStep = snapEnabled ? 45 : 1;
   const sliderValue = element?.mountingHoleRotationDeg ?? config.rotationDeg;
+  const enabled = element?.mountingHolesEnabled === true;
+
+  if (!element) {
+    return null;
+  }
 
   return (
     <div className={styles.root}>
@@ -30,12 +37,12 @@ export function ElementMountingHoles({
         <input
           type="checkbox"
           className={styles.checkbox}
-          checked={config.enabled}
-          onChange={(event) => onChangeConfig({ enabled: event.target.checked })}
+          checked={enabled}
+          onChange={(event) => onToggleElementEnabled(event.target.checked)}
         />
         <span className={styles.label}>{t.elementHoles.enableLabel}</span>
       </label>
-      {config.enabled ? (
+      {enabled ? (
         <>
           <p className={styles.description}>{t.elementHoles.description}</p>
           <div className={styles.grid}>
@@ -102,26 +109,24 @@ export function ElementMountingHoles({
               />
             </label>
           </div>
-          {element ? (
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>
-                {t.elementHoles.rotationLabel}
-                <span className={styles.rotationValue}>{sliderValue.toFixed(0)}°</span>
-              </span>
-              <input
-                className={styles.slider}
-                type="range"
-                min={-360}
-                max={360}
-                step={rotationStep}
-                value={sliderValue}
-                onChange={(event) => {
-                  const value = Number.parseFloat(event.target.value);
-                  onChangeElementRotation(Number.isFinite(value) ? value : 0);
-                }}
-              />
-            </label>
-          ) : null}
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>
+              {t.elementHoles.rotationLabel}
+              <span className={styles.rotationValue}>{sliderValue.toFixed(0)}°</span>
+            </span>
+            <input
+              className={styles.slider}
+              type="range"
+              min={-360}
+              max={360}
+              step={rotationStep}
+              value={sliderValue}
+              onChange={(event) => {
+                const value = Number.parseFloat(event.target.value);
+                onChangeElementRotation(Number.isFinite(value) ? value : 0);
+              }}
+            />
+          </label>
         </>
       ) : null}
     </div>

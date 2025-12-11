@@ -6,6 +6,14 @@ export interface ChangelogEntry {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: '0.3.0',
+    date: '2025-12-11',
+    highlights: [
+      'Added draggable clearance guide lines with distance labels to the nearest edge.',
+      'Mounting holes can now be toggled per element rather than globally.'
+    ]
+  },
+  {
     version: '0.1.1',
     date: '2024-12-29',
     highlights: [
@@ -21,4 +29,3 @@ export const changelogEntries: ChangelogEntry[] = [
     highlights: ['Initial public release.']
   }
 ];
-

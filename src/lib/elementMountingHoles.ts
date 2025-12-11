@@ -30,7 +30,7 @@ export function computeElementMountingHoles(
   elements: PanelElement[],
   config: ElementMountingHoleConfig
 ): MountingHole[] {
-  if (!config.enabled || config.count <= 0 || config.diameterMm <= 0) {
+  if (config.count <= 0 || config.diameterMm <= 0) {
     return [];
   }
 
@@ -39,6 +39,10 @@ export function computeElementMountingHoles(
   const holeRadius = config.diameterMm / 2;
 
   elements.forEach((element) => {
+    const enabled = element.mountingHolesEnabled === true;
+    if (!enabled) {
+      return;
+    }
     const extent = getElementExtent(element);
     if (!extent) {
       return;

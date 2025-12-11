@@ -182,7 +182,7 @@ export const enUS: Translations = {
   },
   elementHoles: {
     title: 'Element screw holes',
-    description: 'Automatically add screw holes around each new element.',
+    description: 'Automatically add screw holes around the selected element.',
     enableLabel: 'Mounting holes',
     countLabel: 'Hole count',
     diameterLabel: 'Hole diameter (mm)',
