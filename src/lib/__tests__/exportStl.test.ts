@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { buildPanelStl } from '@lib/exportStl';
 import { generateMountingHoles } from '@lib/mountingHoles';
 import {
+  DEFAULT_CLEARANCE_CONFIG,
   DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   PanelElementType,
@@ -21,7 +22,8 @@ function createEmptyPanel(): PanelModel {
       gridSizeMm: 5
     },
     mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG },
-    elementHoleConfig: { ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG }
+    elementHoleConfig: { ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG },
+    clearance: { ...DEFAULT_CLEARANCE_CONFIG }
   };
 }
 

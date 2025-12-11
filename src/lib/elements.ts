@@ -76,6 +76,7 @@ export function createPanelElement(
         id: generateElementId(),
         type,
         positionMm,
+        mountingHolesEnabled: false,
         properties: { ...DEFAULT_CIRCULAR }
       };
     case PanelElementType.Potentiometer:
@@ -83,6 +84,7 @@ export function createPanelElement(
         id: generateElementId(),
         type,
         positionMm,
+        mountingHolesEnabled: false,
         properties: { ...DEFAULT_POTENTIOMETER }
       };
     case PanelElementType.Switch:
@@ -90,6 +92,7 @@ export function createPanelElement(
         id: generateElementId(),
         type,
         positionMm,
+        mountingHolesEnabled: false,
         properties: { ...DEFAULT_SWITCH }
       };
     case PanelElementType.Rectangle:
@@ -97,6 +100,7 @@ export function createPanelElement(
         id: generateElementId(),
         type,
         positionMm,
+        mountingHolesEnabled: false,
         properties: { ...DEFAULT_RECTANGLE }
       };
     case PanelElementType.Oval:
@@ -104,6 +108,7 @@ export function createPanelElement(
         id: generateElementId(),
         type,
         positionMm,
+        mountingHolesEnabled: false,
         properties: { ...DEFAULT_OVAL }
       };
     case PanelElementType.Slot:
@@ -111,6 +116,7 @@ export function createPanelElement(
         id: generateElementId(),
         type,
         positionMm,
+        mountingHolesEnabled: false,
         properties: { ...DEFAULT_SLOT }
       };
     case PanelElementType.Triangle:
@@ -118,6 +124,7 @@ export function createPanelElement(
         id: generateElementId(),
         type,
         positionMm,
+        mountingHolesEnabled: false,
         properties: { ...DEFAULT_TRIANGLE }
       };
     case PanelElementType.Led:
@@ -125,6 +132,7 @@ export function createPanelElement(
         id: generateElementId(),
         type,
         positionMm,
+        mountingHolesEnabled: false,
         properties: { ...DEFAULT_LED }
       };
     case PanelElementType.Label:
@@ -133,6 +141,7 @@ export function createPanelElement(
         id: generateElementId(),
         type: PanelElementType.Label,
         positionMm,
+        mountingHolesEnabled: false,
         properties: { ...DEFAULT_LABEL }
       };
   }

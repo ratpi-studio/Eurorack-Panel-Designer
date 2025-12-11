@@ -4,6 +4,7 @@ import { useI18n } from '@i18n/I18nContext';
 import { buildKicadEdgeCutsSvg, buildKicadPcbFile } from '@lib/exportKicad';
 import { buildPanelSvg } from '@lib/exportSvg';
 import {
+  DEFAULT_CLEARANCE_CONFIG,
   DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   DEFAULT_PANEL_OPTIONS,
@@ -367,7 +368,8 @@ export function useProjects({
       elements: [],
       options: { ...DEFAULT_PANEL_OPTIONS },
       mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG },
-      elementHoleConfig: { ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG }
+      elementHoleConfig: { ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG },
+      clearance: { ...DEFAULT_CLEARANCE_CONFIG }
     };
     setModel(resetModel);
     clearHistory();

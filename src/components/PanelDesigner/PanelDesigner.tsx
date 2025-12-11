@@ -23,6 +23,7 @@ import {
 import { createPanelDimensions, hpToMm, mmToCm } from '@lib/units';
 import { changelogEntries } from '@lib/changelog';
 import { computeElementMountingHoles } from '@lib/elementMountingHoles';
+import { computeClearanceLines, applyClearanceLinePosition } from '@lib/clearance';
 import { type ExportFormat } from '@lib/exportPreferences';
 import { usePanelStore } from '@store/panelStore';
 import { usePanelHistory } from '@store/usePanelHistory';
@@ -154,6 +155,11 @@ export function PanelDesigner() {
     [panelModel.elements, panelModel.elementHoleConfig]
   );
 
+  const clearanceLines = React.useMemo(
+    () => computeClearanceLines(panelModel.clearance, panelModel.dimensions.heightMm),
+    [panelModel.clearance, panelModel.dimensions.heightMm]
+  );
+
   const handleSetWidthFromMm = React.useCallback(
     (widthMm: number) => {
       updateModel((prev) => ({
@@ -263,6 +269,8 @@ export function PanelDesigner() {
 
   const projectNameBeforeEditRef = React.useRef(projectName);
   const projectNameInputRef = React.useRef<HTMLInputElement | null>(null);
+  const isClearanceDragActiveRef = React.useRef(false);
+  const clearanceHistoryPushedRef = React.useRef(false);
   const [isEditingProjectName, setIsEditingProjectName] = React.useState(false);
 
   const resolvedProjectName = React.useMemo(() => {
@@ -590,6 +598,40 @@ const handleSelectedElementHoleRotationChange = React.useCallback(
     [updateModel]
   );
 
+  const handleClearanceLineChange = React.useCallback(
+    (line: 'top' | 'bottom', positionMm: number) => {
+      updateModel(
+        (prev) => ({
+          ...prev,
+          clearance: applyClearanceLinePosition(
+            prev.clearance,
+            prev.dimensions.heightMm,
+            line,
+            positionMm
+          )
+        }),
+        {
+          skipHistory: isClearanceDragActiveRef.current && clearanceHistoryPushedRef.current
+        }
+      );
+
+      if (isClearanceDragActiveRef.current && !clearanceHistoryPushedRef.current) {
+        clearanceHistoryPushedRef.current = true;
+      }
+    },
+    [updateModel]
+  );
+
+  const handleClearanceDragStart = React.useCallback(() => {
+    isClearanceDragActiveRef.current = true;
+    clearanceHistoryPushedRef.current = false;
+  }, []);
+
+  const handleClearanceDragEnd = React.useCallback(() => {
+    isClearanceDragActiveRef.current = false;
+    clearanceHistoryPushedRef.current = false;
+  }, []);
+
   const openConfirmDialog = React.useCallback((message: string, onConfirm: () => void) => {
     setConfirmDialog({ message, onConfirm });
   }, []);
@@ -766,6 +808,10 @@ const handleSelectedElementHoleRotationChange = React.useCallback(
             displayOptions={panelModel.options}
             selectedElementIds={selectedElementIds}
             draftProperties={draftProperties}
+            clearanceLines={clearanceLines}
+            onClearanceLineChange={handleClearanceLineChange}
+            onClearanceLineDragStart={handleClearanceDragStart}
+            onClearanceLineDragEnd={handleClearanceDragEnd}
           />
           <div className={styles.shortcuts}>
             <span className={styles.key}>{t.shortcuts.shift}</span>
@@ -1048,6 +1094,12 @@ const handleSelectedElementHoleRotationChange = React.useCallback(
                   onChangeConfig={handleElementHoleConfigChange}
                   onChangeElementRotation={handleSelectedElementHoleRotationChange}
                   element={selectedElement}
+                  onToggleElementEnabled={(enabled) => {
+                    handleUpdateElement(selectedElement.id, (element) => ({
+                      ...element,
+                      mountingHolesEnabled: enabled
+                    }));
+                  }}
                   snapEnabled={panelModel.options.snapToGrid}
                 />
               ) : null}
