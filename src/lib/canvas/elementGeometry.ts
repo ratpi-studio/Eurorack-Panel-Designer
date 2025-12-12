@@ -22,6 +22,12 @@ export interface ElementBounds {
   maxY: number;
 }
 
+export interface NearestElementDistance {
+  elementId: string;
+  center: Vector2;
+  distanceMm: number;
+}
+
 export function getLabelSizeMm(
   properties: LabelElementProperties
 ): LabelSizeMm {
@@ -183,6 +189,27 @@ export function findElementAtPoint(
   }
 
   return null;
+}
+
+export function computeNearestElementDistances(
+  pointMm: Vector2,
+  elements: PanelElement[],
+  maxCount = 3
+): NearestElementDistance[] {
+  const distances = elements
+    .map((element) => {
+      const dx = element.positionMm.x - pointMm.x;
+      const dy = element.positionMm.y - pointMm.y;
+      const distanceMm = Math.hypot(dx, dy);
+      return {
+        elementId: element.id,
+        center: { ...element.positionMm },
+        distanceMm
+      };
+    });
+
+  distances.sort((a, b) => a.distanceMm - b.distanceMm);
+  return maxCount > 0 ? distances.slice(0, maxCount) : [];
 }
 
 function getRectBounds(
