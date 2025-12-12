@@ -8,8 +8,10 @@ import { type ClearanceLines } from '@lib/clearance';
 import type { ReferenceImage } from '@lib/referenceImage';
 
 import {
+  computeNearestElementDistances,
   getLabelSizeMm,
-  PT_TO_MM
+  PT_TO_MM,
+  type NearestElementDistance
 } from './elementGeometry';
 import {
   projectPanelPoint,
@@ -53,6 +55,7 @@ interface PanelSceneDrawingOptions {
   selectionAnimation?: SelectionAnimationState;
   ghostElement?: PanelElement | null;
   clearanceLines?: ClearanceLines | null;
+  showGhostDistances?: boolean;
 }
 
 export function drawPanelScene({
@@ -74,7 +77,8 @@ export function drawPanelScene({
   ghostElement,
   referenceImage,
   clearanceLines,
-  panelSizeMm
+  panelSizeMm,
+  showGhostDistances
 }: PanelSceneDrawingOptions) {
   drawPanelArea(context, transform, palette);
 
@@ -120,6 +124,13 @@ export function drawPanelScene({
       palette.selection,
       fontFamily
     );
+
+    if (showGhostDistances) {
+      const distances = computeNearestElementDistances(ghostElement.positionMm, elements);
+      if (distances.length > 0) {
+        drawGhostDistances(context, transform, ghostElement.positionMm, distances, palette, fontFamily);
+      }
+    }
   }
 }
 
@@ -141,6 +152,43 @@ function drawPanelArea(
   );
   context.fill();
   context.stroke();
+  context.restore();
+}
+
+function drawGhostDistances(
+  context: CanvasRenderingContext2D,
+  transform: CanvasTransform,
+  ghostCenterMm: Vector2,
+  distances: NearestElementDistance[],
+  palette: PanelCanvasPalette,
+  fontFamily: string
+) {
+  const origin = projectPanelPoint(ghostCenterMm, transform);
+  context.save();
+  context.strokeStyle = palette.clearanceLine;
+  context.lineWidth = 1;
+  context.setLineDash([4, 4]);
+
+  distances.forEach((entry) => {
+    const target = projectPanelPoint(entry.center, transform);
+    context.beginPath();
+    context.moveTo(origin.x, origin.y);
+    context.lineTo(target.x, target.y);
+    context.stroke();
+
+    const labelX = (origin.x + target.x) / 2;
+    const labelY = (origin.y + target.y) / 2;
+
+    context.save();
+    context.setLineDash([]);
+    context.font = `10px ${fontFamily}`;
+    context.fillStyle = palette.clearanceLabel;
+    context.textBaseline = 'bottom';
+    const label = `${entry.distanceMm.toFixed(1)} mm`;
+    context.fillText(label, labelX + 4, labelY - 4);
+    context.restore();
+  });
+
   context.restore();
 }
 

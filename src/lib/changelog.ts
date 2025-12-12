@@ -6,6 +6,13 @@ export interface ChangelogEntry {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: '0.4.1',
+    date: '2025-12-12',
+    highlights: [
+      'Added live distance guides from the element being placed to its nearest neighbours to help fine-tune spacing.'
+    ]
+  },
+  {
     version: '0.4.0',
     date: '2025-12-12',
     highlights: [
