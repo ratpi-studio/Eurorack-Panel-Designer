@@ -2,6 +2,10 @@
 
 # Changelog
 
+## 0.4.1 - 2025-12-12
+
+- Added live distance guides from the element being placed to its nearest neighbours to help fine-tune spacing.
+
 ## 0.4.0 - 2025-12-12
 
 - Added a global “Image” button in Projects to import a reference image layer at any time.

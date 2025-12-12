@@ -344,7 +344,7 @@ export function PanelCanvas({
 
   const hudText = `${model.dimensions.widthHp} HP · ${model.dimensions.widthMm.toFixed(
     1
-  )} mm · Zoom ${(zoom * 100).toFixed(0)}%`;
+  )} x ${model.dimensions.heightMm.toFixed(1)} mm · Zoom ${(zoom * 100).toFixed(0)}%`;
 
   const clampZoom = React.useCallback(
     (value: number) => Math.min(zoomLimits.max, Math.max(zoomLimits.min, value)),
@@ -427,27 +427,27 @@ export function PanelCanvas({
         selectionAnimation = { dashOffset, pulseScale };
       }
 
-    drawPanelScene({
-      context,
-      transform,
-      panelSizeMm: {
-        x: model.dimensions.widthMm,
-        y: model.dimensions.heightMm
-      },
-      elements: model.elements,
-      referenceImage:
-        referenceImage && referenceImageElement
-          ? {
-              image: referenceImageElement,
-              info: referenceImage,
-              selected: referenceImageSelected
-            }
-          : null,
-      mountingHoles,
-      elementMountingHoles,
-      mountingHolesSelected,
-      selectedElementIds,
-      showGrid: displayOptions.showGrid,
+      drawPanelScene({
+        context,
+        transform,
+        panelSizeMm: {
+          x: model.dimensions.widthMm,
+          y: model.dimensions.heightMm
+        },
+        elements: model.elements,
+        referenceImage:
+          referenceImage && referenceImageElement
+            ? {
+                image: referenceImageElement,
+                info: referenceImage,
+                selected: referenceImageSelected
+              }
+            : null,
+        mountingHoles,
+        elementMountingHoles,
+        mountingHolesSelected,
+        selectedElementIds,
+        showGrid: displayOptions.showGrid,
         showMountingHoles: displayOptions.showMountingHoles,
         gridSizeMm: displayOptions.gridSizeMm,
         palette: canvasPalette,
@@ -456,7 +456,8 @@ export function PanelCanvas({
         fontFamily: themeValues.font.body,
         selectionAnimation,
         ghostElement,
-        clearanceLines
+        clearanceLines,
+        showGhostDistances: Boolean(ghostElement && placementType)
       });
 
       if (typeof window !== 'undefined') {
