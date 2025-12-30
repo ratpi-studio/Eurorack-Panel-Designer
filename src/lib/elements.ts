@@ -1,6 +1,7 @@
 import {
   PanelElementType,
   type CircularElementProperties,
+  type InsertElementProperties,
   type LabelElementProperties,
   type PanelElement,
   type RectangularElementProperties,
@@ -57,6 +58,15 @@ const DEFAULT_TRIANGLE: RectangularElementProperties = {
 
 const DEFAULT_LED: CircularElementProperties = {
   diameterMm: 3,
+  label: ''
+};
+
+const DEFAULT_INSERT: InsertElementProperties = {
+  outerDiameterMm: 5.3,
+  outerDepthMm: 4,
+  innerDiameterMm: 2.7,
+  innerDepthMm: 4,
+  embedDepthMm: 0,
   label: ''
 };
 
@@ -126,6 +136,14 @@ export function createPanelElement(
         positionMm,
         mountingHolesEnabled: false,
         properties: { ...DEFAULT_TRIANGLE }
+      };
+    case PanelElementType.Insert:
+      return {
+        id: generateElementId(),
+        type,
+        positionMm,
+        mountingHolesEnabled: false,
+        properties: { ...DEFAULT_INSERT }
       };
     case PanelElementType.Led:
       return {
