@@ -57,6 +57,22 @@ function elementToSvg(element: PanelElement): string {
       const d = trianglePath(element.positionMm.x, element.positionMm.y, props.widthMm, props.heightMm);
       return `<path d="${d}" stroke="${stroke}" stroke-width="${strokeWidth}" fill="none" />`;
     }
+    case PanelElementType.Insert: {
+      const props = element.properties as {
+        outerDiameterMm: number;
+        innerDiameterMm: number;
+        outerDepthMm: number;
+        innerDepthMm: number;
+        embedDepthMm: number;
+      };
+      const outerR = props.outerDiameterMm / 2;
+      const innerR = props.innerDiameterMm / 2;
+      const showHole = props.outerDepthMm > 0 && props.embedDepthMm > 0 && props.innerDepthMm > 0;
+      return `<g stroke="${stroke}" stroke-width="${strokeWidth}" fill="none">
+  <circle cx="${element.positionMm.x}" cy="${element.positionMm.y}" r="${outerR}" />
+  ${showHole ? `<circle cx="${element.positionMm.x}" cy="${element.positionMm.y}" r="${innerR}" />` : ''}
+</g>`;
+    }
     case PanelElementType.Label: {
       const props = element.properties as { fontSizePt: number; text: string };
       const fontSizePx = props.fontSizePt * 1.333; // rough pt→px
@@ -127,6 +143,21 @@ function elementCutout(element: PanelElement): string | null {
         props.widthMm,
         props.heightMm
       );
+    }
+    case PanelElementType.Insert: {
+      const props = element.properties as {
+        innerDiameterMm: number;
+        outerDepthMm: number;
+        embedDepthMm: number;
+        innerDepthMm: number;
+      };
+      if (props.outerDepthMm <= 0 || props.embedDepthMm <= 0 || props.innerDepthMm <= 0) {
+        return null;
+      }
+      const r = props.innerDiameterMm / 2;
+      const cx = element.positionMm.x;
+      const cy = element.positionMm.y;
+      return circlePath(cx, cy, r);
     }
     case PanelElementType.Label:
     default:
