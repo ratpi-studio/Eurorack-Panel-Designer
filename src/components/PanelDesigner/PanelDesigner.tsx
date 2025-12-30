@@ -1,13 +1,10 @@
 import React from 'react';
 
 import { PanelCanvas } from '@components/PanelCanvas/PanelCanvas';
-import { PanelControls } from '@components/PanelControls/PanelControls';
-import { DisplayOptions } from '@components/DisplayOptions/DisplayOptions';
-import { ElementPalette } from '@components/ElementPalette/ElementPalette';
-import { ElementProperties } from '@components/ElementProperties/ElementProperties';
-import { MountingHoleSettings } from '@components/MountingHoleSettings/MountingHoleSettings';
-import { ElementMountingHoles } from '@components/ElementMountingHoles/ElementMountingHoles';
-import { ReferenceImageControls } from '@components/ReferenceImageControls/ReferenceImageControls';
+import { LeftPanel } from '@components/PanelDesigner/LeftPanel';
+import { PanelHeader } from '@components/PanelDesigner/PanelHeader';
+import { RightPanel } from '@components/PanelDesigner/RightPanel';
+import { useResponsivePanels } from '@components/PanelDesigner/useResponsivePanels';
 import { useI18n } from '@i18n/I18nContext';
 import { createPanelElement } from '@lib/elements';
 import { generateMountingHoles } from '@lib/mountingHoles';
@@ -37,7 +34,6 @@ const DEFAULT_ZOOM = 1;
 const DEFAULT_PAN: Vector2 = { x: 0, y: 0 };
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 4;
-const GITHUB_REPO_URL = 'https://github.com/ratpi-studio/Eurorack-Panel-Designer';
 const LazyStlPreview = React.lazy(() =>
   import('@components/StlPreview/StlPreview').then((module) => ({
     default: module.StlPreview
@@ -83,9 +79,8 @@ export function PanelDesigner() {
     onConfirm: () => void;
   } | null>(null);
   const [stlThicknessInput, setStlThicknessInput] = React.useState('2');
-  const [isCompact, setIsCompact] = React.useState(false);
-  const [showLeftPanel, setShowLeftPanel] = React.useState(true);
-  const [showRightPanel, setShowRightPanel] = React.useState(true);
+  const { isCompact, showLeftPanel, showRightPanel, setShowLeftPanel, setShowRightPanel } =
+    useResponsivePanels();
   const [mountingHolesSelected, setMountingHolesSelected] = React.useState(false);
   const previewThickness = React.useMemo(() => {
     const parsed = Number.parseFloat(stlThicknessInput);
@@ -122,27 +117,6 @@ export function PanelDesigner() {
     setMountingHolesSelected(false);
     selectReferenceImage(true);
   }, [clearElementSelection, selectReferenceImage, setPlacementType]);
-
-  React.useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) {
-      return;
-    }
-    const media = window.matchMedia('(max-width: 1200px)');
-    const handleChange = () => {
-      const compact = media.matches;
-      setIsCompact(compact);
-      if (compact) {
-        setShowLeftPanel(false);
-        setShowRightPanel(false);
-      } else {
-        setShowLeftPanel(true);
-        setShowRightPanel(true);
-      }
-    };
-    handleChange();
-    media.addEventListener('change', handleChange);
-    return () => media.removeEventListener('change', handleChange);
-  }, []);
 
   const {
     clearHistory,
@@ -754,480 +728,254 @@ export function PanelDesigner() {
     handleReset();
   }, [handleReset, handleSaveProject, hasUnsavedChanges]);
 
+  const handleDeleteOrReset = React.useCallback(() => {
+    if (selectedSavedName) {
+      const name = selectedSavedName;
+      openConfirmDialog(t.projects.messages.confirmDeleteSelected(name), () =>
+        handleDeleteProject(name)
+      );
+    } else {
+      openConfirmDialog(t.projects.messages.confirmReset, () => handleReset());
+    }
+  }, [handleDeleteProject, handleReset, openConfirmDialog, selectedSavedName, t.projects.messages]);
+
+  const handleToggleExportMenu = React.useCallback(() => {
+    setIsExportMenuOpen((open) => !open);
+  }, []);
+
+  const handleChangeElementPosition = React.useCallback(
+    (positionMm: Vector2) => {
+      if (!selectedElement) {
+        return;
+      }
+      updateElement(selectedElement.id, (element) => ({
+        ...element,
+        positionMm
+      }));
+    },
+    [selectedElement, updateElement]
+  );
+
+  const handleChangeElementRotation = React.useCallback(
+    (rotationDeg: number) => {
+      if (!selectedElement) {
+        return;
+      }
+      handleUpdateElement(selectedElement.id, (element) => ({
+        ...element,
+        rotationDeg
+      }));
+    },
+    [handleUpdateElement, selectedElement]
+  );
+
+  const handleChangeElementProperties = React.useCallback(
+    (properties: PanelElement['properties']) => {
+      if (selectedElement) {
+        handleUpdateProperties(selectedElement.id, properties);
+        return;
+      }
+      if (placementType) {
+        setDraftProperties(placementType, properties);
+      }
+    },
+    [handleUpdateProperties, placementType, selectedElement, setDraftProperties]
+  );
+
+  const handleRemoveElementOrPlacement = React.useCallback(() => {
+    if (selectedElement) {
+      handleRemoveSelection();
+      return;
+    }
+    setPlacementType(null);
+  }, [handleRemoveSelection, selectedElement, setPlacementType]);
+
+  const handleToggleElementHoleEnabled = React.useCallback(
+    (enabled: boolean) => {
+      if (!selectedElement) {
+        return;
+      }
+      handleUpdateElement(selectedElement.id, (element) => ({
+        ...element,
+        mountingHolesEnabled: enabled
+      }));
+    },
+    [handleUpdateElement, selectedElement]
+  );
+
+  const projectPanelProps = {
+    t,
+    resolvedProjectName,
+    projectName,
+    isEditingProjectName,
+    hasUnsavedChanges,
+    projectNameInputRef,
+    onProjectNameChange: (value: string) => setProjectName(value),
+    onStartEditingProjectName: handleStartEditingProjectName,
+    onCommitProjectName: handleCommitProjectName,
+    onProjectNameKeyDown: handleProjectNameKeyDown,
+    selectedSavedName,
+    projects,
+    onSelectSavedName: setSelectedSavedName,
+    onLoadSelected: () => selectedSavedName && handleLoadProject(selectedSavedName),
+    onNewProject: handleNewProject,
+    onSaveProject: handleSaveProject,
+    onDeleteOrReset: handleDeleteOrReset,
+    onImportJsonClick: () => fileInputRef.current?.click(),
+    onImportReferenceImageClick: handleImportReferenceImageClick,
+    fileInputRef,
+    referenceImageInputRef,
+    onImportJson: handleImportJson,
+    onReferenceFileChange: handleReferenceFileChange,
+    exportButtonLabel,
+    isExportMenuOpen,
+    onToggleExportMenu: handleToggleExportMenu,
+    onExportClick: handleExportClick,
+    onExportJson: handleExportJson,
+    onSelectExportFormat: handleSelectExportFormat
+  };
+
+  const propertiesPanelProps = {
+    t,
+    panelModel,
+    displayOptions: panelModel.options,
+    mountingHolesSelected,
+    referenceImage,
+    referenceImageSelected,
+    elementForProperties,
+    selectedElement,
+    selectedElementCount: selectedElementIds.length,
+    placementType,
+    snapEnabled: panelModel.options.snapToGrid,
+    onDisplayOptionsChange: handleDisplayOptionsChange,
+    onResetView: resetView,
+    onMountingHoleConfigChange: handleMountingHoleConfigChange,
+    onClearMountingHoleSelection: handleClearMountingHoleSelection,
+    onReferenceImageChange: handleReferenceImageChange,
+    onImportReferenceImageClick: handleImportReferenceImageClick,
+    onRemoveReferenceImage: handleRemoveReferenceImage,
+    onChangePosition: handleChangeElementPosition,
+    onChangeRotation: handleChangeElementRotation,
+    onChangeProperties: handleChangeElementProperties,
+    onRemove: handleRemoveElementOrPlacement,
+    onChangeDraftProperties: setDraftProperties,
+    onChangeElementHoleConfig: handleElementHoleConfigChange,
+    onChangeElementHoleRotation: handleSelectedElementHoleRotationChange,
+    onToggleElementHoleEnabled: handleToggleElementHoleEnabled
+  };
+
   return (
     <>
       <main className={styles.page}>
-        <section className={styles.header}>
-        <div className={styles.headerTop}>
-          <div>
-            <img src="/images/logo.svg" alt={t.app.title} className={styles.logo} />
-          </div>
-          <div className={styles.headerActions}>
-            <a
-              className={styles.githubLink}
-              href={GITHUB_REPO_URL}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Open GitHub repository"
-            >
-              <svg
-                className={styles.githubIcon}
-                viewBox="0 0 16 16"
-                role="img"
-                aria-hidden="true"
-              >
-                <path
-                  d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.01.08-2.11 0 0 .67-.21 2.2.82A7.62 7.62 0 0 1 8 3.44a7.6 7.6 0 0 1 2.01.27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.91.08 2.11.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8"
-                  fill="currentColor"
-                />
-              </svg>
-              <span className={styles.githubLabel}>GitHub</span>
-            </a>
-            <a
-              className={styles.supportLink}
-              href="https://ko-fi.com/T6T01PMWCO"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Support the project on Ko-fi"
-            >
-              <img
-                className={styles.supportImage}
-                src="/images/kofi5.png"
-                alt="Buy me a coffee on Ko-fi"
-              />
-            </a>
-            <button
-              type="button"
-              className={styles.changelogButton}
-              onClick={openChangelog}
-            >
-              {t.changelog.buttonLabel}
-            </button>
-          </div>
-        </div>
-        </section>
+        <PanelHeader
+          title={t.app.title}
+          changelogLabel={t.changelog.buttonLabel}
+          onOpenChangelog={openChangelog}
+        />
         <section className={canvasSectionClass}>
-        {leftVisible ? (
-          <div
-            className={`${styles.leftColumn} ${
-              isCompact
-                ? `${styles.drawer} ${styles.drawerLeft} ${showLeftPanel ? styles.drawerOpen : ''}`
-                : ''
-            }`}
-          >
-            <div className={styles.sectionStack}>
-              {isCompact ? (
-                <div className={styles.drawerHeader}>
-                  <div className={styles.cardTitle}>{t.palette.title}</div>
-                  <button
-                    type="button"
-                    className={styles.secondaryButton}
-                    onClick={() => setShowLeftPanel(false)}
-                  >
-                    Close
-                  </button>
-                </div>
-              ) : null}
-              <div className={styles.card}>
-                <PanelControls
-                  widthMm={panelModel.dimensions.widthMm}
-                  widthHp={panelModel.dimensions.widthHp}
-                  onChangeWidthMm={(nextMm) => {
-                    handleSetWidthFromMm(nextMm);
-                    resetView();
-                  }}
-                  onChangeWidthHp={(nextHp) => {
-                    handleSetWidthFromHp(nextHp);
-                    resetView();
-                  }}
-                />
-              </div>
-              <div className={styles.card}>
-                <ElementPalette activeType={placementType} onSelect={handleSelectPaletteType} />
-              </div>
-            </div>
-          </div>
-        ) : null}
-        <div className={styles.canvasColumn}>
-          {isCompact ? (
-            <div className={styles.compactToggleBar}>
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                onClick={() => {
-                  setShowLeftPanel((prev) => !prev);
-                  setShowRightPanel(false);
-                }}
-              >
-                Tools
-              </button>
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                onClick={() => {
-                  setShowRightPanel((prev) => !prev);
-                  setShowLeftPanel(false);
-                }}
-              >
-                Properties
-              </button>
-            </div>
+          {leftVisible ? (
+            <LeftPanel
+              t={t}
+              panelModel={panelModel}
+              placementType={placementType}
+              isCompact={isCompact}
+              showPanel={showLeftPanel}
+              onClose={() => setShowLeftPanel(false)}
+              onChangeWidthMm={(nextMm) => {
+                handleSetWidthFromMm(nextMm);
+                resetView();
+              }}
+              onChangeWidthHp={(nextHp) => {
+                handleSetWidthFromHp(nextHp);
+                resetView();
+              }}
+              onSelectPaletteType={handleSelectPaletteType}
+            />
           ) : null}
-          <PanelCanvas
-            canvasRef={canvasRef}
-            model={panelModel}
-            mountingHoles={mountingHoles}
-            elementMountingHoles={elementMountingHoles}
-            referenceImage={referenceImage}
-            referenceImageSelected={referenceImageSelected}
-            mountingHolesSelected={mountingHolesSelected}
-            zoom={zoom}
-            pan={pan}
-            zoomLimits={{ min: MIN_ZOOM, max: MAX_ZOOM }}
-            placementType={placementType}
-            onPlaceElement={handlePlaceElement}
-            onMoveElement={handleMoveElement}
-            onMoveElements={moveElements}
-            onMoveStart={beginMove}
-            onMoveEnd={endMove}
-            onZoomChange={handleZoomChange}
-            onPanChange={handlePanChange}
-            onSelectElement={setSelectedElementId}
-            onAddSelectedElements={addSelectedElements}
-            onSelectElements={setSelectedElementIds}
-            onToggleElementSelection={toggleElementSelection}
-            onClearSelection={clearSelection}
-            onSelectReferenceImage={handleSelectReferenceImage}
-            onClearReferenceSelection={handleClearReferenceSelection}
-            onUpdateReferenceImage={handleReferenceImageChange}
-            onSelectMountingHoles={handleSelectMountingHoles}
-            onClearMountingHoleSelection={handleClearMountingHoleSelection}
-            displayOptions={panelModel.options}
-            selectedElementIds={selectedElementIds}
-            draftProperties={draftProperties}
-            clearanceLines={clearanceLines}
-            onClearanceLineChange={handleClearanceLineChange}
-            onClearanceLineDragStart={handleClearanceDragStart}
-            onClearanceLineDragEnd={handleClearanceDragEnd}
-          />
-          <div className={styles.shortcuts}>
-            <span className={styles.key}>{t.shortcuts.shift}</span>
-            <span className={styles.shortcutLabel}>{t.shortcuts.disableSnap}</span>
-            <span className={styles.key}>{t.shortcuts.esc}</span>
-            <span className={styles.shortcutLabel}>{t.shortcuts.cancelPlacement}</span>
-            <span className={styles.key}>{t.shortcuts.deleteKey}</span>
-            <span className={styles.shortcutLabel}>{t.shortcuts.deleteSelection}</span>
-            <span className={styles.key}>{t.shortcuts.undoShortcut}</span>
-            <span className={styles.shortcutLabel}>{t.shortcuts.undo}</span>
-            <span className={styles.key}>{t.shortcuts.redoShortcut}</span>
-            <span className={styles.shortcutLabel}>{t.shortcuts.redo}</span>
-          </div>
-        </div>
-        {rightVisible ? (
-          <aside
-            className={`${styles.rightColumn} ${
-              isCompact
-                ? `${styles.drawer} ${styles.drawerRight} ${showRightPanel ? styles.drawerOpen : ''}`
-                : ''
-            }`}
-          >
-            <div className={styles.card}>
-              {isCompact ? (
-                <div className={styles.drawerHeader}>
-                  <div className={styles.cardTitle}>{resolvedProjectName}</div>
-                  <button
-                    type="button"
-                    className={styles.secondaryButton}
-                    onClick={() => setShowRightPanel(false)}
-                  >
-                    Close
-                  </button>
-                </div>
-              ) : null}
-              <div className={styles.projectHeader}>
-                {isEditingProjectName ? (
-                  <div className={styles.projectNameEditRow}>
-                    <input
-                      ref={projectNameInputRef}
-                      className={styles.projectNameInput}
-                      type="text"
-                      value={projectName}
-                      onChange={(event) => setProjectName(event.target.value)}
-                      onBlur={handleCommitProjectName}
-                      onKeyDown={handleProjectNameKeyDown}
-                      aria-label={t.projects.nameLabel}
-                      placeholder={t.projects.nameLabel}
-                    />
-                    {hasUnsavedChanges ? (
-                      <span className={styles.dirtyStar} aria-hidden="true">
-                        *
-                      </span>
-                    ) : null}
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    className={styles.projectNameButton}
-                    onClick={handleStartEditingProjectName}
-                    title={t.projects.nameLabel}
-                  >
-                    <span className={styles.projectNameContent}>
-                      <span className={styles.projectNameText}>{resolvedProjectName}</span>
-                      {hasUnsavedChanges ? (
-                        <span className={styles.dirtyStar} aria-hidden="true">
-                          *
-                        </span>
-                      ) : null}
-                    </span>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className={styles.iconButton}
-                  onClick={
-                    isEditingProjectName ? handleCommitProjectName : handleStartEditingProjectName
-                  }
-                  aria-label={t.projects.editNameLabel}
-                >
-                  <svg
-                    className={styles.editIcon}
-                    viewBox="0 0 20 20"
-                    role="img"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M15.73 2.29a1 1 0 0 0-1.41 0l-1.73 1.73 3.39 3.39 1.73-1.73a1 1 0 0 0 0-1.41zM2 14.67 3.91 18l3.32-1.91 7.13-7.13-3.39-3.39L2 14.67z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <div className={styles.buttonRow}>
-                <button type="button" className={styles.secondaryButton} onClick={handleNewProject}>
-                  {t.projects.newProject}
-                </button>
-                <button type="button" className={styles.primaryButton} onClick={handleSaveProject}>
-                  {t.projects.save}
-                </button>
-                <div className={styles.exportSplitButton}>
-                  <button
-                    type="button"
-                    className={styles.exportSplitMain}
-                    onClick={handleExportClick}
-                  >
-                    {exportButtonLabel}
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={t.projects.exportMenuLabel}
-                    className={styles.exportSplitToggle}
-                    onClick={() => setIsExportMenuOpen((open) => !open)}
-                  >
-                    ▾
-                  </button>
-                  {isExportMenuOpen ? (
-                    <div className={styles.exportMenu}>
-                      <button
-                        type="button"
-                        className={styles.exportMenuItem}
-                        onClick={() => {
-                          setIsExportMenuOpen(false);
-                          handleExportJson();
-                        }}
-                      >
-                        {t.projects.exportJson}
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.exportMenuItem}
-                        onClick={() => handleSelectExportFormat('svg')}
-                      >
-                        {t.projects.exportSvg}
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.exportMenuItem}
-                        onClick={() => handleSelectExportFormat('png')}
-                      >
-                        {t.projects.exportPng}
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.exportMenuItem}
-                        onClick={() => handleSelectExportFormat('kicadSvg')}
-                      >
-                        {t.projects.exportKicadSvg}
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.exportMenuItem}
-                        onClick={() => handleSelectExportFormat('kicadPcb')}
-                      >
-                        {t.projects.exportKicadPcb}
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.exportMenuItem}
-                        onClick={() => handleSelectExportFormat('stl')}
-                      >
-                        {t.projects.exportStl}
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-              <label className={styles.fieldRow}>
-                <span className={styles.label}>{t.projects.savedLabel}</span>
-                <select
-                  className={styles.textInput}
-                  value={selectedSavedName}
-                  onChange={(event) => setSelectedSavedName(event.target.value)}
-                >
-                  <option value="">—</option>
-                  {projects.map((project) => (
-                    <option key={project.name} value={project.name}>
-                      {project.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className={styles.buttonRow}>
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  disabled={!selectedSavedName}
-                  onClick={() => selectedSavedName && handleLoadProject(selectedSavedName)}
-                >
-                  {t.projects.load}
-                </button>
+          <div className={styles.canvasColumn}>
+            {isCompact ? (
+              <div className={styles.compactToggleBar}>
                 <button
                   type="button"
                   className={styles.secondaryButton}
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => {
+                    setShowLeftPanel((prev) => !prev);
+                    setShowRightPanel(false);
+                  }}
                 >
-                  {t.projects.importJson}
+                  Tools
                 </button>
                 <button
                   type="button"
                   className={styles.secondaryButton}
                   onClick={() => {
-                    if (selectedSavedName) {
-                      const name = selectedSavedName;
-                      openConfirmDialog(t.projects.messages.confirmDeleteSelected(name), () =>
-                        handleDeleteProject(name)
-                      );
-                    } else {
-                      openConfirmDialog(t.projects.messages.confirmReset, () => handleReset());
-                    }
+                    setShowRightPanel((prev) => !prev);
+                    setShowLeftPanel(false);
                   }}
                 >
-                  {t.projects.delete}
+                  Properties
                 </button>
-                <button
-                  type="button"
-                  className={styles.secondaryButton}
-                  onClick={handleImportReferenceImageClick}
-                >
-                  {t.properties.importImage}
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="application/json"
-                  className={styles.hiddenInput}
-                  onChange={handleImportJson}
-                />
-                <input
-                  ref={referenceImageInputRef}
-                  type="file"
-                  accept="image/*"
-                  className={styles.hiddenInput}
-                  onChange={handleReferenceFileChange}
-                />
-              </div>
-            </div>
-            <div className={styles.card}>
-              <DisplayOptions
-                options={panelModel.options}
-                onChange={handleDisplayOptionsChange}
-                onResetView={resetView}
-              />
-            </div>
-            {mountingHolesSelected ? (
-              <div className={styles.card}>
-                <MountingHoleSettings
-                  config={panelModel.mountingHoleConfig}
-                  onChange={handleMountingHoleConfigChange}
-                  onClose={handleClearMountingHoleSelection}
-                />
               </div>
             ) : null}
-            <div className={styles.card}>
-              {referenceImage && referenceImageSelected ? (
-                <ReferenceImageControls
-                  image={referenceImage}
-                  onChange={handleReferenceImageChange}
-                  onReplace={handleImportReferenceImageClick}
-                  onRemove={handleRemoveReferenceImage}
-                />
-              ) : (
-                <>
-                  <ElementProperties
-                    element={elementForProperties}
-                    selectionCount={selectedElementIds.length}
-                    onChangePosition={(positionMm) => {
-                      if (selectedElement) {
-                        updateElement(selectedElement.id, (element) => ({
-                          ...element,
-                          positionMm
-                        }));
-                      }
-                    }}
-                    onChangeRotation={(rotationDeg) => {
-                      if (selectedElement) {
-                        handleUpdateElement(selectedElement.id, (element) => ({
-                          ...element,
-                          rotationDeg
-                        }));
-                      }
-                    }}
-                    onChangeProperties={(properties) => {
-                      if (selectedElement) {
-                        handleUpdateProperties(selectedElement.id, properties);
-                        return;
-                      }
-                      if (placementType) {
-                        setDraftProperties(placementType, properties);
-                      }
-                    }}
-                    onRemove={() => {
-                      if (selectedElement) {
-                        handleRemoveSelection();
-                      } else {
-                        setPlacementType(null);
-                      }
-                    }}
-                  />
-                  {selectedElement ? (
-                    <ElementMountingHoles
-                      config={panelModel.elementHoleConfig}
-                      onChangeConfig={handleElementHoleConfigChange}
-                      onChangeElementRotation={handleSelectedElementHoleRotationChange}
-                      element={selectedElement}
-                      onToggleElementEnabled={(enabled) => {
-                        handleUpdateElement(selectedElement.id, (element) => ({
-                          ...element,
-                          mountingHolesEnabled: enabled
-                        }));
-                      }}
-                      snapEnabled={panelModel.options.snapToGrid}
-                    />
-                  ) : null}
-                </>
-              )}
+            <PanelCanvas
+              canvasRef={canvasRef}
+              model={panelModel}
+              mountingHoles={mountingHoles}
+              elementMountingHoles={elementMountingHoles}
+              referenceImage={referenceImage}
+              referenceImageSelected={referenceImageSelected}
+              mountingHolesSelected={mountingHolesSelected}
+              zoom={zoom}
+              pan={pan}
+              zoomLimits={{ min: MIN_ZOOM, max: MAX_ZOOM }}
+              placementType={placementType}
+              onPlaceElement={handlePlaceElement}
+              onMoveElement={handleMoveElement}
+              onMoveElements={moveElements}
+              onMoveStart={beginMove}
+              onMoveEnd={endMove}
+              onZoomChange={handleZoomChange}
+              onPanChange={handlePanChange}
+              onSelectElement={setSelectedElementId}
+              onAddSelectedElements={addSelectedElements}
+              onSelectElements={setSelectedElementIds}
+              onToggleElementSelection={toggleElementSelection}
+              onClearSelection={clearSelection}
+              onSelectReferenceImage={handleSelectReferenceImage}
+              onClearReferenceSelection={handleClearReferenceSelection}
+              onUpdateReferenceImage={handleReferenceImageChange}
+              onSelectMountingHoles={handleSelectMountingHoles}
+              onClearMountingHoleSelection={handleClearMountingHoleSelection}
+              displayOptions={panelModel.options}
+              selectedElementIds={selectedElementIds}
+              draftProperties={draftProperties}
+              clearanceLines={clearanceLines}
+              onClearanceLineChange={handleClearanceLineChange}
+              onClearanceLineDragStart={handleClearanceDragStart}
+              onClearanceLineDragEnd={handleClearanceDragEnd}
+            />
+            <div className={styles.shortcuts}>
+              <span className={styles.key}>{t.shortcuts.shift}</span>
+              <span className={styles.shortcutLabel}>{t.shortcuts.disableSnap}</span>
+              <span className={styles.key}>{t.shortcuts.esc}</span>
+              <span className={styles.shortcutLabel}>{t.shortcuts.cancelPlacement}</span>
+              <span className={styles.key}>{t.shortcuts.deleteKey}</span>
+              <span className={styles.shortcutLabel}>{t.shortcuts.deleteSelection}</span>
+              <span className={styles.key}>{t.shortcuts.undoShortcut}</span>
+              <span className={styles.shortcutLabel}>{t.shortcuts.undo}</span>
+              <span className={styles.key}>{t.shortcuts.redoShortcut}</span>
+              <span className={styles.shortcutLabel}>{t.shortcuts.redo}</span>
             </div>
-          </aside>
-        ) : null}
+          </div>
+          {rightVisible ? (
+            <RightPanel
+              isCompact={isCompact}
+              showPanel={showRightPanel}
+              onClose={() => setShowRightPanel(false)}
+              projectPanel={projectPanelProps}
+              propertiesPanel={propertiesPanelProps}
+            />
+          ) : null}
         </section>
       </main>
       {isStlModalOpen ? (
