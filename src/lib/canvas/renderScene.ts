@@ -463,6 +463,19 @@ function drawElements(
         );
         break;
       }
+      case PanelElementType.Insert: {
+        drawInsertElement(
+          context,
+          element,
+          transform.scale,
+          selectedElementIds.has(element.id),
+          elementFillColors[element.type],
+          elementStrokeColor,
+          selectionColor,
+          selectionAnimation
+        );
+        break;
+      }
       case PanelElementType.Label: {
         drawLabelElement(
           context,
@@ -691,6 +704,42 @@ function drawTriangleElement(
       selectionColor,
       selectionAnimation
     );
+  }
+}
+
+function drawInsertElement(
+  context: CanvasRenderingContext2D,
+  element: PanelElement,
+  scale: number,
+  isSelected: boolean,
+  fillColor: string,
+  strokeColor: string,
+  selectionColor: string,
+  selectionAnimation?: SelectionAnimationState
+) {
+  if (element.type !== PanelElementType.Insert) {
+    return;
+  }
+
+  const outerRadius = (element.properties.outerDiameterMm / 2) * scale;
+  const hasHole = element.properties.embedDepthMm > 0 && element.properties.innerDepthMm > 0;
+  const innerRadius = hasHole ? Math.max((element.properties.innerDiameterMm / 2) * scale, 0) : 0;
+  context.fillStyle = fillColor;
+  context.strokeStyle = strokeColor;
+  context.lineWidth = 2;
+  context.beginPath();
+  context.arc(0, 0, outerRadius, 0, Math.PI * 2);
+  context.fill();
+  context.stroke();
+
+  if (hasHole) {
+    context.beginPath();
+    context.arc(0, 0, innerRadius, 0, Math.PI * 2);
+    context.stroke();
+  }
+
+  if (isSelected) {
+    drawSelectionCircle(context, outerRadius + 6, selectionColor, selectionAnimation);
   }
 }
 

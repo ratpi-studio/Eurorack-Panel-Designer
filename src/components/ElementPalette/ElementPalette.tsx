@@ -57,6 +57,10 @@ export function ElementPalette({ activeType, onSelect }: ElementPaletteProps) {
       {
         type: PanelElementType.Triangle,
         ...t.palette.items.triangle
+      },
+      {
+        type: PanelElementType.Insert,
+        ...t.palette.items.insert
       }
     ],
     [t]
@@ -188,6 +192,27 @@ function renderIcon(type: PanelElementType, color: string): React.ReactNode {
         <svg {...commonProps}>
           <line x1="8" y1="14" x2="28" y2="14" stroke={color} strokeWidth="2" />
           <line x1="8" y1="22" x2="24" y2="22" stroke={color} strokeWidth="2" />
+        </svg>
+      );
+    case PanelElementType.Insert:
+      return (
+        <svg {...commonProps}>
+          <circle
+            cx="18"
+            cy="18"
+            r="11"
+            stroke={color}
+            strokeWidth="2"
+            fill="none"
+          />
+          <circle
+            cx="18"
+            cy="18"
+            r="5"
+            stroke={color}
+            strokeWidth="2"
+            fill="none"
+          />
         </svg>
       );
     default:
