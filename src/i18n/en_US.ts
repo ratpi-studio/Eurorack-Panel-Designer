@@ -72,6 +72,11 @@ interface Translations {
     height: string;
     text: string;
     fontSize: string;
+    outerDiameter: string;
+    outerDepth: string;
+    innerDiameter: string;
+    innerDepth: string;
+    embedDepth: string;
   };
   referenceImage: {
     title: string;
@@ -265,6 +270,11 @@ export const enUS: Translations = {
         label: 'Triangle',
         description: 'Triangular cutout',
         color: '#22d3ee'
+      },
+      insert: {
+        label: 'Insert',
+        description: 'Press-fit insert with inner hole',
+        color: '#f59e0b'
       }
     }
   },
@@ -284,7 +294,12 @@ export const enUS: Translations = {
     width: 'Width (mm)',
     height: 'Height (mm)',
     text: 'Text',
-    fontSize: 'Size (pt)'
+    fontSize: 'Size (pt)',
+    outerDiameter: 'Outer diameter (mm)',
+    outerDepth: 'Outer depth (mm)',
+    innerDiameter: 'Inner diameter (mm)',
+    innerDepth: 'Inner depth (mm)',
+    embedDepth: 'Embed depth (mm)'
   },
   projects: {
     title: 'Projects',
@@ -361,5 +376,3 @@ export const enUS: Translations = {
     redoShortcut: 'Ctrl/Cmd + Shift + Z'
   }
 };
-
-type Locale = 'en_US';

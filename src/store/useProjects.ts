@@ -4,9 +4,6 @@ import { useI18n } from '@i18n/I18nContext';
 import { buildKicadEdgeCutsSvg, buildKicadPcbFile } from '@lib/exportKicad';
 import { buildPanelSvg } from '@lib/exportSvg';
 import {
-  computeClearanceLines
-} from '@lib/clearance';
-import {
   computeElementMountingHoles
 } from '@lib/elementMountingHoles';
 import {
@@ -14,6 +11,7 @@ import {
   DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   DEFAULT_PANEL_OPTIONS,
+  PanelElementType,
   type MountingHole
 } from '@lib/panelTypes';
 import { drawPanelScene } from '@lib/canvas/renderScene';
@@ -40,7 +38,6 @@ import { createPanelDimensions } from '@lib/units';
 import { usePanelStore } from '@store/panelStore';
 
 interface UseProjectsArgs {
-  canvasRef: React.RefObject<HTMLCanvasElement | null>;
   mountingHoles: MountingHole[];
   resetView: () => void;
   clearHistory: () => void;
@@ -80,7 +77,6 @@ interface UseProjectsResult {
 }
 
 export function useProjects({
-  canvasRef,
   mountingHoles,
   resetView,
   clearHistory
@@ -172,17 +168,13 @@ export function useProjects({
       rectangle: '#4ade80',
       oval: '#c084fc',
       slot: '#fb923c',
-      triangle: '#22d3ee'
-    } as const;
+      triangle: '#22d3ee',
+      insert: '#f59e0b'
+    } satisfies Record<PanelElementType, string>;
 
     const elementMountingHoles = computeElementMountingHoles(
       panelModel.elements,
       panelModel.elementHoleConfig
-    );
-
-    const clearanceLines = computeClearanceLines(
-      panelModel.clearance,
-      panelModel.dimensions.heightMm
     );
 
     const transform = computeCanvasTransform({
@@ -229,9 +221,7 @@ export function useProjects({
     projectName,
     serializedModel,
     setStatus,
-    t.projects.defaultName,
-    t.projects.messages,
-    t.projects.messages.saveSuccess
+    t
   ]);
 
   const handleLoadProject = React.useCallback(
@@ -313,9 +303,7 @@ export function useProjects({
       setModel,
       setPlacementType,
       clearSelection,
-      t.projects.messages,
-      t.projects.messages.importError,
-      t.projects.messages.importSuccess
+      t
     ]
   );
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildPanelStl } from '@lib/exportStl';
+import { buildPanelStl, getCircularHoles } from '@lib/exportStl';
 import { generateMountingHoles } from '@lib/mountingHoles';
 import {
   DEFAULT_CLEARANCE_CONFIG,
@@ -141,5 +141,67 @@ describe('buildPanelStl', () => {
 
     expect(stl.startsWith('solid eurorack_panel')).toBe(true);
     expect(stl.includes('facet')).toBe(true);
+  });
+
+  it('includes inserts with inner holes without failing', () => {
+    const model = createEmptyPanel();
+    model.elements.push({
+      id: 'insert-1',
+      type: PanelElementType.Insert,
+      positionMm: { x: 20, y: 20 },
+      properties: {
+        outerDiameterMm: 5.3,
+        outerDepthMm: 4,
+        innerDiameterMm: 2.7,
+        innerDepthMm: 4,
+        embedDepthMm: 1
+      }
+    });
+
+    const mountingHoles = generateMountingHoles({
+      widthHp: model.dimensions.widthHp,
+      widthMm: model.dimensions.widthMm,
+      heightMm: model.dimensions.heightMm
+    });
+
+    const stl = buildPanelStl(model, mountingHoles, {
+      thicknessMm: 2
+    });
+
+    expect(stl.startsWith('solid eurorack_panel')).toBe(true);
+  });
+
+  it('does not change the mesh when insert depth is zero', () => {
+    const model = createEmptyPanel();
+    const center = {
+      x: model.dimensions.widthMm / 2,
+      y: model.dimensions.heightMm / 2
+    };
+    model.elements.push({
+      id: 'insert-2',
+      type: PanelElementType.Insert,
+      positionMm: center,
+      properties: {
+        outerDiameterMm: 6,
+        outerDepthMm: 4,
+        innerDiameterMm: 3,
+        innerDepthMm: 4,
+        embedDepthMm: 0
+      }
+    });
+
+    const mountingHoles = generateMountingHoles({
+      widthHp: model.dimensions.widthHp,
+      widthMm: model.dimensions.widthMm,
+      heightMm: model.dimensions.heightMm
+    });
+
+    const holes = getCircularHoles(model, mountingHoles);
+    expect(holes.some((hole) => hole.radius === 1.5)).toBe(false);
+
+    const stl = buildPanelStl(model, mountingHoles, {
+      thicknessMm: 2
+    });
+    expect(stl.startsWith('solid eurorack_panel')).toBe(true);
   });
 });

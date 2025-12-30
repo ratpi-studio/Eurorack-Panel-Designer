@@ -1,5 +1,3 @@
-type LengthUnit = 'cm' | 'mm' | 'hp';
-
 export interface Vector2 {
   x: number;
   y: number;
@@ -18,7 +16,8 @@ export enum PanelElementType {
   Rectangle = 'rectangle',
   Oval = 'oval',
   Slot = 'slot',
-  Triangle = 'triangle'
+  Triangle = 'triangle',
+  Insert = 'insert'
 }
 
 interface PanelElementBase<
@@ -52,6 +51,14 @@ export interface LabelElementProperties extends PanelElementPropertiesBase {
   fontSizePt: number;
 }
 
+export interface InsertElementProperties extends PanelElementPropertiesBase {
+  outerDiameterMm: number;
+  outerDepthMm: number;
+  innerDiameterMm: number;
+  innerDepthMm: number;
+  embedDepthMm: number;
+}
+
 export type PanelElementPropertiesMap = {
   [PanelElementType.Jack]: CircularElementProperties;
   [PanelElementType.Potentiometer]: CircularElementProperties;
@@ -62,6 +69,7 @@ export type PanelElementPropertiesMap = {
   [PanelElementType.Oval]: RectangularElementProperties;
   [PanelElementType.Slot]: RectangularElementProperties;
   [PanelElementType.Triangle]: RectangularElementProperties;
+  [PanelElementType.Insert]: InsertElementProperties;
 };
 
 type PanelElementForType<TType extends PanelElementType> = PanelElementBase<
@@ -78,7 +86,8 @@ export type PanelElement =
   | PanelElementForType<PanelElementType.Rectangle>
   | PanelElementForType<PanelElementType.Oval>
   | PanelElementForType<PanelElementType.Slot>
-  | PanelElementForType<PanelElementType.Triangle>;
+  | PanelElementForType<PanelElementType.Triangle>
+  | PanelElementForType<PanelElementType.Insert>;
 
 export interface PanelDimensions {
   widthCm: number;
@@ -250,6 +259,18 @@ function isLabelElementProperties(
   return 'text' in properties && 'fontSizePt' in properties;
 }
 
+function isInsertElementProperties(
+  properties: PanelElement['properties']
+): properties is InsertElementProperties {
+  return (
+    'outerDiameterMm' in properties &&
+    'outerDepthMm' in properties &&
+    'innerDiameterMm' in properties &&
+    'innerDepthMm' in properties &&
+    'embedDepthMm' in properties
+  );
+}
+
 export function sanitizePropertiesForType<TType extends PanelElementType>(
   type: TType,
   properties?: PanelElement['properties'] | null
@@ -272,6 +293,11 @@ export function sanitizePropertiesForType<TType extends PanelElementType>(
     case PanelElementType.Slot:
     case PanelElementType.Triangle:
       if (isRectangularElementProperties(properties)) {
+        return { ...properties } as PanelElementPropertiesMap[TType];
+      }
+      return null;
+    case PanelElementType.Insert:
+      if (isInsertElementProperties(properties)) {
         return { ...properties } as PanelElementPropertiesMap[TType];
       }
       return null;
@@ -324,6 +350,19 @@ export function withElementProperties(
     case PanelElementType.Triangle: {
       const nextProperties = sanitizePropertiesForType(
         element.type,
+        properties
+      );
+      if (!nextProperties) {
+        return element;
+      }
+      return {
+        ...element,
+        properties: nextProperties
+      };
+    }
+    case PanelElementType.Insert: {
+      const nextProperties = sanitizePropertiesForType(
+        PanelElementType.Insert,
         properties
       );
       if (!nextProperties) {

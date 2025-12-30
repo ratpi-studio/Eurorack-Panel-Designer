@@ -7,9 +7,7 @@ import {
   type PanelModelInput,
   type PanelOptions,
   type SerializedPanel,
-  type Vector2,
-  type ClearanceConfig,
-  DEFAULT_CLEARANCE_CONFIG
+  type Vector2
 } from './panelTypes';
 
 export class SerializationError extends Error {
@@ -168,17 +166,5 @@ function isMountingHoleConfig(value: unknown): value is PanelModel['mountingHole
     typeof config.spacingHp === 'number' &&
     typeof config.slotLengthMm === 'number' &&
     (config.shape === 'circle' || config.shape === 'slot')
-  );
-}
-
-function isClearanceConfig(value: unknown): value is ClearanceConfig {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-  const config = value as ClearanceConfig;
-  return (
-    typeof config.topOffsetMm === 'number' &&
-    typeof config.bottomOffsetMm === 'number' &&
-    typeof config.minSpacingMm === 'number'
   );
 }
