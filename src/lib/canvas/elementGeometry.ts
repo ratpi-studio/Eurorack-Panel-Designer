@@ -165,6 +165,10 @@ function isPointInsideElement(
         element.properties.widthMm,
         element.properties.heightMm
       );
+    case PanelElementType.Insert: {
+      const radius = element.properties.outerDiameterMm / 2;
+      return localPoint.x ** 2 + localPoint.y ** 2 <= radius ** 2;
+    }
     case PanelElementType.Label: {
       const { widthMm, heightMm } = getLabelSizeMm(element.properties);
       return (
@@ -317,6 +321,15 @@ export function getElementBounds(element: PanelElement): ElementBounds {
         element.properties.heightMm,
         rotation
       );
+    }
+    case PanelElementType.Insert: {
+      const radius = element.properties.outerDiameterMm / 2;
+      return {
+        minX: element.positionMm.x - radius,
+        maxX: element.positionMm.x + radius,
+        minY: element.positionMm.y - radius,
+        maxY: element.positionMm.y + radius
+      };
     }
     case PanelElementType.Label: {
       const { widthMm, heightMm } = getLabelSizeMm(element.properties);

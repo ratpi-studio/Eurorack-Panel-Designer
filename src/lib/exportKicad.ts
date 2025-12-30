@@ -72,20 +72,35 @@ function collectCircularCutouts(
     }));
 
   for (const element of model.elements) {
-    if (!hasCircularCutout(element)) {
+    if (element.type === PanelElementType.Insert) {
+      if (
+        element.properties.outerDepthMm <= 0 ||
+        element.properties.embedDepthMm <= 0 ||
+        element.properties.innerDepthMm <= 0
+      ) {
+        continue;
+      }
+      const radius = element.properties.innerDiameterMm / 2;
+      if (radius > 0) {
+        holes.push({
+          cx: element.positionMm.x,
+          cy: element.positionMm.y,
+          radius
+        });
+      }
       continue;
     }
 
-    const radius = element.properties.diameterMm / 2;
-    if (radius <= 0) {
-      continue;
+    if (hasCircularCutout(element)) {
+      const radius = element.properties.diameterMm / 2;
+      if (radius > 0) {
+        holes.push({
+          cx: element.positionMm.x,
+          cy: element.positionMm.y,
+          radius
+        });
+      }
     }
-
-    holes.push({
-      cx: element.positionMm.x,
-      cy: element.positionMm.y,
-      radius
-    });
   }
 
   return holes;

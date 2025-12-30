@@ -160,15 +160,10 @@ export function PanelDesigner() {
     removeElements
   } = usePanelHistory();
 
-  const mountingHoles = React.useMemo(
-    () => computeMountingHoles(panelModel),
-    [
-      panelModel.dimensions.heightMm,
-      panelModel.dimensions.widthHp,
-      panelModel.dimensions.widthMm,
-      panelModel.mountingHoleConfig
-    ]
-  );
+      const mountingHoles = React.useMemo(
+        () => computeMountingHoles(panelModel),
+        [panelModel]
+      );
 
   const elementMountingHoles = React.useMemo(
     () => computeElementMountingHoles(panelModel.elements, panelModel.elementHoleConfig),
@@ -281,7 +276,6 @@ export function PanelDesigner() {
     setExportFormat,
     handleReset
   } = useProjects({
-    canvasRef,
     mountingHoles: combinedMountingHoles,
     resetView,
     clearHistory
