@@ -1,6 +1,8 @@
 # Changelog
 
-# Changelog
+## 0.5.0 - 2025-12-13
+
+- Added insert item for pcb mount
 
 ## 0.4.1 - 2025-12-12
 
