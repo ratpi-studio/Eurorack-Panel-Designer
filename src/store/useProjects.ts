@@ -11,6 +11,7 @@ import {
   DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   DEFAULT_PANEL_OPTIONS,
+  PanelElementType,
   type MountingHole
 } from '@lib/panelTypes';
 import { drawPanelScene } from '@lib/canvas/renderScene';
@@ -167,8 +168,9 @@ export function useProjects({
       rectangle: '#4ade80',
       oval: '#c084fc',
       slot: '#fb923c',
-      triangle: '#22d3ee'
-    } as const;
+      triangle: '#22d3ee',
+      insert: '#f59e0b'
+    } satisfies Record<PanelElementType, string>;
 
     const elementMountingHoles = computeElementMountingHoles(
       panelModel.elements,
