@@ -1,15 +1,19 @@
 import {
+  BufferGeometry,
   ExtrudeGeometry,
   Mesh,
   MeshStandardMaterial,
   Path,
   Shape
 } from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
 
 import {
   PanelElementType,
+  type InsertElementProperties,
   type MountingHole,
+  type PanelElement,
   type PanelModel
 } from '@lib/panelTypes';
 
@@ -51,7 +55,7 @@ interface TriangleHole {
   height: number;
 }
 
-function getCircularHoles(
+export function getCircularHoles(
   model: PanelModel,
   mountingHoles: MountingHole[]
 ): CircularHole[] {
@@ -73,6 +77,23 @@ function getCircularHoles(
           centerX: element.positionMm.x,
           centerY: element.positionMm.y,
           radius: props.diameterMm / 2
+        });
+        break;
+      }
+      case PanelElementType.Insert: {
+        const props = element.properties as {
+          innerDiameterMm: number;
+          outerDepthMm: number;
+          embedDepthMm: number;
+          innerDepthMm: number;
+        };
+        if (props.outerDepthMm <= 0 || props.embedDepthMm <= 0 || props.innerDepthMm <= 0) {
+          break;
+        }
+        circularHoles.push({
+          centerX: element.positionMm.x,
+          centerY: element.positionMm.y,
+          radius: props.innerDiameterMm / 2
         });
         break;
       }
@@ -214,6 +235,90 @@ function createTriangleHolePath(hole: TriangleHole): Path {
   return path;
 }
 
+function clampInsertProperties(
+  properties: InsertElementProperties,
+  panelThicknessMm: number
+) {
+  const outerDepthMm = Math.max(properties.outerDepthMm, 0);
+  const innerDepthMm = Math.min(Math.max(properties.innerDepthMm, 0), outerDepthMm);
+  const embedDepthMm = Math.min(
+    Math.max(properties.embedDepthMm, 0),
+    Math.min(panelThicknessMm, outerDepthMm || panelThicknessMm)
+  );
+  const outerRadius = Math.max(properties.outerDiameterMm / 2, 0);
+  const innerRadius = Math.min(Math.max(properties.innerDiameterMm / 2, 0), outerRadius);
+
+  return {
+    outerDepthMm,
+    innerDepthMm,
+    embedDepthMm,
+    outerRadius,
+    innerRadius
+  };
+}
+
+function buildInsertGeometry(
+  element: PanelElement & { type: PanelElementType.Insert; properties: InsertElementProperties },
+  panelThicknessMm: number
+): BufferGeometry | null {
+  const { outerDepthMm, innerDepthMm, embedDepthMm, outerRadius, innerRadius } = clampInsertProperties(
+    element.properties,
+    panelThicknessMm
+  );
+
+  if (outerDepthMm <= 0 || outerRadius <= 0) {
+    return null;
+  }
+
+  const baseZ = Math.max(panelThicknessMm - embedDepthMm, 0);
+  const ringHeight = Math.min(innerDepthMm, outerDepthMm);
+  const remainingHeight = Math.max(outerDepthMm - ringHeight, 0);
+
+  const ringShape = new Shape();
+  ringShape.absarc(0, 0, outerRadius, 0, Math.PI * 2, false);
+  if (innerRadius > 0) {
+    const hole = new Path();
+    hole.absarc(0, 0, innerRadius, 0, Math.PI * 2, true);
+    ringShape.holes.push(hole);
+  }
+
+  const geometries: BufferGeometry[] = [];
+
+  if (ringHeight > 0) {
+    const ringGeometry = new ExtrudeGeometry(ringShape, {
+      depth: ringHeight,
+      bevelEnabled: false
+    });
+    ringGeometry.translate(element.positionMm.x, element.positionMm.y, baseZ);
+    geometries.push(ringGeometry);
+  }
+
+  if (remainingHeight > 0) {
+    const plugShape = new Shape();
+    plugShape.absarc(0, 0, outerRadius, 0, Math.PI * 2, false);
+    const plugGeometry = new ExtrudeGeometry(plugShape, {
+      depth: remainingHeight,
+      bevelEnabled: false
+    });
+    plugGeometry.translate(
+      element.positionMm.x,
+      element.positionMm.y,
+      baseZ + ringHeight
+    );
+    geometries.push(plugGeometry);
+  }
+
+  if (!geometries.length) {
+    return null;
+  }
+
+  if (geometries.length === 1) {
+    return geometries[0];
+  }
+
+  return mergeGeometries(geometries) ?? null;
+}
+
 function buildPanelShape(
   model: PanelModel,
   mountingHoles: MountingHole[]
@@ -294,26 +399,45 @@ export function createPanelExtrusion(
   model: PanelModel,
   mountingHoles: MountingHole[],
   thicknessMm: number
-): ExtrudeGeometry {
+): BufferGeometry {
   if (!Number.isFinite(thicknessMm) || thicknessMm <= 0) {
     throw new Error('Panel thickness must be a positive number.');
   }
 
   const shape = buildPanelShape(model, mountingHoles);
-  const geometry = new ExtrudeGeometry(shape, {
+  const panelGeometry = new ExtrudeGeometry(shape, {
     depth: thicknessMm,
     bevelEnabled: false
   });
 
-  // Flip Y so the exported model matches the on-canvas orientation (origin top-left).
-  geometry.scale(1, -1, 1);
-  geometry.translate(0, model.dimensions.heightMm, 0);
-  geometry.computeVertexNormals();
+  const geometries: BufferGeometry[] = [panelGeometry];
+  for (const element of model.elements) {
+    if (element.type !== PanelElementType.Insert) {
+      continue;
+    }
+    const insertGeometry = buildInsertGeometry(
+      element as PanelElement & { type: PanelElementType.Insert; properties: InsertElementProperties },
+      thicknessMm
+    );
+    if (insertGeometry) {
+      geometries.push(insertGeometry);
+    }
+  }
 
-  return geometry;
+  const merged =
+    geometries.length === 1
+      ? geometries[0]
+      : mergeGeometries(geometries) ?? panelGeometry;
+
+  // Flip Y so the exported model matches the on-canvas orientation (origin top-left).
+  merged.scale(1, -1, 1);
+  merged.translate(0, model.dimensions.heightMm, 0);
+  merged.computeVertexNormals();
+
+  return merged;
 }
 
-function geometryToStlString(geometry: ExtrudeGeometry): string {
+function geometryToStlString(geometry: BufferGeometry): string {
   const mesh = new Mesh(
     geometry,
     // Material is not used for STL export; keep a tiny default.

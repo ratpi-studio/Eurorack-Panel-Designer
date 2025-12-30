@@ -82,6 +82,25 @@ export function ElementProperties({
       return;
     }
 
+    if (element.type === PanelElementType.Insert) {
+      const props = element.properties as {
+        outerDiameterMm: number;
+        outerDepthMm: number;
+        innerDiameterMm: number;
+        innerDepthMm: number;
+        embedDepthMm: number;
+      };
+      setInputs({
+        ...base,
+        outerDiameter: props.outerDiameterMm.toString(),
+        outerDepth: props.outerDepthMm.toString(),
+        innerDiameter: props.innerDiameterMm.toString(),
+        innerDepth: props.innerDepthMm.toString(),
+        embedDepth: props.embedDepthMm.toString()
+      });
+      return;
+    }
+
     setInputs(base);
   }, [element]);
 
@@ -271,6 +290,91 @@ export function ElementProperties({
             </label>
           </>
         )}
+
+        {element.type === PanelElementType.Insert ? (
+          <>
+            <label className={styles.field}>
+              <span className={styles.label}>{t.properties.outerDiameter}</span>
+              <input
+                className={styles.input}
+                type="number"
+                min={0}
+                step={0.1}
+                value={
+                  inputs.outerDiameter ??
+                  (properties as { outerDiameterMm: number }).outerDiameterMm.toString()
+                }
+                onChange={(event) =>
+                  handlePropertyChange('outerDiameterMm', event.target.value)
+                }
+              />
+            </label>
+            <label className={styles.field}>
+              <span className={styles.label}>{t.properties.outerDepth}</span>
+              <input
+                className={styles.input}
+                type="number"
+                min={0}
+                step={0.1}
+                value={
+                  inputs.outerDepth ??
+                  (properties as { outerDepthMm: number }).outerDepthMm.toString()
+                }
+                onChange={(event) =>
+                  handlePropertyChange('outerDepthMm', event.target.value)
+                }
+              />
+            </label>
+            <label className={styles.field}>
+              <span className={styles.label}>{t.properties.innerDiameter}</span>
+              <input
+                className={styles.input}
+                type="number"
+                min={0}
+                step={0.1}
+                value={
+                  inputs.innerDiameter ??
+                  (properties as { innerDiameterMm: number }).innerDiameterMm.toString()
+                }
+                onChange={(event) =>
+                  handlePropertyChange('innerDiameterMm', event.target.value)
+                }
+              />
+            </label>
+            <label className={styles.field}>
+              <span className={styles.label}>{t.properties.innerDepth}</span>
+              <input
+                className={styles.input}
+                type="number"
+                min={0}
+                step={0.1}
+                value={
+                  inputs.innerDepth ??
+                  (properties as { innerDepthMm: number }).innerDepthMm.toString()
+                }
+                onChange={(event) =>
+                  handlePropertyChange('innerDepthMm', event.target.value)
+                }
+              />
+            </label>
+            <label className={styles.field}>
+              <span className={styles.label}>{t.properties.embedDepth}</span>
+              <input
+                className={styles.input}
+                type="number"
+                min={0}
+                step={0.1}
+                value={
+                  inputs.embedDepth ??
+                  (properties as { embedDepthMm: number }).embedDepthMm.toString()
+                }
+                onChange={(event) =>
+                  handlePropertyChange('embedDepthMm', event.target.value)
+                }
+              />
+            </label>
+          </>
+        ) : null}
 
         {element.type === PanelElementType.Label ? (
           <>

@@ -37,7 +37,8 @@ const elementFillColors: Record<PanelElementType, string> = {
   [PanelElementType.Rectangle]: '#4ade80',
   [PanelElementType.Oval]: '#c084fc',
   [PanelElementType.Slot]: '#fb923c',
-  [PanelElementType.Triangle]: '#22d3ee'
+  [PanelElementType.Triangle]: '#22d3ee',
+  [PanelElementType.Insert]: '#f59e0b'
 };
 
 const elementStrokeColor = '#0f172a';
@@ -476,6 +477,7 @@ export function PanelCanvas({
       animationFrameRef.current = null;
     };
   }, [
+    canvasRef,
     transform,
     model.elements,
     mountingHoles,
@@ -492,7 +494,10 @@ export function PanelCanvas({
     clearanceLines,
     referenceImage,
     referenceImageElement,
-    referenceImageSelected
+    referenceImageSelected,
+    model.dimensions.widthMm,
+    model.dimensions.heightMm,
+    placementType
   ]);
 
   const handleWheel = React.useCallback(
@@ -543,6 +548,7 @@ export function PanelCanvas({
       onPanChange(nextPan);
     },
     [
+      canvasRef,
       clampZoom,
       model.dimensions.heightMm,
       model.dimensions.widthMm,
@@ -565,7 +571,7 @@ export function PanelCanvas({
     return () => {
       canvas.removeEventListener('wheel', listener);
     };
-  }, [handleWheel]);
+  }, [canvasRef, handleWheel]);
 
   const updateHoverState = React.useCallback(
     (pointPanel: Vector2 | null) => {

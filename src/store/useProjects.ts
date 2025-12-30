@@ -4,9 +4,6 @@ import { useI18n } from '@i18n/I18nContext';
 import { buildKicadEdgeCutsSvg, buildKicadPcbFile } from '@lib/exportKicad';
 import { buildPanelSvg } from '@lib/exportSvg';
 import {
-  computeClearanceLines
-} from '@lib/clearance';
-import {
   computeElementMountingHoles
 } from '@lib/elementMountingHoles';
 import {
@@ -40,7 +37,6 @@ import { createPanelDimensions } from '@lib/units';
 import { usePanelStore } from '@store/panelStore';
 
 interface UseProjectsArgs {
-  canvasRef: React.RefObject<HTMLCanvasElement | null>;
   mountingHoles: MountingHole[];
   resetView: () => void;
   clearHistory: () => void;
@@ -80,7 +76,6 @@ interface UseProjectsResult {
 }
 
 export function useProjects({
-  canvasRef,
   mountingHoles,
   resetView,
   clearHistory
@@ -180,11 +175,6 @@ export function useProjects({
       panelModel.elementHoleConfig
     );
 
-    const clearanceLines = computeClearanceLines(
-      panelModel.clearance,
-      panelModel.dimensions.heightMm
-    );
-
     const transform = computeCanvasTransform({
       canvasSizePx: { x: widthPx, y: heightPx },
       panelSizeMm: { x: panelModel.dimensions.widthMm, y: panelModel.dimensions.heightMm },
@@ -229,9 +219,7 @@ export function useProjects({
     projectName,
     serializedModel,
     setStatus,
-    t.projects.defaultName,
-    t.projects.messages,
-    t.projects.messages.saveSuccess
+    t
   ]);
 
   const handleLoadProject = React.useCallback(
@@ -313,9 +301,7 @@ export function useProjects({
       setModel,
       setPlacementType,
       clearSelection,
-      t.projects.messages,
-      t.projects.messages.importError,
-      t.projects.messages.importSuccess
+      t
     ]
   );
 
