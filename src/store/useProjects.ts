@@ -11,7 +11,6 @@ import {
   DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   DEFAULT_PANEL_OPTIONS,
-  PanelElementType,
   type MountingHole
 } from '@lib/panelTypes';
 import { drawPanelScene } from '@lib/canvas/renderScene';
@@ -36,6 +35,7 @@ import {
 } from '@lib/serialization';
 import { createPanelDimensions } from '@lib/units';
 import { usePanelStore } from '@store/panelStore';
+import { elementFillColors, elementStrokeColor, exportPalette } from '@lib/canvas/palette';
 
 interface UseProjectsArgs {
   mountingHoles: MountingHole[];
@@ -147,31 +147,6 @@ export function useProjects({
       return null;
     }
 
-    const exportPalette = {
-      panelFill: '#111827',
-      panelBorder: '#334155',
-      grid: 'rgba(148, 163, 184, 0.2)',
-      gridCenter: 'rgba(148, 163, 184, 0.45)',
-      mountingHoleFill: '#0f172a',
-      mountingHoleStroke: '#94a3b8',
-      selection: '#ffffff',
-      clearanceLine: 'rgba(244, 114, 182, 0.4)',
-      clearanceLabel: '#fbcfe8'
-    } as const;
-
-    const elementFillColors = {
-      jack: '#38bdf8',
-      potentiometer: '#f472b6',
-      switch: '#facc15',
-      led: '#f87171',
-      label: '#f8fafc',
-      rectangle: '#4ade80',
-      oval: '#c084fc',
-      slot: '#fb923c',
-      triangle: '#22d3ee',
-      insert: '#f59e0b'
-    } satisfies Record<PanelElementType, string>;
-
     const elementMountingHoles = computeElementMountingHoles(
       panelModel.elements,
       panelModel.elementHoleConfig
@@ -199,7 +174,7 @@ export function useProjects({
       gridSizeMm: panelModel.options.gridSizeMm,
       palette: exportPalette,
       elementFillColors,
-      elementStrokeColor: '#0f172a',
+      elementStrokeColor,
       fontFamily: themeValues.font.body
     });
 
