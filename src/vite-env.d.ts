@@ -7,3 +7,11 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+declare module 'virtual:changelog' {
+  export const changelogEntries: Array<{
+    version: string;
+    date: string;
+    highlights: string[];
+  }>;
+}

@@ -70,7 +70,7 @@ interface UseProjectsResult {
   handleExportSvg: () => void;
   handleExportKicadSvg: () => void;
   handleExportKicadPcb: () => void;
-  handleExportStl: (thicknessMm: number) => void;
+  handleExportStl: (thicknessMm: number, fileName?: string) => void;
   exportFormat: ExportFormat;
   setExportFormat: (format: ExportFormat) => void;
   handleReset: () => void;
@@ -341,7 +341,7 @@ export function useProjects({
   }, [mountingHoles, panelModel, projectName, setStatus, t.projects.messages]);
 
   const handleExportStl = React.useCallback(
-    (thicknessMm: number) => {
+    (thicknessMm: number, fileName?: string) => {
       if (!Number.isFinite(thicknessMm) || thicknessMm <= 0) {
         return;
       }
@@ -354,7 +354,12 @@ export function useProjects({
           const blob = new Blob([stl], { type: 'model/stl' });
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
-          const baseName = (projectName || 'panel').trim().replace(/\s+/g, '-');
+          const baseNameInput = (fileName || projectName || 'panel').trim();
+          const baseName = baseNameInput
+            .replace(/\.stl$/i, '')
+            .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '')
+            .trim()
+            .replace(/\s+/g, '-');
           link.download = `${baseName || 'panel'}.stl`;
           link.href = url;
           link.click();
