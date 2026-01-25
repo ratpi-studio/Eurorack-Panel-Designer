@@ -133,16 +133,18 @@ interface Translations {
       confirmYes: string;
       confirmNo: string;
     };
-    stlDialog: {
-      title: string;
-      description: string;
-      thicknessLabel: string;
-      thicknessHint: string;
-      previewLabel: string;
-      previewLoading: string;
-      cancel: string;
-      confirm: string;
-    };
+	    stlDialog: {
+	      title: string;
+	      description: string;
+	      fileNameLabel: string;
+	      fileNameHint: string;
+	      thicknessLabel: string;
+	      thicknessHint: string;
+	      previewLabel: string;
+	      previewLoading: string;
+	      cancel: string;
+	      confirm: string;
+	    };
   };
   changelog: {
     buttonLabel: string;
@@ -345,17 +347,19 @@ export const enUS: Translations = {
       confirmYes: 'Yes',
       confirmNo: 'No'
     },
-    stlDialog: {
-      title: 'Export STL',
-      description: 'Set the panel thickness in millimeters for the 3D model.',
-      thicknessLabel: 'Panel thickness (mm)',
-      thicknessHint: 'Default is 2 mm.',
-      previewLabel: 'Preview',
-      previewLoading: 'Loading preview…',
-      cancel: 'Cancel',
-      confirm: 'Export STL'
-    }
-  },
+	    stlDialog: {
+	      title: 'Export STL',
+	      description: 'Set the panel thickness in millimeters for the 3D model.',
+	      fileNameLabel: 'File name',
+	      fileNameHint: 'The .stl extension is added automatically.',
+	      thicknessLabel: 'Panel thickness (mm)',
+	      thicknessHint: 'Default is 2 mm.',
+	      previewLabel: 'Preview',
+	      previewLoading: 'Loading preview…',
+	      cancel: 'Cancel',
+	      confirm: 'Export STL'
+	    }
+	  },
   changelog: {
     buttonLabel: 'Changelog',
     title: 'Changelog',

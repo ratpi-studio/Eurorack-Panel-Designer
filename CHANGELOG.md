@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.1 - 2026-01-24
+
+- STL export dialog now supports a custom file name.
+- Fixed the export dialog closing when releasing a text selection outside the modal.
+
 ## 0.5.0 - 2025-12-13
 
 - Added insert item for pcb mount

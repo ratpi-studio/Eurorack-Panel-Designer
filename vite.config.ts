@@ -3,10 +3,101 @@ import path from 'node:path';
 
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import react from '@vitejs/plugin-react-swc';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 
 const sentryEnvFile = path.resolve(__dirname, '.env.sentry');
+
+const changelogVirtualId = 'virtual:changelog';
+const resolvedChangelogVirtualId = `\0${changelogVirtualId}`;
+const changelogPath = path.resolve(__dirname, 'CHANGELOG.md');
+
+interface ChangelogEntry {
+  version: string;
+  date: string;
+  highlights: string[];
+}
+
+function parseChangelogMarkdown(markdown: string): ChangelogEntry[] {
+  const lines = markdown.split(/\r?\n/);
+  const entries: ChangelogEntry[] = [];
+  let currentEntry: ChangelogEntry | null = null;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd();
+    const headerMatch = line.match(/^##\s+(.+?)\s*$/);
+    if (headerMatch) {
+      const header = headerMatch[1].trim();
+      const [rawVersion, rawDate = ''] = header.split(/\s+-\s+/, 2);
+      const version = (rawVersion ?? '').trim().replace(/^v/i, '');
+      const date = (rawDate ?? '').trim();
+
+      if (!version) {
+        currentEntry = null;
+        continue;
+      }
+
+      currentEntry = { version, date, highlights: [] };
+      entries.push(currentEntry);
+      continue;
+    }
+
+    if (!currentEntry) {
+      continue;
+    }
+
+    const bulletMatch = line.match(/^\s*-\s+(.*)$/);
+    if (bulletMatch) {
+      const text = bulletMatch[1].trim();
+      if (text) {
+        currentEntry.highlights.push(text);
+      }
+    }
+  }
+
+  return entries;
+}
+
+function changelogPlugin(): Plugin {
+  return {
+    name: 'eurorack-changelog',
+    resolveId(id) {
+      if (id === changelogVirtualId) {
+        return resolvedChangelogVirtualId;
+      }
+      return null;
+    },
+    load(id) {
+      if (id !== resolvedChangelogVirtualId) {
+        return null;
+      }
+
+      this.addWatchFile(changelogPath);
+
+      const markdown = readFileSync(changelogPath, 'utf8');
+      const entries = parseChangelogMarkdown(markdown);
+
+      return `export const changelogEntries = ${JSON.stringify(entries, null, 2)};\n`;
+    },
+    configureServer(server) {
+      server.watcher.add(changelogPath);
+    },
+    handleHotUpdate({ file, server }) {
+      if (path.resolve(file) !== changelogPath) {
+        return [];
+      }
+
+      const module = server.moduleGraph.getModuleById(resolvedChangelogVirtualId);
+      if (module) {
+        server.moduleGraph.invalidateModule(module);
+        return [module];
+      }
+
+      server.ws.send({ type: 'full-reload' });
+      return [];
+    }
+  };
+}
 
 const readLocalSentryEnv = () => {
   if (!existsSync(sentryEnvFile)) {
@@ -59,6 +150,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       vanillaExtractPlugin(),
+      changelogPlugin(),
       react(),
       ...(useSentry
         ? [

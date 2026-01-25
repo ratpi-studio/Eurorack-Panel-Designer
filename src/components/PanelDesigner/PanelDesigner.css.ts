@@ -495,7 +495,11 @@ export const previewFallback = style({
 export const changelogList = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: vars.spacing.sm
+  gap: vars.spacing.sm,
+  maxHeight: 'min(60vh, 420px)',
+  overflowY: 'auto',
+  overscrollBehavior: 'contain',
+  paddingRight: vars.spacing.xs
 });
 
 export const changelogEntry = style({

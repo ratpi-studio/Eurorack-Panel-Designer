@@ -78,6 +78,7 @@ export function PanelDesigner() {
     message: string;
     onConfirm: () => void;
   } | null>(null);
+  const [stlFileNameInput, setStlFileNameInput] = React.useState('');
   const [stlThicknessInput, setStlThicknessInput] = React.useState('2');
   const { isCompact, showLeftPanel, showRightPanel, setShowLeftPanel, setShowRightPanel } =
     useResponsivePanels();
@@ -266,6 +267,11 @@ export function PanelDesigner() {
     const trimmed = projectName.trim();
     return trimmed || t.projects.defaultName;
   }, [projectName, t.projects.defaultName]);
+
+  const openStlExportModal = React.useCallback(() => {
+    setStlFileNameInput((previous) => (previous.trim() ? previous : resolvedProjectName));
+    setIsStlModalOpen(true);
+  }, [resolvedProjectName]);
 
   React.useEffect(() => {
     if (!isEditingProjectName) {
@@ -573,7 +579,7 @@ export function PanelDesigner() {
         handleExportPng();
         return;
       case 'stl':
-        setIsStlModalOpen(true);
+        openStlExportModal();
         return;
       case 'kicadSvg':
         handleExportKicadSvg();
@@ -590,7 +596,8 @@ export function PanelDesigner() {
     handleExportKicadPcb,
     handleExportKicadSvg,
     handleExportPng,
-    handleExportSvg
+    handleExportSvg,
+    openStlExportModal
   ]);
 
   const handleSelectExportFormat = React.useCallback(
@@ -603,7 +610,7 @@ export function PanelDesigner() {
           handleExportPng();
           return;
         case 'stl':
-          setIsStlModalOpen(true);
+          openStlExportModal();
           return;
         case 'kicadSvg':
           handleExportKicadSvg();
@@ -621,6 +628,7 @@ export function PanelDesigner() {
       handleExportKicadSvg,
       handleExportPng,
       handleExportSvg,
+      openStlExportModal,
       setExportFormat
     ]
   );
@@ -630,9 +638,9 @@ export function PanelDesigner() {
     if (!Number.isFinite(thickness) || thickness <= 0) {
       return;
     }
-    handleExportStl(thickness);
+    handleExportStl(thickness, stlFileNameInput);
     setIsStlModalOpen(false);
-  }, [handleExportStl, stlThicknessInput]);
+  }, [handleExportStl, stlFileNameInput, stlThicknessInput]);
 
   const handleCancelStlExport = React.useCallback(() => {
     setIsStlModalOpen(false);
@@ -984,10 +992,13 @@ export function PanelDesigner() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="stl-export-title"
-          onClick={handleCancelStlExport}
+          onPointerDown={handleCancelStlExport}
         >
           <div
             className={styles.modal}
+            onPointerDown={(event) => {
+              event.stopPropagation();
+            }}
             onClick={(event) => {
               event.stopPropagation();
             }}
@@ -996,6 +1007,16 @@ export function PanelDesigner() {
               {t.projects.stlDialog.title}
             </h2>
             <p className={styles.modalDescription}>{t.projects.stlDialog.description}</p>
+            <label className={styles.fieldRow}>
+              <span className={styles.label}>{t.projects.stlDialog.fileNameLabel}</span>
+              <input
+                className={styles.textInput}
+                type="text"
+                value={stlFileNameInput}
+                onChange={(event) => setStlFileNameInput(event.target.value)}
+              />
+              <span className={styles.hint}>{t.projects.stlDialog.fileNameHint}</span>
+            </label>
             <label className={styles.fieldRow}>
               <span className={styles.label}>{t.projects.stlDialog.thicknessLabel}</span>
               <input
