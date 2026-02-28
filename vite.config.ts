@@ -131,6 +131,7 @@ export default defineConfig(({ mode }) => {
   });
 
   const env = loadEnv(mode, process.cwd(), '');
+  const basePath = env.VITE_BASE_PATH || '/';
   const releaseName = env.VITE_SENTRY_RELEASE || env.SENTRY_RELEASE || localSentryEnv.SENTRY_RELEASE;
 
   if (releaseName) {
@@ -148,6 +149,7 @@ export default defineConfig(({ mode }) => {
   const useSentry = Boolean(env.SENTRY_AUTH_TOKEN && env.SENTRY_ORG && env.SENTRY_PROJECT);
 
   return {
+    base: basePath,
     plugins: [
       vanillaExtractPlugin(),
       changelogPlugin(),
