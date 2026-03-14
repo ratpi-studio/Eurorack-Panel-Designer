@@ -34,6 +34,8 @@ const DEFAULT_ZOOM = 1;
 const DEFAULT_PAN: Vector2 = { x: 0, y: 0 };
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 4;
+const CHANGELOG_URL =
+  "https://github.com/ratpi-studio/Eurorack-Panel-Designer/blob/master/CHANGELOG.md";
 const LazyStlPreview = React.lazy(() =>
   import("@components/StlPreview/StlPreview").then((module) => ({
     default: module.StlPreview,
@@ -1112,7 +1114,7 @@ export function PanelDesigner() {
               ))}
               <a
                 className={styles.changelogLink}
-                href="/CHANGELOG.md"
+                href={CHANGELOG_URL}
                 target="_blank"
                 rel="noreferrer"
               >

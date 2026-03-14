@@ -33,7 +33,7 @@ jobs:
         run: vp check
 
       - name: Typecheck
-        run: yarn tsc --noEmit
+        run: corepack yarn exec tsc --noEmit
 
       - name: Run tests
         run: vp test
