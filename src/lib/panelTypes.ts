@@ -8,21 +8,21 @@ export const DEFAULT_MM_PER_HP = 5.08;
 export const THREE_U_HEIGHT_MM = 128.5;
 
 export enum PanelElementType {
-  Jack = 'jack',
-  Potentiometer = 'potentiometer',
-  Switch = 'switch',
-  Led = 'led',
-  Label = 'label',
-  Rectangle = 'rectangle',
-  Oval = 'oval',
-  Slot = 'slot',
-  Triangle = 'triangle',
-  Insert = 'insert'
+  Jack = "jack",
+  Potentiometer = "potentiometer",
+  Switch = "switch",
+  Led = "led",
+  Label = "label",
+  Rectangle = "rectangle",
+  Oval = "oval",
+  Slot = "slot",
+  Triangle = "triangle",
+  Insert = "insert",
 }
 
 interface PanelElementBase<
   TType extends PanelElementType,
-  TProperties extends PanelElementPropertiesBase
+  TProperties extends PanelElementPropertiesBase,
 > {
   id: string;
   type: TType;
@@ -128,7 +128,7 @@ export interface PanelModel {
 
 export type PanelModelInput = Omit<
   PanelModel,
-  'mountingHoleConfig' | 'elementHoleConfig' | 'clearance'
+  "mountingHoleConfig" | "elementHoleConfig" | "clearance"
 > & {
   mountingHoleConfig?: MountingHoleConfig;
   elementHoleConfig?: ElementMountingHoleConfig;
@@ -142,32 +142,32 @@ export function normalizePanelModel(model: PanelModelInput): PanelModel {
   const elementEnableDefault = elementOverrides.enabled ?? false;
   const normalizedElements =
     model.elements?.map((element) =>
-      typeof element.mountingHolesEnabled === 'boolean'
+      typeof element.mountingHolesEnabled === "boolean"
         ? element
-        : { ...element, mountingHolesEnabled: elementEnableDefault }
+        : { ...element, mountingHolesEnabled: elementEnableDefault },
     ) ?? [];
   return {
     ...model,
     mountingHoleConfig: {
       ...DEFAULT_MOUNTING_HOLE_CONFIG,
-      ...overrides
+      ...overrides,
     },
     elementHoleConfig: {
       ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
-      ...elementOverrides
+      ...elementOverrides,
     },
     elements: normalizedElements,
     clearance: clampClearanceConfig(
       {
         ...DEFAULT_CLEARANCE_CONFIG,
-        ...clearanceOverrides
+        ...clearanceOverrides,
       },
-      model.dimensions.heightMm
-    )
+      model.dimensions.heightMm,
+    ),
   };
 }
 
-export type MountingHoleShape = 'circle' | 'slot';
+export type MountingHoleShape = "circle" | "slot";
 
 export interface MountingHole {
   center: Vector2;
@@ -189,7 +189,7 @@ export const DEFAULT_PANEL_OPTIONS: PanelOptions = {
   showGrid: true,
   showMountingHoles: true,
   snapToGrid: true,
-  gridSizeMm: 5
+  gridSizeMm: 5,
 };
 
 export const DEFAULT_MOUNTING_HOLE_CONFIG: MountingHoleConfig = {
@@ -197,8 +197,8 @@ export const DEFAULT_MOUNTING_HOLE_CONFIG: MountingHoleConfig = {
   horizontalOffsetMm: 7.5,
   verticalOffsetMm: 3,
   spacingHp: 10,
-  shape: 'circle',
-  slotLengthMm: 8
+  shape: "circle",
+  slotLengthMm: 8,
 };
 
 export const DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG: ElementMountingHoleConfig = {
@@ -206,18 +206,18 @@ export const DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG: ElementMountingHoleConfig = {
   count: 2,
   diameterMm: 2.5,
   offsetMm: 3,
-  rotationDeg: 0
+  rotationDeg: 0,
 };
 
 export const DEFAULT_CLEARANCE_CONFIG: ClearanceConfig = {
   topOffsetMm: 10,
   bottomOffsetMm: 10,
-  minSpacingMm: 5
+  minSpacingMm: 5,
 };
 
 export function clampClearanceConfig(
   config: ClearanceConfig,
-  panelHeightMm: number
+  panelHeightMm: number,
 ): ClearanceConfig {
   const safeHeight = Math.max(panelHeightMm, 0);
   const clampValue = (value: number, min: number, max: number) =>
@@ -230,7 +230,7 @@ export function clampClearanceConfig(
   return {
     topOffsetMm,
     bottomOffsetMm,
-    minSpacingMm: safeMinSpacing
+    minSpacingMm: safeMinSpacing,
   };
 }
 
@@ -242,38 +242,38 @@ export interface SerializedPanel {
 export const SERIALIZATION_VERSION = 4;
 
 function isCircularElementProperties(
-  properties: PanelElement['properties']
+  properties: PanelElement["properties"],
 ): properties is CircularElementProperties {
-  return 'diameterMm' in properties;
+  return "diameterMm" in properties;
 }
 
 function isRectangularElementProperties(
-  properties: PanelElement['properties']
+  properties: PanelElement["properties"],
 ): properties is RectangularElementProperties {
-  return 'widthMm' in properties && 'heightMm' in properties;
+  return "widthMm" in properties && "heightMm" in properties;
 }
 
 function isLabelElementProperties(
-  properties: PanelElement['properties']
+  properties: PanelElement["properties"],
 ): properties is LabelElementProperties {
-  return 'text' in properties && 'fontSizePt' in properties;
+  return "text" in properties && "fontSizePt" in properties;
 }
 
 function isInsertElementProperties(
-  properties: PanelElement['properties']
+  properties: PanelElement["properties"],
 ): properties is InsertElementProperties {
   return (
-    'outerDiameterMm' in properties &&
-    'outerDepthMm' in properties &&
-    'innerDiameterMm' in properties &&
-    'innerDepthMm' in properties &&
-    'embedDepthMm' in properties
+    "outerDiameterMm" in properties &&
+    "outerDepthMm" in properties &&
+    "innerDiameterMm" in properties &&
+    "innerDepthMm" in properties &&
+    "embedDepthMm" in properties
   );
 }
 
 export function sanitizePropertiesForType<TType extends PanelElementType>(
   type: TType,
-  properties?: PanelElement['properties'] | null
+  properties?: PanelElement["properties"] | null,
 ): PanelElementPropertiesMap[TType] | null {
   if (!properties) {
     return null;
@@ -313,77 +313,62 @@ export function sanitizePropertiesForType<TType extends PanelElementType>(
 
 export function withElementProperties(
   element: PanelElement,
-  properties?: PanelElement['properties'] | null
+  properties?: PanelElement["properties"] | null,
 ): PanelElement {
   switch (element.type) {
     case PanelElementType.Jack:
     case PanelElementType.Potentiometer:
     case PanelElementType.Led: {
-      const nextProperties = sanitizePropertiesForType(
-        element.type,
-        properties
-      );
+      const nextProperties = sanitizePropertiesForType(element.type, properties);
       if (!nextProperties) {
         return element;
       }
       return {
         ...element,
-        properties: nextProperties
+        properties: nextProperties,
       };
     }
     case PanelElementType.Switch: {
-      const nextProperties = sanitizePropertiesForType(
-        PanelElementType.Switch,
-        properties
-      );
+      const nextProperties = sanitizePropertiesForType(PanelElementType.Switch, properties);
       if (!nextProperties) {
         return element;
       }
       return {
         ...element,
-        properties: nextProperties
+        properties: nextProperties,
       };
     }
     case PanelElementType.Rectangle:
     case PanelElementType.Oval:
     case PanelElementType.Slot:
     case PanelElementType.Triangle: {
-      const nextProperties = sanitizePropertiesForType(
-        element.type,
-        properties
-      );
+      const nextProperties = sanitizePropertiesForType(element.type, properties);
       if (!nextProperties) {
         return element;
       }
       return {
         ...element,
-        properties: nextProperties
+        properties: nextProperties,
       };
     }
     case PanelElementType.Insert: {
-      const nextProperties = sanitizePropertiesForType(
-        PanelElementType.Insert,
-        properties
-      );
+      const nextProperties = sanitizePropertiesForType(PanelElementType.Insert, properties);
       if (!nextProperties) {
         return element;
       }
       return {
         ...element,
-        properties: nextProperties
+        properties: nextProperties,
       };
     }
     case PanelElementType.Label: {
-      const nextProperties = sanitizePropertiesForType(
-        PanelElementType.Label,
-        properties
-      );
+      const nextProperties = sanitizePropertiesForType(PanelElementType.Label, properties);
       if (!nextProperties) {
         return element;
       }
       return {
         ...element,
-        properties: nextProperties
+        properties: nextProperties,
       };
     }
     default:

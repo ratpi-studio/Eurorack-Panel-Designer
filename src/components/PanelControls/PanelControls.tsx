@@ -1,8 +1,8 @@
-import React from 'react';
+import React from "react";
 
-import { useI18n } from '@i18n/I18nContext';
+import { useI18n } from "@i18n/I18nContext";
 
-import * as styles from './PanelControls.css';
+import * as styles from "./PanelControls.css";
 
 interface PanelControlsProps {
   widthMm: number;
@@ -24,7 +24,7 @@ export function PanelControls({
   widthMm,
   widthHp,
   onChangeWidthMm,
-  onChangeWidthHp
+  onChangeWidthHp,
 }: PanelControlsProps) {
   const t = useI18n();
   const [widthHpInput, setWidthHpInput] = React.useState(() => widthHp.toString());
@@ -42,7 +42,7 @@ export function PanelControls({
     const { value } = event.target;
     setWidthMmInput(value);
 
-    if (value.trim() === '') {
+    if (value.trim() === "") {
       return;
     }
 
@@ -58,7 +58,7 @@ export function PanelControls({
     const { value } = event.target;
     setWidthHpInput(value);
 
-    if (value.trim() === '') {
+    if (value.trim() === "") {
       return;
     }
 

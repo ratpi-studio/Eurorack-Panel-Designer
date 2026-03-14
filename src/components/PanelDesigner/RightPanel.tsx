@@ -1,23 +1,23 @@
-import React from 'react';
+import React from "react";
 
-import { DisplayOptions } from '@components/DisplayOptions/DisplayOptions';
-import { ElementMountingHoles } from '@components/ElementMountingHoles/ElementMountingHoles';
-import { ElementProperties } from '@components/ElementProperties/ElementProperties';
-import { MountingHoleSettings } from '@components/MountingHoleSettings/MountingHoleSettings';
-import { ReferenceImageControls } from '@components/ReferenceImageControls/ReferenceImageControls';
-import type { ExportFormat } from '@lib/exportPreferences';
+import { DisplayOptions } from "@components/DisplayOptions/DisplayOptions";
+import { ElementMountingHoles } from "@components/ElementMountingHoles/ElementMountingHoles";
+import { ElementProperties } from "@components/ElementProperties/ElementProperties";
+import { MountingHoleSettings } from "@components/MountingHoleSettings/MountingHoleSettings";
+import { ReferenceImageControls } from "@components/ReferenceImageControls/ReferenceImageControls";
+import type { ExportFormat } from "@lib/exportPreferences";
 import {
   PanelElementType,
   type ElementMountingHoleConfig,
   type MountingHoleConfig,
   type PanelElement,
   type PanelModel,
-  type Vector2
-} from '@lib/panelTypes';
-import type { ReferenceImage } from '@lib/referenceImage';
-import type { StoredProject } from '@lib/storage';
-import * as styles from './PanelDesigner.css';
-import type { ReturnTypeUseI18n } from './types';
+  type Vector2,
+} from "@lib/panelTypes";
+import type { ReferenceImage } from "@lib/referenceImage";
+import type { StoredProject } from "@lib/storage";
+import * as styles from "./PanelDesigner.css";
+import type { ReturnTypeUseI18n } from "./types";
 
 interface ProjectPanelProps {
   t: ReturnTypeUseI18n;
@@ -54,7 +54,7 @@ interface ProjectPanelProps {
 interface PropertiesPanelProps {
   t: ReturnTypeUseI18n;
   panelModel: PanelModel;
-  displayOptions: PanelModel['options'];
+  displayOptions: PanelModel["options"];
   mountingHolesSelected: boolean;
   referenceImage: ReferenceImage | null;
   referenceImageSelected: boolean;
@@ -63,7 +63,7 @@ interface PropertiesPanelProps {
   selectedElementCount: number;
   placementType: PanelElementType | null;
   snapEnabled: boolean;
-  onDisplayOptionsChange: (options: Partial<PanelModel['options']>) => void;
+  onDisplayOptionsChange: (options: Partial<PanelModel["options"]>) => void;
   onResetView: () => void;
   onMountingHoleConfigChange: (updates: Partial<MountingHoleConfig>) => void;
   onClearMountingHoleSelection: () => void;
@@ -72,9 +72,9 @@ interface PropertiesPanelProps {
   onRemoveReferenceImage: () => void;
   onChangePosition: (positionMm: Vector2) => void;
   onChangeRotation: (rotationDeg: number) => void;
-  onChangeProperties: (properties: PanelElement['properties']) => void;
+  onChangeProperties: (properties: PanelElement["properties"]) => void;
   onRemove: () => void;
-  onChangeDraftProperties: (type: PanelElementType, properties: PanelElement['properties']) => void;
+  onChangeDraftProperties: (type: PanelElementType, properties: PanelElement["properties"]) => void;
   onChangeElementHoleConfig: (updates: Partial<ElementMountingHoleConfig>) => void;
   onChangeElementHoleRotation: (rotationDeg: number) => void;
   onToggleElementHoleEnabled: (enabled: boolean) => void;
@@ -117,7 +117,7 @@ function ProjectPanel({
   onToggleExportMenu,
   onExportClick,
   onExportJson,
-  onSelectExportFormat
+  onSelectExportFormat,
 }: ProjectPanelProps) {
   return (
     <>
@@ -206,35 +206,35 @@ function ProjectPanel({
               <button
                 type="button"
                 className={styles.exportMenuItem}
-                onClick={() => onSelectExportFormat('svg')}
+                onClick={() => onSelectExportFormat("svg")}
               >
                 {t.projects.exportSvg}
               </button>
               <button
                 type="button"
                 className={styles.exportMenuItem}
-                onClick={() => onSelectExportFormat('png')}
+                onClick={() => onSelectExportFormat("png")}
               >
                 {t.projects.exportPng}
               </button>
               <button
                 type="button"
                 className={styles.exportMenuItem}
-                onClick={() => onSelectExportFormat('kicadSvg')}
+                onClick={() => onSelectExportFormat("kicadSvg")}
               >
                 {t.projects.exportKicadSvg}
               </button>
               <button
                 type="button"
                 className={styles.exportMenuItem}
-                onClick={() => onSelectExportFormat('kicadPcb')}
+                onClick={() => onSelectExportFormat("kicadPcb")}
               >
                 {t.projects.exportKicadPcb}
               </button>
               <button
                 type="button"
                 className={styles.exportMenuItem}
-                onClick={() => onSelectExportFormat('stl')}
+                onClick={() => onSelectExportFormat("stl")}
               >
                 {t.projects.exportStl}
               </button>
@@ -323,12 +323,16 @@ function PropertiesPanel({
   onChangeDraftProperties,
   onChangeElementHoleConfig,
   onChangeElementHoleRotation,
-  onToggleElementHoleEnabled
+  onToggleElementHoleEnabled,
 }: PropertiesPanelProps) {
   return (
     <>
       <div className={styles.card}>
-        <DisplayOptions options={displayOptions} onChange={onDisplayOptionsChange} onResetView={onResetView} />
+        <DisplayOptions
+          options={displayOptions}
+          onChange={onDisplayOptionsChange}
+          onResetView={onResetView}
+        />
       </div>
       {mountingHolesSelected ? (
         <div className={styles.card}>
@@ -382,9 +386,15 @@ function PropertiesPanel({
   );
 }
 
-export function RightPanel({ isCompact, showPanel, onClose, projectPanel, propertiesPanel }: RightPanelProps) {
+export function RightPanel({
+  isCompact,
+  showPanel,
+  onClose,
+  projectPanel,
+  propertiesPanel,
+}: RightPanelProps) {
   const containerClass = `${styles.rightColumn} ${
-    isCompact ? `${styles.drawer} ${styles.drawerRight} ${showPanel ? styles.drawerOpen : ''}` : ''
+    isCompact ? `${styles.drawer} ${styles.drawerRight} ${showPanel ? styles.drawerOpen : ""}` : ""
   }`;
 
   if (isCompact && !showPanel) {

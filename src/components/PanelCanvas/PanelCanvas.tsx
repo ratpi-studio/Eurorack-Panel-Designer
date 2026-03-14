@@ -1,6 +1,6 @@
-import React from 'react';
+import React from "react";
 
-import { computeCanvasTransform } from '@lib/canvas/transform';
+import { computeCanvasTransform } from "@lib/canvas/transform";
 import {
   PanelElementType,
   withElementProperties,
@@ -8,23 +8,23 @@ import {
   type PanelElement,
   type PanelModel,
   type PanelOptions,
-  type Vector2
-} from '@lib/panelTypes';
-import type { ReferenceImage } from '@lib/referenceImage';
-import { type ClearanceLines } from '@lib/clearance';
-import { createPanelElement } from '@lib/elements';
-import { snapPointToGrid } from '@lib/grid';
-import { useCanvasPointer } from './useCanvasPointer';
-import { useCanvasRender } from './useCanvasRender';
-import { useCanvasSize } from './useCanvasSize';
-import * as styles from './PanelCanvas.css';
+  type Vector2,
+} from "@lib/panelTypes";
+import type { ReferenceImage } from "@lib/referenceImage";
+import { type ClearanceLines } from "@lib/clearance";
+import { createPanelElement } from "@lib/elements";
+import { snapPointToGrid } from "@lib/grid";
+import { useCanvasPointer } from "./useCanvasPointer";
+import { useCanvasRender } from "./useCanvasRender";
+import { useCanvasSize } from "./useCanvasSize";
+import * as styles from "./PanelCanvas.css";
 
 const CANVAS_PADDING_PX = 48;
 const CANVAS_WIDTH_PX = 1200;
 const CANVAS_HEIGHT_PX = 720;
 
 type DraftPropertiesState = Partial<{
-  [T in PanelElementType]: PanelElement['properties'];
+  [T in PanelElementType]: PanelElement["properties"];
 }>;
 
 interface PanelCanvasProps {
@@ -57,13 +57,13 @@ interface PanelCanvasProps {
   onClearMountingHoleSelection: () => void;
   displayOptions: Pick<
     PanelOptions,
-    'showGrid' | 'showMountingHoles' | 'gridSizeMm' | 'snapToGrid'
+    "showGrid" | "showMountingHoles" | "gridSizeMm" | "snapToGrid"
   >;
   selectedElementIds: string[];
   draftProperties: DraftPropertiesState;
   onMoveElements: (updates: { id: string; positionMm: Vector2 }[]) => void;
   clearanceLines: ClearanceLines;
-  onClearanceLineChange: (line: 'top' | 'bottom', positionMm: number) => void;
+  onClearanceLineChange: (line: "top" | "bottom", positionMm: number) => void;
   onClearanceLineDragStart: () => void;
   onClearanceLineDragEnd: () => void;
 }
@@ -103,7 +103,7 @@ export function PanelCanvas({
   clearanceLines,
   onClearanceLineChange,
   onClearanceLineDragStart,
-  onClearanceLineDragEnd
+  onClearanceLineDragEnd,
 }: PanelCanvasProps) {
   const internalCanvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const canvasRef = forwardedCanvasRef ?? internalCanvasRef;
@@ -115,13 +115,13 @@ export function PanelCanvas({
         canvasSizePx: canvasSize,
         panelSizeMm: {
           x: model.dimensions.widthMm,
-          y: model.dimensions.heightMm
+          y: model.dimensions.heightMm,
         },
         zoom,
         pan,
-        paddingPx: CANVAS_PADDING_PX
+        paddingPx: CANVAS_PADDING_PX,
       }),
-    [canvasSize, model.dimensions.heightMm, model.dimensions.widthMm, pan, zoom]
+    [canvasSize, model.dimensions.heightMm, model.dimensions.widthMm, pan, zoom],
   );
 
   const {
@@ -134,7 +134,7 @@ export function PanelCanvas({
     handlePointerMove,
     handlePointerUp,
     handlePointerLeave,
-    handleContextMenu
+    handleContextMenu,
   } = useCanvasPointer({
     canvasRef,
     transform,
@@ -171,25 +171,24 @@ export function PanelCanvas({
     clearanceLines,
     onClearanceLineChange,
     onClearanceLineDragStart,
-    onClearanceLineDragEnd
+    onClearanceLineDragEnd,
   });
 
   const maybeSnap = React.useCallback(
     (point: Vector2): Vector2 =>
       displayOptions.snapToGrid && !snapOverridden
-        ? snapPointToGrid(
-            point,
-            displayOptions.gridSizeMm,
-            { x: model.dimensions.widthMm, y: model.dimensions.heightMm }
-          )
+        ? snapPointToGrid(point, displayOptions.gridSizeMm, {
+            x: model.dimensions.widthMm,
+            y: model.dimensions.heightMm,
+          })
         : point,
     [
       displayOptions.gridSizeMm,
       displayOptions.snapToGrid,
       snapOverridden,
       model.dimensions.heightMm,
-      model.dimensions.widthMm
-    ]
+      model.dimensions.widthMm,
+    ],
   );
 
   const ghostElement = React.useMemo<PanelElement | null>(() => {
@@ -204,7 +203,7 @@ export function PanelCanvas({
 
     return {
       ...withDraft,
-      id: 'ghost'
+      id: "ghost",
     };
   }, [draftProperties, maybeSnap, placementType, pointerPanelPos]);
 
@@ -223,21 +222,21 @@ export function PanelCanvas({
     referenceImage,
     referenceImageElement,
     referenceImageSelected,
-    placementType
+    placementType,
   });
 
   const canvasStyle = React.useMemo(
     () => ({
-      width: '100%',
+      width: "100%",
       maxWidth: `${CANVAS_WIDTH_PX}px`,
       height: `${canvasSize.y}px`,
-      minHeight: `${Math.round(CANVAS_HEIGHT_PX * 0.6)}px`
+      minHeight: `${Math.round(CANVAS_HEIGHT_PX * 0.6)}px`,
     }),
-    [canvasSize.y]
+    [canvasSize.y],
   );
 
   const hudText = `${model.dimensions.widthHp} HP · ${model.dimensions.widthMm.toFixed(
-    1
+    1,
   )} x ${model.dimensions.heightMm.toFixed(1)} mm · Zoom ${(zoom * 100).toFixed(0)}%`;
 
   return (
@@ -259,7 +258,7 @@ export function PanelCanvas({
             left: `${selectionOverlay.left}px`,
             top: `${selectionOverlay.top}px`,
             width: `${selectionOverlay.width}px`,
-            height: `${selectionOverlay.height}px`
+            height: `${selectionOverlay.height}px`,
           }}
         />
       ) : null}
@@ -267,7 +266,7 @@ export function PanelCanvas({
         {hudText}
         {pointerPanelPos
           ? ` · X ${pointerPanelPos.x.toFixed(1)} mm · Y ${pointerPanelPos.y.toFixed(1)} mm`
-          : ''}
+          : ""}
       </div>
     </div>
   );

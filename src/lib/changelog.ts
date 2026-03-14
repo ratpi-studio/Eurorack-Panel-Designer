@@ -1,4 +1,4 @@
-import { changelogEntries as generatedChangelogEntries } from 'virtual:changelog';
+import { changelogEntries as generatedChangelogEntries } from "virtual:changelog";
 
 export interface ChangelogEntry {
   version: string;

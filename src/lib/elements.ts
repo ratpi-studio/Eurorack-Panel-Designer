@@ -5,11 +5,11 @@ import {
   type LabelElementProperties,
   type PanelElement,
   type RectangularElementProperties,
-  type Vector2
-} from '@lib/panelTypes';
+  type Vector2,
+} from "@lib/panelTypes";
 
 function generateElementId(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
   }
 
@@ -18,47 +18,47 @@ function generateElementId(): string {
 
 const DEFAULT_CIRCULAR: CircularElementProperties = {
   diameterMm: 8,
-  label: ''
+  label: "",
 };
 
 const DEFAULT_POTENTIOMETER: CircularElementProperties = {
   diameterMm: 10,
-  label: ''
+  label: "",
 };
 
 const DEFAULT_SWITCH: RectangularElementProperties = {
   widthMm: 8,
   heightMm: 16,
-  label: ''
+  label: "",
 };
 
 const DEFAULT_RECTANGLE: RectangularElementProperties = {
   widthMm: 12,
   heightMm: 20,
-  label: ''
+  label: "",
 };
 
 const DEFAULT_OVAL: RectangularElementProperties = {
   widthMm: 12,
   heightMm: 8,
-  label: ''
+  label: "",
 };
 
 const DEFAULT_SLOT: RectangularElementProperties = {
   widthMm: 16,
   heightMm: 6,
-  label: ''
+  label: "",
 };
 
 const DEFAULT_TRIANGLE: RectangularElementProperties = {
   widthMm: 12,
   heightMm: 12,
-  label: ''
+  label: "",
 };
 
 const DEFAULT_LED: CircularElementProperties = {
   diameterMm: 3,
-  label: ''
+  label: "",
 };
 
 const DEFAULT_INSERT: InsertElementProperties = {
@@ -67,19 +67,16 @@ const DEFAULT_INSERT: InsertElementProperties = {
   innerDiameterMm: 2.7,
   innerDepthMm: 4,
   embedDepthMm: 0,
-  label: ''
+  label: "",
 };
 
 const DEFAULT_LABEL: LabelElementProperties = {
-  text: 'Label',
+  text: "Label",
   fontSizePt: 10,
-  label: ''
+  label: "",
 };
 
-export function createPanelElement(
-  type: PanelElementType,
-  positionMm: Vector2
-): PanelElement {
+export function createPanelElement(type: PanelElementType, positionMm: Vector2): PanelElement {
   switch (type) {
     case PanelElementType.Jack:
       return {
@@ -87,7 +84,7 @@ export function createPanelElement(
         type,
         positionMm,
         mountingHolesEnabled: false,
-        properties: { ...DEFAULT_CIRCULAR }
+        properties: { ...DEFAULT_CIRCULAR },
       };
     case PanelElementType.Potentiometer:
       return {
@@ -95,7 +92,7 @@ export function createPanelElement(
         type,
         positionMm,
         mountingHolesEnabled: false,
-        properties: { ...DEFAULT_POTENTIOMETER }
+        properties: { ...DEFAULT_POTENTIOMETER },
       };
     case PanelElementType.Switch:
       return {
@@ -103,7 +100,7 @@ export function createPanelElement(
         type,
         positionMm,
         mountingHolesEnabled: false,
-        properties: { ...DEFAULT_SWITCH }
+        properties: { ...DEFAULT_SWITCH },
       };
     case PanelElementType.Rectangle:
       return {
@@ -111,7 +108,7 @@ export function createPanelElement(
         type,
         positionMm,
         mountingHolesEnabled: false,
-        properties: { ...DEFAULT_RECTANGLE }
+        properties: { ...DEFAULT_RECTANGLE },
       };
     case PanelElementType.Oval:
       return {
@@ -119,7 +116,7 @@ export function createPanelElement(
         type,
         positionMm,
         mountingHolesEnabled: false,
-        properties: { ...DEFAULT_OVAL }
+        properties: { ...DEFAULT_OVAL },
       };
     case PanelElementType.Slot:
       return {
@@ -127,7 +124,7 @@ export function createPanelElement(
         type,
         positionMm,
         mountingHolesEnabled: false,
-        properties: { ...DEFAULT_SLOT }
+        properties: { ...DEFAULT_SLOT },
       };
     case PanelElementType.Triangle:
       return {
@@ -135,7 +132,7 @@ export function createPanelElement(
         type,
         positionMm,
         mountingHolesEnabled: false,
-        properties: { ...DEFAULT_TRIANGLE }
+        properties: { ...DEFAULT_TRIANGLE },
       };
     case PanelElementType.Insert:
       return {
@@ -143,7 +140,7 @@ export function createPanelElement(
         type,
         positionMm,
         mountingHolesEnabled: false,
-        properties: { ...DEFAULT_INSERT }
+        properties: { ...DEFAULT_INSERT },
       };
     case PanelElementType.Led:
       return {
@@ -151,7 +148,7 @@ export function createPanelElement(
         type,
         positionMm,
         mountingHolesEnabled: false,
-        properties: { ...DEFAULT_LED }
+        properties: { ...DEFAULT_LED },
       };
     case PanelElementType.Label:
     default:
@@ -160,7 +157,7 @@ export function createPanelElement(
         type: PanelElementType.Label,
         positionMm,
         mountingHolesEnabled: false,
-        properties: { ...DEFAULT_LABEL }
+        properties: { ...DEFAULT_LABEL },
       };
   }
 }

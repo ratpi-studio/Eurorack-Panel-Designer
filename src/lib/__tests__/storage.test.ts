@@ -1,19 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import {
   DEFAULT_CLEARANCE_CONFIG,
   DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   DEFAULT_PANEL_OPTIONS,
-  type PanelModel
-} from '../panelTypes';
-import { createPanelDimensions } from '../units';
-import {
-  deleteProject,
-  listProjects,
-  loadProject,
-  saveProject
-} from '../storage';
+  type PanelModel,
+} from "../panelTypes";
+import { createPanelDimensions } from "../units";
+import { deleteProject, listProjects, loadProject, saveProject } from "../storage";
 
 class MemoryStorage implements Storage {
   private store = new Map<string, string>();
@@ -23,7 +18,7 @@ class MemoryStorage implements Storage {
   }
 
   getItem(key: string): string | null {
-    return this.store.has(key) ? this.store.get(key) ?? null : null;
+    return this.store.has(key) ? (this.store.get(key) ?? null) : null;
   }
 
   key(index: number): string | null {
@@ -49,37 +44,37 @@ const sampleModel: PanelModel = {
   options: { ...DEFAULT_PANEL_OPTIONS },
   mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG },
   elementHoleConfig: { ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG },
-  clearance: { ...DEFAULT_CLEARANCE_CONFIG }
+  clearance: { ...DEFAULT_CLEARANCE_CONFIG },
 };
 
-describe('storage helpers', () => {
+describe("storage helpers", () => {
   beforeEach(() => {
-    vi.stubGlobal('localStorage', new MemoryStorage());
+    vi.stubGlobal("localStorage", new MemoryStorage());
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it('saves and lists projects', () => {
-    const projects = saveProject('Test', sampleModel);
+  it("saves and lists projects", () => {
+    const projects = saveProject("Test", sampleModel);
     expect(projects).toHaveLength(1);
-    expect(projects[0].name).toBe('Test');
+    expect(projects[0].name).toBe("Test");
     const listed = listProjects();
     expect(listed[0].payload.model.dimensions.widthHp).toBeGreaterThan(0);
   });
 
-  it('loads a saved project', () => {
-    saveProject('Loadable', sampleModel);
-    const model = loadProject('loadable');
+  it("loads a saved project", () => {
+    saveProject("Loadable", sampleModel);
+    const model = loadProject("loadable");
     expect(model).not.toBeNull();
     expect(model?.dimensions.widthHp).toBe(sampleModel.dimensions.widthHp);
   });
 
-  it('deletes a saved project', () => {
-    saveProject('Temp', sampleModel);
-    const afterDelete = deleteProject('Temp');
+  it("deletes a saved project", () => {
+    saveProject("Temp", sampleModel);
+    const afterDelete = deleteProject("Temp");
     expect(afterDelete).toHaveLength(0);
-    expect(loadProject('Temp')).toBeNull();
+    expect(loadProject("Temp")).toBeNull();
   });
 });

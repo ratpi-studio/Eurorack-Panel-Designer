@@ -1,41 +1,36 @@
-import React from 'react';
+import React from "react";
 
-import { useI18n } from '@i18n/I18nContext';
-import { buildKicadEdgeCutsSvg, buildKicadPcbFile } from '@lib/exportKicad';
-import { buildPanelSvg } from '@lib/exportSvg';
-import {
-  computeElementMountingHoles
-} from '@lib/elementMountingHoles';
+import { useI18n } from "@i18n/I18nContext";
+import { buildKicadEdgeCutsSvg, buildKicadPcbFile } from "@lib/exportKicad";
+import { buildPanelSvg } from "@lib/exportSvg";
+import { computeElementMountingHoles } from "@lib/elementMountingHoles";
 import {
   DEFAULT_CLEARANCE_CONFIG,
   DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   DEFAULT_PANEL_OPTIONS,
-  type MountingHole
-} from '@lib/panelTypes';
-import { drawPanelScene } from '@lib/canvas/renderScene';
-import { computeCanvasTransform } from '@lib/canvas/transform';
-import { themeValues } from '@styles/theme.css';
+  type MountingHole,
+} from "@lib/panelTypes";
+import { drawPanelScene } from "@lib/canvas/renderScene";
+import { computeCanvasTransform } from "@lib/canvas/transform";
+import { themeValues } from "@styles/theme.css";
 import {
   DEFAULT_EXPORT_FORMAT,
   getPreferredExportFormat,
   setPreferredExportFormat,
-  type ExportFormat
-} from '@lib/exportPreferences';
+  type ExportFormat,
+} from "@lib/exportPreferences";
 import {
   deleteProject,
   listProjects,
   loadProject,
   saveProject,
-  type StoredProject
-} from '@lib/storage';
-import {
-  deserializePanelModel,
-  serializePanelModel
-} from '@lib/serialization';
-import { createPanelDimensions } from '@lib/units';
-import { usePanelStore } from '@store/panelStore';
-import { elementFillColors, elementStrokeColor, exportPalette } from '@lib/canvas/palette';
+  type StoredProject,
+} from "@lib/storage";
+import { deserializePanelModel, serializePanelModel } from "@lib/serialization";
+import { createPanelDimensions } from "@lib/units";
+import { usePanelStore } from "@store/panelStore";
+import { elementFillColors, elementStrokeColor, exportPalette } from "@lib/canvas/palette";
 
 interface UseProjectsArgs {
   mountingHoles: MountingHole[];
@@ -43,7 +38,7 @@ interface UseProjectsArgs {
   clearHistory: () => void;
 }
 
-type StatusVariant = 'success' | 'error' | 'info';
+type StatusVariant = "success" | "error" | "info";
 
 interface StatusMessage {
   message: string;
@@ -79,7 +74,7 @@ interface UseProjectsResult {
 export function useProjects({
   mountingHoles,
   resetView,
-  clearHistory
+  clearHistory,
 }: UseProjectsArgs): UseProjectsResult {
   const t = useI18n();
   const panelModel = usePanelStore((state) => state.model);
@@ -90,7 +85,7 @@ export function useProjects({
   const [projectName, setProjectName] = React.useState(t.projects.defaultName);
   const [projects, setProjects] = React.useState<StoredProject[]>([]);
   const [activeProjectName, setActiveProjectName] = React.useState<string | null>(null);
-  const [selectedSavedName, setSelectedSavedName] = React.useState<string>('');
+  const [selectedSavedName, setSelectedSavedName] = React.useState<string>("");
   const [statusMessage, setStatusMessage] = React.useState<StatusMessage | null>(null);
   const [lastDeletedProject, setLastDeletedProject] = React.useState<StoredProject | null>(null);
   const [lastSavedSnapshot, setLastSavedSnapshot] = React.useState<string | null>(null);
@@ -120,36 +115,30 @@ export function useProjects({
     return serializedModel !== lastSavedSnapshot || trimmedName !== savedName;
   }, [lastSavedName, lastSavedSnapshot, projectName, serializedModel, t.projects.defaultName]);
 
-  const markSavedState = React.useCallback(
-    (name: string, snapshot: string) => {
-      setLastSavedSnapshot(snapshot);
-      setLastSavedName(name);
-    },
-    []
-  );
+  const markSavedState = React.useCallback((name: string, snapshot: string) => {
+    setLastSavedSnapshot(snapshot);
+    setLastSavedName(name);
+  }, []);
 
-  const setStatus = React.useCallback(
-    (message: string, variant: StatusVariant) => {
-      setStatusMessage({ message, variant });
-    },
-    []
-  );
+  const setStatus = React.useCallback((message: string, variant: StatusVariant) => {
+    setStatusMessage({ message, variant });
+  }, []);
 
   const buildPanelPngDataUrl = React.useCallback(() => {
     const EXPORT_SCALE = 4; // px per mm
     const widthPx = Math.max(1, Math.round(panelModel.dimensions.widthMm * EXPORT_SCALE));
     const heightPx = Math.max(1, Math.round(panelModel.dimensions.heightMm * EXPORT_SCALE));
-    const offscreen = document.createElement('canvas');
+    const offscreen = document.createElement("canvas");
     offscreen.width = widthPx;
     offscreen.height = heightPx;
-    const context = offscreen.getContext('2d');
+    const context = offscreen.getContext("2d");
     if (!context) {
       return null;
     }
 
     const elementMountingHoles = computeElementMountingHoles(
       panelModel.elements,
-      panelModel.elementHoleConfig
+      panelModel.elementHoleConfig,
     );
 
     const transform = computeCanvasTransform({
@@ -157,7 +146,7 @@ export function useProjects({
       panelSizeMm: { x: panelModel.dimensions.widthMm, y: panelModel.dimensions.heightMm },
       zoom: 1,
       pan: { x: 0, y: 0 },
-      paddingPx: 0
+      paddingPx: 0,
     });
 
     drawPanelScene({
@@ -175,10 +164,10 @@ export function useProjects({
       palette: exportPalette,
       elementFillColors,
       elementStrokeColor,
-      fontFamily: themeValues.font.body
+      fontFamily: themeValues.font.body,
     });
 
-    return offscreen.toDataURL('image/png');
+    return offscreen.toDataURL("image/png");
   }, [mountingHoles, panelModel]);
 
   const handleSaveProject = React.useCallback(() => {
@@ -189,21 +178,14 @@ export function useProjects({
     setActiveProjectName(trimmedName);
     setLastDeletedProject(null);
     setSelectedSavedName(trimmedName);
-    setStatus(t.projects.messages.saveSuccess(trimmedName), 'success');
-  }, [
-    markSavedState,
-    panelModel,
-    projectName,
-    serializedModel,
-    setStatus,
-    t
-  ]);
+    setStatus(t.projects.messages.saveSuccess(trimmedName), "success");
+  }, [markSavedState, panelModel, projectName, serializedModel, setStatus, t]);
 
   const handleLoadProject = React.useCallback(
     (name: string) => {
       const model = loadProject(name);
       if (!model) {
-        setStatus(t.projects.messages.loadError(name), 'error');
+        setStatus(t.projects.messages.loadError(name), "error");
         return;
       }
       setModel(model);
@@ -216,7 +198,7 @@ export function useProjects({
       markSavedState(name, serializePanelModel(model));
       setLastDeletedProject(null);
       setSelectedSavedName(name);
-      setStatus(t.projects.messages.loadSuccess(name), 'success');
+      setStatus(t.projects.messages.loadSuccess(name), "success");
     },
     [
       clearHistory,
@@ -226,21 +208,21 @@ export function useProjects({
       setModel,
       setPlacementType,
       clearSelection,
-      t.projects.messages
-    ]
+      t.projects.messages,
+    ],
   );
 
   const handleExportJson = React.useCallback(() => {
     const payload = serializePanelModel(panelModel);
-    const blob = new Blob([payload], { type: 'application/json' });
+    const blob = new Blob([payload], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
-    const baseName = (projectName || 'panel').trim().replace(/\s+/g, '-');
-    link.download = `${baseName || 'panel'}.json`;
+    const baseName = (projectName || "panel").trim().replace(/\s+/g, "-");
+    link.download = `${baseName || "panel"}.json`;
     link.click();
     URL.revokeObjectURL(url);
-    setStatus(t.projects.messages.jsonExport, 'success');
+    setStatus(t.projects.messages.jsonExport, "success");
   }, [panelModel, projectName, setStatus, t.projects.messages]);
 
   const handleImportJson = React.useCallback(
@@ -251,7 +233,7 @@ export function useProjects({
         .text()
         .then((text) => {
           const model = deserializePanelModel(text);
-          const nextName = file.name.replace(/\.json$/i, '');
+          const nextName = file.name.replace(/\.json$/i, "");
           setModel(model);
           clearHistory();
           setProjectName(nextName);
@@ -259,14 +241,14 @@ export function useProjects({
           clearSelection();
           setPlacementType(null);
           resetView();
-          setStatus(t.projects.messages.importSuccess(file.name), 'success');
+          setStatus(t.projects.messages.importSuccess(file.name), "success");
         })
         .catch(() => {
-          setStatus(t.projects.messages.importError, 'error');
+          setStatus(t.projects.messages.importError, "error");
         })
         .finally(() => {
           if (fileInputRef.current) {
-            fileInputRef.current.value = '';
+            fileInputRef.current.value = "";
           }
         });
     },
@@ -278,66 +260,66 @@ export function useProjects({
       setModel,
       setPlacementType,
       clearSelection,
-      t
-    ]
+      t,
+    ],
   );
 
   const handleExportPng = React.useCallback(() => {
     const url = buildPanelPngDataUrl();
     if (!url) {
-      setStatus(t.projects.messages.pngError, 'error');
+      setStatus(t.projects.messages.pngError, "error");
       return;
     }
-    const link = document.createElement('a');
-    const baseName = (projectName || 'panel').trim().replace(/\s+/g, '-');
-    link.download = `${baseName || 'panel'}.png`;
+    const link = document.createElement("a");
+    const baseName = (projectName || "panel").trim().replace(/\s+/g, "-");
+    link.download = `${baseName || "panel"}.png`;
     link.href = url;
     link.click();
-    setStatus(t.projects.messages.pngSuccess, 'success');
+    setStatus(t.projects.messages.pngSuccess, "success");
   }, [buildPanelPngDataUrl, projectName, setStatus, t.projects.messages]);
 
   const handleExportSvg = React.useCallback(() => {
     const svg = buildPanelSvg(panelModel, mountingHoles, {
-      stroke: '#f5f3f0',
-      panelStroke: '#f5f3f0',
+      stroke: "#f5f3f0",
+      panelStroke: "#f5f3f0",
       background: null,
-      strokeWidth: 0.8
+      strokeWidth: 0.8,
     });
-    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const blob = new Blob([svg], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    const baseName = (projectName || 'panel').trim().replace(/\s+/g, '-');
-    link.download = `${baseName || 'panel'}.svg`;
+    const link = document.createElement("a");
+    const baseName = (projectName || "panel").trim().replace(/\s+/g, "-");
+    link.download = `${baseName || "panel"}.svg`;
     link.href = url;
     link.click();
     URL.revokeObjectURL(url);
-    setStatus(t.projects.messages.svgExport, 'success');
+    setStatus(t.projects.messages.svgExport, "success");
   }, [mountingHoles, panelModel, projectName, setStatus, t.projects.messages]);
 
   const handleExportKicadSvg = React.useCallback(() => {
     const svg = buildKicadEdgeCutsSvg(panelModel, mountingHoles);
-    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const blob = new Blob([svg], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    const baseName = (projectName || 'panel').trim().replace(/\s+/g, '-');
-    link.download = `${baseName || 'panel'}-edge-cuts.svg`;
+    const link = document.createElement("a");
+    const baseName = (projectName || "panel").trim().replace(/\s+/g, "-");
+    link.download = `${baseName || "panel"}-edge-cuts.svg`;
     link.href = url;
     link.click();
     URL.revokeObjectURL(url);
-    setStatus(t.projects.messages.kicadSvgExport, 'success');
+    setStatus(t.projects.messages.kicadSvgExport, "success");
   }, [mountingHoles, panelModel, projectName, setStatus, t.projects.messages]);
 
   const handleExportKicadPcb = React.useCallback(() => {
     const pcb = buildKicadPcbFile(panelModel, mountingHoles);
-    const blob = new Blob([pcb], { type: 'text/plain' });
+    const blob = new Blob([pcb], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    const baseName = (projectName || 'panel').trim().replace(/\s+/g, '-');
-    link.download = `${baseName || 'panel'}.kicad_pcb`;
+    const link = document.createElement("a");
+    const baseName = (projectName || "panel").trim().replace(/\s+/g, "-");
+    link.download = `${baseName || "panel"}.kicad_pcb`;
     link.href = url;
     link.click();
     URL.revokeObjectURL(url);
-    setStatus(t.projects.messages.kicadPcbExport, 'success');
+    setStatus(t.projects.messages.kicadPcbExport, "success");
   }, [mountingHoles, panelModel, projectName, setStatus, t.projects.messages]);
 
   const handleExportStl = React.useCallback(
@@ -346,32 +328,32 @@ export function useProjects({
         return;
       }
 
-      import('@lib/exportStl')
+      import("@lib/exportStl")
         .then(({ buildPanelStl }) => {
           const stl = buildPanelStl(panelModel, mountingHoles, {
-            thicknessMm
+            thicknessMm,
           });
-          const blob = new Blob([stl], { type: 'model/stl' });
+          const blob = new Blob([stl], { type: "model/stl" });
           const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          const baseNameInput = (fileName || projectName || 'panel').trim();
+          const link = document.createElement("a");
+          const baseNameInput = (fileName || projectName || "panel").trim();
           const baseName = baseNameInput
-            .replace(/\.stl$/i, '')
-            .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '')
+            .replace(/\.stl$/i, "")
+            .replace(/[<>:"/\\|?*]|\p{Cc}/gu, "")
             .trim()
-            .replace(/\s+/g, '-');
-          link.download = `${baseName || 'panel'}.stl`;
+            .replace(/\s+/g, "-");
+          link.download = `${baseName || "panel"}.stl`;
           link.href = url;
           link.click();
           URL.revokeObjectURL(url);
-          setStatus(t.projects.messages.stlExport, 'success');
+          setStatus(t.projects.messages.stlExport, "success");
         })
         .catch((error) => {
-          console.error('Failed to export STL', error);
-          setStatus(t.projects.messages.stlError, 'error');
+          console.error("Failed to export STL", error);
+          setStatus(t.projects.messages.stlError, "error");
         });
     },
-    [mountingHoles, panelModel, projectName, setStatus, t.projects.messages]
+    [mountingHoles, panelModel, projectName, setStatus, t.projects.messages],
   );
 
   const setExportFormat = React.useCallback((format: ExportFormat) => {
@@ -381,9 +363,7 @@ export function useProjects({
 
   const handleDeleteProject = React.useCallback(
     (name: string) => {
-      const match = projects.find(
-        (project) => project.name.toLowerCase() === name.toLowerCase()
-      );
+      const match = projects.find((project) => project.name.toLowerCase() === name.toLowerCase());
       setLastDeletedProject(match ?? null);
       const next = deleteProject(name);
       setProjects(next);
@@ -391,11 +371,11 @@ export function useProjects({
         setActiveProjectName(null);
       }
       if (selectedSavedName && selectedSavedName.toLowerCase() === name.toLowerCase()) {
-        setSelectedSavedName('');
+        setSelectedSavedName("");
       }
-      setStatus(t.projects.messages.deleteSuccess(name), 'success');
+      setStatus(t.projects.messages.deleteSuccess(name), "success");
     },
-    [activeProjectName, projects, selectedSavedName, setStatus, t.projects.messages]
+    [activeProjectName, projects, selectedSavedName, setStatus, t.projects.messages],
   );
 
   const handleUndoDeleteProject = React.useCallback(() => {
@@ -409,7 +389,7 @@ export function useProjects({
     setProjects(saved);
     setLastDeletedProject(null);
     setSelectedSavedName(lastDeletedProject.name);
-    setStatus(t.projects.messages.deleteUndoSuccess(lastDeletedProject.name), 'success');
+    setStatus(t.projects.messages.deleteUndoSuccess(lastDeletedProject.name), "success");
     return true;
   }, [lastDeletedProject, markSavedState, setStatus, t.projects.messages]);
 
@@ -420,7 +400,7 @@ export function useProjects({
       options: { ...DEFAULT_PANEL_OPTIONS },
       mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG },
       elementHoleConfig: { ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG },
-      clearance: { ...DEFAULT_CLEARANCE_CONFIG }
+      clearance: { ...DEFAULT_CLEARANCE_CONFIG },
     };
     setModel(resetModel);
     clearHistory();
@@ -429,7 +409,7 @@ export function useProjects({
     setProjectName(t.projects.defaultName);
     markSavedState(t.projects.defaultName, serializePanelModel(resetModel));
     setLastDeletedProject(null);
-    setStatus(t.projects.messages.reset, 'info');
+    setStatus(t.projects.messages.reset, "info");
     resetView();
   }, [
     clearHistory,
@@ -440,7 +420,7 @@ export function useProjects({
     setPlacementType,
     clearSelection,
     t.projects.defaultName,
-    t.projects.messages.reset
+    t.projects.messages.reset,
   ]);
 
   return {
@@ -466,6 +446,6 @@ export function useProjects({
     handleExportStl,
     exportFormat,
     setExportFormat,
-    handleReset
+    handleReset,
   };
 }

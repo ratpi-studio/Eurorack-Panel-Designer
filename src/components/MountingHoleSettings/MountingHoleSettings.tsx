@@ -1,9 +1,9 @@
-import React from 'react';
+import React from "react";
 
-import { useI18n } from '@i18n/I18nContext';
-import { type MountingHoleConfig } from '@lib/panelTypes';
+import { useI18n } from "@i18n/I18nContext";
+import { type MountingHoleConfig } from "@lib/panelTypes";
 
-import * as styles from './MountingHoleSettings.css';
+import * as styles from "./MountingHoleSettings.css";
 
 interface MountingHoleSettingsProps {
   config: MountingHoleConfig;
@@ -14,14 +14,14 @@ interface MountingHoleSettingsProps {
 export function MountingHoleSettings({ config, onChange, onClose }: MountingHoleSettingsProps) {
   const t = useI18n();
 
-  const handleShapeChange = (shape: MountingHoleConfig['shape']) => {
+  const handleShapeChange = (shape: MountingHoleConfig["shape"]) => {
     if (shape === config.shape) {
       return;
     }
-    if (shape === 'slot') {
+    if (shape === "slot") {
       onChange({
         shape,
-        slotLengthMm: Math.max(config.slotLengthMm, config.diameterMm)
+        slotLengthMm: Math.max(config.slotLengthMm, config.diameterMm),
       });
       return;
     }
@@ -35,7 +35,7 @@ export function MountingHoleSettings({ config, onChange, onClose }: MountingHole
     }
     const diameter = Math.max(0.1, value);
     const updates: Partial<MountingHoleConfig> = { diameterMm: diameter };
-    if (config.shape === 'slot' && config.slotLengthMm < diameter) {
+    if (config.shape === "slot" && config.slotLengthMm < diameter) {
       updates.slotLengthMm = diameter;
     }
     onChange(updates);
@@ -47,7 +47,7 @@ export function MountingHoleSettings({ config, onChange, onClose }: MountingHole
       return;
     }
     onChange({
-      slotLengthMm: Math.max(config.diameterMm, value)
+      slotLengthMm: Math.max(config.diameterMm, value),
     });
   };
 
@@ -67,17 +67,15 @@ export function MountingHoleSettings({ config, onChange, onClose }: MountingHole
         <div className={styles.shapeGroup}>
           <button
             type="button"
-            className={
-              config.shape === 'circle' ? styles.shapeButtonActive : styles.shapeButton
-            }
-            onClick={() => handleShapeChange('circle')}
+            className={config.shape === "circle" ? styles.shapeButtonActive : styles.shapeButton}
+            onClick={() => handleShapeChange("circle")}
           >
             {t.mountingHoles.typeCircle}
           </button>
           <button
             type="button"
-            className={config.shape === 'slot' ? styles.shapeButtonActive : styles.shapeButton}
-            onClick={() => handleShapeChange('slot')}
+            className={config.shape === "slot" ? styles.shapeButtonActive : styles.shapeButton}
+            onClick={() => handleShapeChange("slot")}
           >
             {t.mountingHoles.typeSlot}
           </button>
@@ -94,7 +92,7 @@ export function MountingHoleSettings({ config, onChange, onClose }: MountingHole
           onChange={handleDiameterChange}
         />
       </label>
-      {config.shape === 'slot' ? (
+      {config.shape === "slot" ? (
         <label className={styles.field}>
           <span className={styles.label}>{t.mountingHoles.slotLengthLabel}</span>
           <input

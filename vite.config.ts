@@ -1,16 +1,18 @@
-import { existsSync, readFileSync } from 'node:fs';
-import path from 'node:path';
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { sentryVitePlugin } from '@sentry/vite-plugin';
-import react from '@vitejs/plugin-react-swc';
-import { defineConfig, loadEnv, type Plugin } from 'vite';
-import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
+import { sentryVitePlugin } from "@sentry/vite-plugin";
+import react from "@vitejs/plugin-react";
+import { defineConfig, loadEnv, type Plugin } from "vite-plus";
+import { vanillaExtractPlugin } from "@vanilla-extract/vite-plugin";
 
-const sentryEnvFile = path.resolve(__dirname, '.env.sentry');
+const configDir = path.dirname(fileURLToPath(import.meta.url));
+const sentryEnvFile = path.resolve(configDir, ".env.sentry");
 
-const changelogVirtualId = 'virtual:changelog';
+const changelogVirtualId = "virtual:changelog";
 const resolvedChangelogVirtualId = `\0${changelogVirtualId}`;
-const changelogPath = path.resolve(__dirname, 'CHANGELOG.md');
+const changelogPath = path.resolve(configDir, "CHANGELOG.md");
 
 interface ChangelogEntry {
   version: string;
@@ -28,9 +30,9 @@ function parseChangelogMarkdown(markdown: string): ChangelogEntry[] {
     const headerMatch = line.match(/^##\s+(.+?)\s*$/);
     if (headerMatch) {
       const header = headerMatch[1].trim();
-      const [rawVersion, rawDate = ''] = header.split(/\s+-\s+/, 2);
-      const version = (rawVersion ?? '').trim().replace(/^v/i, '');
-      const date = (rawDate ?? '').trim();
+      const [rawVersion, rawDate = ""] = header.split(/\s+-\s+/, 2);
+      const version = (rawVersion ?? "").trim().replace(/^v/i, "");
+      const date = (rawDate ?? "").trim();
 
       if (!version) {
         currentEntry = null;
@@ -60,7 +62,7 @@ function parseChangelogMarkdown(markdown: string): ChangelogEntry[] {
 
 function changelogPlugin(): Plugin {
   return {
-    name: 'eurorack-changelog',
+    name: "eurorack-changelog",
     resolveId(id) {
       if (id === changelogVirtualId) {
         return resolvedChangelogVirtualId;
@@ -74,7 +76,7 @@ function changelogPlugin(): Plugin {
 
       this.addWatchFile(changelogPath);
 
-      const markdown = readFileSync(changelogPath, 'utf8');
+      const markdown = readFileSync(changelogPath, "utf8");
       const entries = parseChangelogMarkdown(markdown);
 
       return `export const changelogEntries = ${JSON.stringify(entries, null, 2)};\n`;
@@ -93,9 +95,9 @@ function changelogPlugin(): Plugin {
         return [module];
       }
 
-      server.ws.send({ type: 'full-reload' });
+      server.ws.send({ type: "full-reload" });
       return [];
-    }
+    },
   };
 }
 
@@ -104,111 +106,124 @@ const readLocalSentryEnv = () => {
     return {};
   }
 
-  const data = readFileSync(sentryEnvFile, 'utf8');
+  const data = readFileSync(sentryEnvFile, "utf8");
   return data.split(/\r?\n/).reduce<Record<string, string>>((acc, rawLine) => {
     const line = rawLine.trim();
 
-    if (!line || line.startsWith('#')) {
+    if (!line || line.startsWith("#")) {
       return acc;
     }
 
-    const [key, ...rest] = line.split('=');
+    const [key, ...rest] = line.split("=");
     if (!key) {
       return acc;
     }
 
-    acc[key] = rest.join('=').trim();
+    acc[key] = rest.join("=").trim();
     return acc;
   }, {});
 };
 
-export default defineConfig(({ mode }) => {
-  const localSentryEnv = readLocalSentryEnv();
-  Object.entries(localSentryEnv).forEach(([key, value]) => {
-    if (value && !process.env[key]) {
-      process.env[key] = value;
-    }
-  });
+const localSentryEnv = readLocalSentryEnv();
+Object.entries(localSentryEnv).forEach(([key, value]) => {
+  if (value && !process.env[key]) {
+    process.env[key] = value;
+  }
+});
 
-  const env = loadEnv(mode, process.cwd(), '');
-  const basePath = env.VITE_BASE_PATH || '/';
-  const releaseName = env.VITE_SENTRY_RELEASE || env.SENTRY_RELEASE || localSentryEnv.SENTRY_RELEASE;
+const activeMode = process.env.MODE ?? process.env.NODE_ENV ?? "development";
+const env = loadEnv(activeMode, process.cwd(), "");
+const basePath = env.VITE_BASE_PATH || "/";
+const releaseName = env.VITE_SENTRY_RELEASE || env.SENTRY_RELEASE || localSentryEnv.SENTRY_RELEASE;
 
-  if (releaseName) {
-    if (!env.VITE_SENTRY_RELEASE) {
-      env.VITE_SENTRY_RELEASE = releaseName;
-      process.env.VITE_SENTRY_RELEASE = releaseName;
-    }
-
-    if (!env.SENTRY_RELEASE) {
-      env.SENTRY_RELEASE = releaseName;
-      process.env.SENTRY_RELEASE = releaseName;
-    }
+if (releaseName) {
+  if (!env.VITE_SENTRY_RELEASE) {
+    env.VITE_SENTRY_RELEASE = releaseName;
+    process.env.VITE_SENTRY_RELEASE = releaseName;
   }
 
-  const useSentry = Boolean(env.SENTRY_AUTH_TOKEN && env.SENTRY_ORG && env.SENTRY_PROJECT);
+  if (!env.SENTRY_RELEASE) {
+    env.SENTRY_RELEASE = releaseName;
+    process.env.SENTRY_RELEASE = releaseName;
+  }
+}
 
-  return {
-    base: basePath,
-    plugins: [
-      vanillaExtractPlugin(),
-      changelogPlugin(),
-      react(),
-      ...(useSentry
-        ? [
-            sentryVitePlugin({
-              org: env.SENTRY_ORG,
-              project: env.SENTRY_PROJECT,
-              authToken: env.SENTRY_AUTH_TOKEN,
-              telemetry: false,
-              release: {
-                ...(releaseName ? { name: releaseName } : {}),
-                inject: true
-              },
-              sourcemaps: {
-                assets: './dist/assets/**'
-              }
-            })
-          ]
-        : [])
-    ],
-    build: {
-      sourcemap: true,
-      chunkSizeWarningLimit: 1200,
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            if (!id.includes('node_modules')) {
-              return undefined;
-            }
-            if (/node_modules\/react/i.test(id)) {
-              return 'react-vendor';
-            }
-            if (id.includes('node_modules/three')) {
-              return 'three';
-            }
-            if (id.includes('node_modules/@sentry')) {
-              return 'sentry';
-            }
-            if (id.includes('node_modules/zustand')) {
-              return 'zustand';
-            }
-            if (id.includes('node_modules/react-hot-toast')) {
-              return 'react-hot-toast';
-            }
-            return 'vendor';
-          }
-        }
-      }
+const useSentry = Boolean(env.SENTRY_AUTH_TOKEN && env.SENTRY_ORG && env.SENTRY_PROJECT);
+
+export default defineConfig({
+  lint: {
+    plugins: ["react", "import", "typescript", "vitest"],
+    env: {
+      browser: true,
+      es2021: true,
+      node: true,
     },
-    resolve: {
-      alias: {
-        '@components': path.resolve(__dirname, 'src/components'),
-        '@lib': path.resolve(__dirname, 'src/lib'),
-        '@store': path.resolve(__dirname, 'src/store'),
-        '@i18n': path.resolve(__dirname, 'src/i18n'),
-        '@styles': path.resolve(__dirname, 'src/styles')
-      }
-    }
-  };
+    ignorePatterns: ["dist/**"],
+    options: {},
+  },
+  test: {
+    include: ["src/lib/**/*.test.ts"],
+    passWithNoTests: false,
+  },
+  base: basePath,
+  plugins: [
+    vanillaExtractPlugin(),
+    changelogPlugin(),
+    react(),
+    ...(useSentry
+      ? [
+          sentryVitePlugin({
+            org: env.SENTRY_ORG,
+            project: env.SENTRY_PROJECT,
+            authToken: env.SENTRY_AUTH_TOKEN,
+            telemetry: false,
+            release: {
+              ...(releaseName ? { name: releaseName } : {}),
+              inject: true,
+            },
+            sourcemaps: {
+              assets: "./dist/assets/**",
+            },
+          }),
+        ]
+      : []),
+  ],
+  build: {
+    sourcemap: true,
+    chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) {
+            return undefined;
+          }
+          if (/node_modules\/react/i.test(id)) {
+            return "react-vendor";
+          }
+          if (id.includes("node_modules/three")) {
+            return "three";
+          }
+          if (id.includes("node_modules/@sentry")) {
+            return "sentry";
+          }
+          if (id.includes("node_modules/zustand")) {
+            return "zustand";
+          }
+          if (id.includes("node_modules/react-hot-toast")) {
+            return "react-hot-toast";
+          }
+          return "vendor";
+        },
+      },
+    },
+  },
+  resolve: {
+    alias: {
+      "@components": path.resolve(configDir, "src/components"),
+      "@lib": path.resolve(configDir, "src/lib"),
+      "@store": path.resolve(configDir, "src/store"),
+      "@i18n": path.resolve(configDir, "src/i18n"),
+      "@styles": path.resolve(configDir, "src/styles"),
+    },
+  },
 });

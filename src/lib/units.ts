@@ -2,8 +2,8 @@ import {
   DEFAULT_MM_PER_HP,
   MM_PER_CM,
   THREE_U_HEIGHT_MM,
-  type PanelDimensions
-} from './panelTypes';
+  type PanelDimensions,
+} from "./panelTypes";
 
 interface PanelWidthComputation {
   widthCm: number;
@@ -40,7 +40,7 @@ export function hpToMm(valueHp: number, mmPerHp = DEFAULT_MM_PER_HP): number {
 
 export function computePanelWidth(
   widthCm: number,
-  mmPerHp = DEFAULT_MM_PER_HP
+  mmPerHp = DEFAULT_MM_PER_HP,
 ): PanelWidthComputation {
   const sanitizedWidthCm = sanitizeWidthCm(widthCm);
   const widthMm = cmToMm(sanitizedWidthCm);
@@ -51,22 +51,25 @@ export function computePanelWidth(
     widthCm: sanitizedWidthCm,
     widthMm,
     widthHp,
-    normalizedWidthMm
+    normalizedWidthMm,
   };
 }
 
 export function createPanelDimensions(
   widthCm: number,
   mmPerHp = DEFAULT_MM_PER_HP,
-  heightMm = THREE_U_HEIGHT_MM
+  heightMm = THREE_U_HEIGHT_MM,
 ): PanelDimensions {
-  const { widthHp, normalizedWidthMm, widthCm: sanitizedWidthCm } =
-    computePanelWidth(widthCm, mmPerHp);
+  const {
+    widthHp,
+    normalizedWidthMm,
+    widthCm: sanitizedWidthCm,
+  } = computePanelWidth(widthCm, mmPerHp);
 
   return {
     widthCm: sanitizedWidthCm,
     widthMm: normalizedWidthMm,
     widthHp,
-    heightMm
+    heightMm,
   };
 }

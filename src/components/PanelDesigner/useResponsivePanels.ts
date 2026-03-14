@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface ResponsivePanelsState {
   isCompact: boolean;
@@ -14,10 +14,10 @@ export function useResponsivePanels(): ResponsivePanelsState {
   const [showRightPanel, setShowRightPanel] = React.useState(true);
 
   React.useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) {
+    if (typeof window === "undefined" || !window.matchMedia) {
       return;
     }
-    const media = window.matchMedia('(max-width: 1200px)');
+    const media = window.matchMedia("(max-width: 1200px)");
     const handleChange = () => {
       const compact = media.matches;
       setIsCompact(compact);
@@ -30,8 +30,8 @@ export function useResponsivePanels(): ResponsivePanelsState {
       }
     };
     handleChange();
-    media.addEventListener('change', handleChange);
-    return () => media.removeEventListener('change', handleChange);
+    media.addEventListener("change", handleChange);
+    return () => media.removeEventListener("change", handleChange);
   }, []);
 
   return {
@@ -39,6 +39,6 @@ export function useResponsivePanels(): ResponsivePanelsState {
     showLeftPanel,
     showRightPanel,
     setShowLeftPanel,
-    setShowRightPanel
+    setShowRightPanel,
   };
 }

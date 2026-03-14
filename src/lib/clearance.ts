@@ -1,4 +1,4 @@
-import { clampClearanceConfig, type ClearanceConfig } from './panelTypes';
+import { clampClearanceConfig, type ClearanceConfig } from "./panelTypes";
 
 export interface ClearanceLines {
   topY: number;
@@ -7,28 +7,25 @@ export interface ClearanceLines {
 
 export function computeClearanceLines(
   config: ClearanceConfig,
-  panelHeightMm: number
+  panelHeightMm: number,
 ): ClearanceLines {
   const clamped = clampClearanceConfig(config, panelHeightMm);
   const topY = clamped.topOffsetMm;
-  const bottomY = Math.max(
-    panelHeightMm - clamped.bottomOffsetMm,
-    topY + clamped.minSpacingMm
-  );
+  const bottomY = Math.max(panelHeightMm - clamped.bottomOffsetMm, topY + clamped.minSpacingMm);
   return {
     topY,
-    bottomY
+    bottomY,
   };
 }
 
 export function applyClearanceLinePosition(
   config: ClearanceConfig,
   panelHeightMm: number,
-  line: 'top' | 'bottom',
-  positionMm: number
+  line: "top" | "bottom",
+  positionMm: number,
 ): ClearanceConfig {
   const nextConfig: ClearanceConfig =
-    line === 'top'
+    line === "top"
       ? { ...config, topOffsetMm: positionMm }
       : { ...config, bottomOffsetMm: panelHeightMm - positionMm };
   return clampClearanceConfig(nextConfig, panelHeightMm);

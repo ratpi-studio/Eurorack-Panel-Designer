@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   AmbientLight,
   Box3,
@@ -9,14 +9,14 @@ import {
   PerspectiveCamera,
   Scene,
   Vector3,
-  WebGLRenderer
-} from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+  WebGLRenderer,
+} from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-import { createPanelExtrusion } from '@lib/exportStl';
-import { type MountingHole, type PanelModel } from '@lib/panelTypes';
+import { createPanelExtrusion } from "@lib/exportStl";
+import { type MountingHole, type PanelModel } from "@lib/panelTypes";
 
-import * as styles from './StlPreview.css';
+import * as styles from "./StlPreview.css";
 
 interface StlPreviewProps {
   model: PanelModel;
@@ -43,18 +43,18 @@ export function StlPreview({ model, mountingHoles, thicknessMm }: StlPreviewProp
     const renderer = new WebGLRenderer({
       antialias: true,
       alpha: true,
-      canvas
+      canvas,
     });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 
     const scene = new Scene();
-    scene.background = new Color('#0b1226');
+    scene.background = new Color("#0b1226");
 
     const geometry = createPanelExtrusion(model, mountingHoles, thicknessMm);
     const material = new MeshStandardMaterial({
       color: 0x5eead4,
       metalness: 0.15,
-      roughness: 0.35
+      roughness: 0.35,
     });
     const mesh = new Mesh(geometry, material);
     scene.add(mesh);
@@ -73,12 +73,7 @@ export function StlPreview({ model, mountingHoles, thicknessMm }: StlPreviewProp
     const initialHeight = container.clientHeight || 240;
     renderer.setSize(initialWidth, initialHeight, false);
 
-    const camera = new PerspectiveCamera(
-      35,
-      initialWidth / initialHeight,
-      0.1,
-      2000
-    );
+    const camera = new PerspectiveCamera(35, initialWidth / initialHeight, 0.1, 2000);
     const maxSize = Math.max(size.x, size.y, size.z);
     const distance = maxSize * 2.4 + thicknessMm;
     camera.position.set(center.x + distance, center.y + distance * 0.4, center.z + distance);

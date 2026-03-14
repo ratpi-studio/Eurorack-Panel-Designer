@@ -1,18 +1,18 @@
-import React from 'react';
+import React from "react";
 
-import { drawPanelScene } from '@lib/canvas/renderScene';
-import { type ClearanceLines } from '@lib/clearance';
-import { canvasPalette, elementFillColors, elementStrokeColor } from '@lib/canvas/palette';
+import { drawPanelScene } from "@lib/canvas/renderScene";
+import { type ClearanceLines } from "@lib/clearance";
+import { canvasPalette, elementFillColors, elementStrokeColor } from "@lib/canvas/palette";
 import {
   type PanelElement,
   type PanelElementType,
   type PanelModel,
   type Vector2,
-  type MountingHole
-} from '@lib/panelTypes';
-import type { ReferenceImage } from '@lib/referenceImage';
-import { themeValues } from '@styles/theme.css';
-import { type CanvasTransform } from '@lib/canvas/transform';
+  type MountingHole,
+} from "@lib/panelTypes";
+import type { ReferenceImage } from "@lib/referenceImage";
+import { themeValues } from "@styles/theme.css";
+import { type CanvasTransform } from "@lib/canvas/transform";
 
 interface CanvasRenderOptions {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -51,7 +51,7 @@ export function useCanvasRender({
   referenceImage,
   referenceImageElement,
   referenceImageSelected,
-  placementType
+  placementType,
 }: CanvasRenderOptions) {
   React.useLayoutEffect(() => {
     let frameId: number | null = null;
@@ -60,7 +60,7 @@ export function useCanvasRender({
       return;
     }
 
-    const context = canvas.getContext('2d');
+    const context = canvas.getContext("2d");
     if (!context) {
       return;
     }
@@ -68,7 +68,7 @@ export function useCanvasRender({
     const renderFrame = (timeMs: number) => {
       const width = canvasSize.x;
       const height = canvasSize.y;
-      const pixelRatio = typeof window !== 'undefined' ? window.devicePixelRatio : 1;
+      const pixelRatio = typeof window !== "undefined" ? window.devicePixelRatio : 1;
       const scaledWidth = Math.round(width * pixelRatio);
       const scaledHeight = Math.round(height * pixelRatio);
 
@@ -81,7 +81,7 @@ export function useCanvasRender({
       context.clearRect(0, 0, canvas.width, canvas.height);
       context.scale(pixelRatio, pixelRatio);
 
-      context.fillStyle = canvasPalette.workspace ?? '#030712';
+      context.fillStyle = canvasPalette.workspace ?? "#030712";
       context.fillRect(0, 0, width, height);
 
       let selectionAnimation: { dashOffset: number; pulseScale: number } | undefined;
@@ -101,7 +101,7 @@ export function useCanvasRender({
         transform,
         panelSizeMm: {
           x: model.dimensions.widthMm,
-          y: model.dimensions.heightMm
+          y: model.dimensions.heightMm,
         },
         elements: model.elements,
         referenceImage:
@@ -109,7 +109,7 @@ export function useCanvasRender({
             ? {
                 image: referenceImageElement,
                 info: referenceImage,
-                selected: referenceImageSelected
+                selected: referenceImageSelected,
               }
             : null,
         mountingHoles,
@@ -126,20 +126,20 @@ export function useCanvasRender({
         selectionAnimation,
         ghostElement,
         clearanceLines,
-        showGhostDistances: Boolean(ghostElement && placementType)
+        showGhostDistances: Boolean(ghostElement && placementType),
       });
 
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         frameId = window.requestAnimationFrame(renderFrame);
       }
     };
 
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       frameId = window.requestAnimationFrame(renderFrame);
     }
 
     return () => {
-      if (frameId !== null && typeof window !== 'undefined') {
+      if (frameId !== null && typeof window !== "undefined") {
         window.cancelAnimationFrame(frameId);
       }
     };
@@ -163,6 +163,6 @@ export function useCanvasRender({
     referenceImageSelected,
     model.dimensions.widthMm,
     model.dimensions.heightMm,
-    placementType
+    placementType,
   ]);
 }

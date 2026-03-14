@@ -1,9 +1,9 @@
-import React from 'react';
+import React from "react";
 
-import { useI18n } from '@i18n/I18nContext';
-import { PanelElementType } from '@lib/panelTypes';
+import { useI18n } from "@i18n/I18nContext";
+import { PanelElementType } from "@lib/panelTypes";
 
-import * as styles from './ElementPalette.css';
+import * as styles from "./ElementPalette.css";
 
 interface ElementPaletteProps {
   activeType: PanelElementType | null;
@@ -24,46 +24,46 @@ export function ElementPalette({ activeType, onSelect }: ElementPaletteProps) {
     () => [
       {
         type: PanelElementType.Jack,
-        ...t.palette.items.jack
+        ...t.palette.items.jack,
       },
       {
         type: PanelElementType.Potentiometer,
-        ...t.palette.items.potentiometer
+        ...t.palette.items.potentiometer,
       },
       {
         type: PanelElementType.Switch,
-        ...t.palette.items.switch
+        ...t.palette.items.switch,
       },
       {
         type: PanelElementType.Led,
-        ...t.palette.items.led
+        ...t.palette.items.led,
       },
       {
         type: PanelElementType.Label,
-        ...t.palette.items.label
+        ...t.palette.items.label,
       },
       {
         type: PanelElementType.Rectangle,
-        ...t.palette.items.rectangle
+        ...t.palette.items.rectangle,
       },
       {
         type: PanelElementType.Oval,
-        ...t.palette.items.oval
+        ...t.palette.items.oval,
       },
       {
         type: PanelElementType.Slot,
-        ...t.palette.items.slot
+        ...t.palette.items.slot,
       },
       {
         type: PanelElementType.Triangle,
-        ...t.palette.items.triangle
+        ...t.palette.items.triangle,
       },
       {
         type: PanelElementType.Insert,
-        ...t.palette.items.insert
-      }
+        ...t.palette.items.insert,
+      },
     ],
-    [t]
+    [t],
   );
 
   return (
@@ -73,11 +73,7 @@ export function ElementPalette({ activeType, onSelect }: ElementPaletteProps) {
           <div className={styles.title}>{t.palette.title}</div>
           <div className={styles.subtitle}>{t.palette.subtitle}</div>
         </div>
-        <button
-          type="button"
-          className={styles.clearButton}
-          onClick={() => onSelect(null)}
-        >
+        <button type="button" className={styles.clearButton} onClick={() => onSelect(null)}>
           {t.palette.clear}
         </button>
       </div>
@@ -109,9 +105,9 @@ function renderIcon(type: PanelElementType, color: string): React.ReactNode {
   const commonProps = {
     width: ICON_SIZE,
     height: ICON_SIZE,
-    viewBox: '0 0 36 36',
-    role: 'presentation',
-    focusable: false
+    viewBox: "0 0 36 36",
+    role: "presentation",
+    focusable: false,
   } as const;
 
   switch (type) {
@@ -120,14 +116,7 @@ function renderIcon(type: PanelElementType, color: string): React.ReactNode {
     case PanelElementType.Led:
       return (
         <svg {...commonProps}>
-          <circle
-            cx="18"
-            cy="18"
-            r="9"
-            stroke={color}
-            strokeWidth="2"
-            fill="none"
-          />
+          <circle cx="18" cy="18" r="9" stroke={color} strokeWidth="2" fill="none" />
         </svg>
       );
     case PanelElementType.Switch:
@@ -149,15 +138,7 @@ function renderIcon(type: PanelElementType, color: string): React.ReactNode {
     case PanelElementType.Oval:
       return (
         <svg {...commonProps}>
-          <ellipse
-            cx="18"
-            cy="18"
-            rx="12"
-            ry="7"
-            stroke={color}
-            strokeWidth="2"
-            fill="none"
-          />
+          <ellipse cx="18" cy="18" rx="12" ry="7" stroke={color} strokeWidth="2" fill="none" />
         </svg>
       );
     case PanelElementType.Slot:
@@ -179,12 +160,7 @@ function renderIcon(type: PanelElementType, color: string): React.ReactNode {
     case PanelElementType.Triangle:
       return (
         <svg {...commonProps}>
-          <polygon
-            points="18,6 28,26 8,26"
-            stroke={color}
-            strokeWidth="2"
-            fill="none"
-          />
+          <polygon points="18,6 28,26 8,26" stroke={color} strokeWidth="2" fill="none" />
         </svg>
       );
     case PanelElementType.Label:
@@ -197,35 +173,14 @@ function renderIcon(type: PanelElementType, color: string): React.ReactNode {
     case PanelElementType.Insert:
       return (
         <svg {...commonProps}>
-          <circle
-            cx="18"
-            cy="18"
-            r="11"
-            stroke={color}
-            strokeWidth="2"
-            fill="none"
-          />
-          <circle
-            cx="18"
-            cy="18"
-            r="5"
-            stroke={color}
-            strokeWidth="2"
-            fill="none"
-          />
+          <circle cx="18" cy="18" r="11" stroke={color} strokeWidth="2" fill="none" />
+          <circle cx="18" cy="18" r="5" stroke={color} strokeWidth="2" fill="none" />
         </svg>
       );
     default:
       return (
         <svg {...commonProps}>
-          <circle
-            cx="18"
-            cy="18"
-            r="9"
-            stroke={color}
-            strokeWidth="2"
-            fill="none"
-          />
+          <circle cx="18" cy="18" r="9" stroke={color} strokeWidth="2" fill="none" />
         </svg>
       );
   }

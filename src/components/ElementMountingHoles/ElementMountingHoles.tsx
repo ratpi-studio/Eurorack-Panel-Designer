@@ -1,9 +1,9 @@
-import React from 'react';
+import React from "react";
 
-import { useI18n } from '@i18n/I18nContext';
-import { type ElementMountingHoleConfig, type PanelElement } from '@lib/panelTypes';
+import { useI18n } from "@i18n/I18nContext";
+import { type ElementMountingHoleConfig, type PanelElement } from "@lib/panelTypes";
 
-import * as styles from './ElementMountingHoles.css';
+import * as styles from "./ElementMountingHoles.css";
 
 interface ElementMountingHolesProps {
   config: ElementMountingHoleConfig;
@@ -20,7 +20,7 @@ export function ElementMountingHoles({
   onChangeElementRotation,
   onToggleElementEnabled,
   snapEnabled,
-  element
+  element,
 }: ElementMountingHolesProps) {
   const t = useI18n();
   const rotationStep = snapEnabled ? 45 : 1;
@@ -57,7 +57,7 @@ export function ElementMountingHoles({
                 value={config.count}
                 onChange={(event) =>
                   onChangeConfig({
-                    count: Math.max(1, Number.parseInt(event.target.value, 10) || 1)
+                    count: Math.max(1, Number.parseInt(event.target.value, 10) || 1),
                   })
                 }
               />
@@ -72,7 +72,7 @@ export function ElementMountingHoles({
                 value={config.diameterMm}
                 onChange={(event) =>
                   onChangeConfig({
-                    diameterMm: Math.max(0.1, Number.parseFloat(event.target.value) || 0)
+                    diameterMm: Math.max(0.1, Number.parseFloat(event.target.value) || 0),
                   })
                 }
               />
@@ -87,7 +87,7 @@ export function ElementMountingHoles({
                 value={config.offsetMm}
                 onChange={(event) =>
                   onChangeConfig({
-                    offsetMm: Math.max(0, Number.parseFloat(event.target.value) || 0)
+                    offsetMm: Math.max(0, Number.parseFloat(event.target.value) || 0),
                   })
                 }
               />
@@ -103,7 +103,7 @@ export function ElementMountingHoles({
                 value={config.rotationDeg}
                 onChange={(event) =>
                   onChangeConfig({
-                    rotationDeg: Number.parseFloat(event.target.value) || 0
+                    rotationDeg: Number.parseFloat(event.target.value) || 0,
                   })
                 }
               />

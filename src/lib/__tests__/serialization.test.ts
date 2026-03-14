@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vite-plus/test";
 
 import {
   DEFAULT_CLEARANCE_CONFIG,
@@ -6,62 +6,62 @@ import {
   DEFAULT_MOUNTING_HOLE_CONFIG,
   DEFAULT_PANEL_OPTIONS,
   PanelElementType,
-  type PanelModel
-} from '../panelTypes';
+  type PanelModel,
+} from "../panelTypes";
 import {
   deserializePanelModel,
   parseSerializedPanel,
   SerializationError,
-  serializePanelModel
-} from '../serialization';
+  serializePanelModel,
+} from "../serialization";
 
 const sampleModel: PanelModel = {
   dimensions: {
     widthCm: 10,
     widthMm: 101.6,
     widthHp: 20,
-    heightMm: 128.5
+    heightMm: 128.5,
   },
   elements: [
     {
-      id: 'el-1',
+      id: "el-1",
       type: PanelElementType.Jack,
       mountingHolesEnabled: false,
       positionMm: { x: 5, y: 10 },
       properties: {
-        diameterMm: 6
-      }
-    }
+        diameterMm: 6,
+      },
+    },
   ],
   options: { ...DEFAULT_PANEL_OPTIONS },
   mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG },
   elementHoleConfig: { ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG },
-  clearance: { ...DEFAULT_CLEARANCE_CONFIG }
+  clearance: { ...DEFAULT_CLEARANCE_CONFIG },
 };
 
-describe('serialization helpers', () => {
-  it('round-trips a panel model', () => {
+describe("serialization helpers", () => {
+  it("round-trips a panel model", () => {
     const serialized = serializePanelModel(sampleModel);
     const parsed = parseSerializedPanel(serialized);
 
     expect(parsed.model).toEqual(sampleModel);
   });
 
-  it('deserializes from an object payload', () => {
+  it("deserializes from an object payload", () => {
     const serialized = serializePanelModel(sampleModel);
     const model = deserializePanelModel(JSON.parse(serialized));
     expect(model.dimensions.widthHp).toBe(20);
   });
 
-  it('rejects malformed payloads', () => {
-    expect(() => parseSerializedPanel('{}')).toThrow(SerializationError);
+  it("rejects malformed payloads", () => {
+    expect(() => parseSerializedPanel("{}")).toThrow(SerializationError);
     expect(() =>
       parseSerializedPanel(
         JSON.stringify({
           version: 999,
-          model: sampleModel
-        })
-      )
+          model: sampleModel,
+        }),
+      ),
     ).toThrow(SerializationError);
   });
 });

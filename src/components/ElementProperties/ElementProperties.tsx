@@ -1,20 +1,16 @@
-import React from 'react';
+import React from "react";
 
-import { useI18n } from '@i18n/I18nContext';
-import {
-  PanelElementType,
-  type PanelElement,
-  type Vector2
-} from '@lib/panelTypes';
+import { useI18n } from "@i18n/I18nContext";
+import { PanelElementType, type PanelElement, type Vector2 } from "@lib/panelTypes";
 
-import * as styles from './ElementProperties.css';
+import * as styles from "./ElementProperties.css";
 
 interface ElementPropertiesProps {
   element: PanelElement | null;
   selectionCount: number;
   onChangePosition: (position: Vector2) => void;
   onChangeRotation: (rotationDeg: number) => void;
-  onChangeProperties: (properties: PanelElement['properties']) => void;
+  onChangeProperties: (properties: PanelElement["properties"]) => void;
   onRemove: () => void;
 }
 
@@ -29,7 +25,7 @@ export function ElementProperties({
   onChangePosition,
   onChangeRotation,
   onChangeProperties,
-  onRemove
+  onRemove,
 }: ElementPropertiesProps) {
   const t = useI18n();
   const [inputs, setInputs] = React.useState<Record<string, string>>({});
@@ -43,7 +39,7 @@ export function ElementProperties({
     const base = {
       posX: element.positionMm.x.toFixed(1),
       posY: element.positionMm.y.toFixed(1),
-      rotation: (element.rotationDeg ?? 0).toString()
+      rotation: (element.rotationDeg ?? 0).toString(),
     };
 
     const isCircularElement =
@@ -53,7 +49,7 @@ export function ElementProperties({
     if (isCircularElement) {
       setInputs({
         ...base,
-        diameter: (element.properties as { diameterMm: number }).diameterMm.toString()
+        diameter: (element.properties as { diameterMm: number }).diameterMm.toString(),
       });
       return;
     }
@@ -69,7 +65,7 @@ export function ElementProperties({
       setInputs({
         ...base,
         width: (element.properties as { widthMm: number }).widthMm.toString(),
-        height: (element.properties as { heightMm: number }).heightMm.toString()
+        height: (element.properties as { heightMm: number }).heightMm.toString(),
       });
       return;
     }
@@ -77,7 +73,7 @@ export function ElementProperties({
     if (element.type === PanelElementType.Label) {
       setInputs({
         ...base,
-        fontSize: (element.properties as { fontSizePt: number }).fontSizePt.toString()
+        fontSize: (element.properties as { fontSizePt: number }).fontSizePt.toString(),
       });
       return;
     }
@@ -96,7 +92,7 @@ export function ElementProperties({
         outerDepth: props.outerDepthMm.toString(),
         innerDiameter: props.innerDiameterMm.toString(),
         innerDepth: props.innerDepthMm.toString(),
-        embedDepth: props.embedDepthMm.toString()
+        embedDepth: props.embedDepthMm.toString(),
       });
       return;
     }
@@ -124,20 +120,16 @@ export function ElementProperties({
   }
 
   if (!element) {
-    return (
-      <div className={styles.empty}>
-        {t.properties.empty}
-      </div>
-    );
+    return <div className={styles.empty}>{t.properties.empty}</div>;
   }
 
   const { positionMm, rotationDeg = 0, properties } = element;
-  const isDraft = element.id === 'draft';
+  const isDraft = element.id === "draft";
 
-  const handlePositionChange = (axis: 'x' | 'y', value: string) => {
+  const handlePositionChange = (axis: "x" | "y", value: string) => {
     setInputs((prev) => ({
       ...prev,
-      [axis === 'x' ? 'posX' : 'posY']: value
+      [axis === "x" ? "posX" : "posY"]: value,
     }));
     const next = sanitizeNumber(value);
     if (next === null) {
@@ -145,14 +137,14 @@ export function ElementProperties({
     }
     onChangePosition({
       ...positionMm,
-      [axis]: Math.max(0, next)
+      [axis]: Math.max(0, next),
     });
   };
 
   const handleRotationChange = (value: string) => {
     setInputs((prev) => ({
       ...prev,
-      rotation: value
+      rotation: value,
     }));
     const next = sanitizeNumber(value);
     if (next === null) {
@@ -164,7 +156,7 @@ export function ElementProperties({
   const handlePropertyChange = (key: string, value: string) => {
     setInputs((prev) => ({
       ...prev,
-      [key]: value
+      [key]: value,
     }));
     const next = sanitizeNumber(value);
     if (next === null) {
@@ -173,7 +165,7 @@ export function ElementProperties({
     onChangeProperties({
       ...properties,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      [key]: Math.max(0, next) as any
+      [key]: Math.max(0, next) as any,
     });
   };
 
@@ -183,7 +175,7 @@ export function ElementProperties({
     }
     onChangeProperties({
       ...properties,
-      text: value
+      text: value,
     });
   };
 
@@ -212,7 +204,7 @@ export function ElementProperties({
             min={0}
             step={0.5}
             value={inputs.posX ?? positionMm.x.toFixed(1)}
-            onChange={(event) => handlePositionChange('x', event.target.value)}
+            onChange={(event) => handlePositionChange("x", event.target.value)}
           />
         </label>
         <label className={styles.field}>
@@ -223,7 +215,7 @@ export function ElementProperties({
             min={0}
             step={0.5}
             value={inputs.posY ?? positionMm.y.toFixed(1)}
-            onChange={(event) => handlePositionChange('y', event.target.value)}
+            onChange={(event) => handlePositionChange("y", event.target.value)}
           />
         </label>
         <label className={styles.field}>
@@ -248,10 +240,10 @@ export function ElementProperties({
               type="number"
               min={0}
               step={0.5}
-              value={inputs.diameter ?? (properties as { diameterMm: number }).diameterMm.toString()}
-              onChange={(event) =>
-                handlePropertyChange('diameterMm', event.target.value)
+              value={
+                inputs.diameter ?? (properties as { diameterMm: number }).diameterMm.toString()
               }
+              onChange={(event) => handlePropertyChange("diameterMm", event.target.value)}
             />
           </label>
         )}
@@ -263,30 +255,26 @@ export function ElementProperties({
           element.type === PanelElementType.Triangle) && (
           <>
             <label className={styles.field}>
-            <span className={styles.label}>{t.properties.width}</span>
-            <input
-              className={styles.input}
-              type="number"
-              min={0}
-              step={0.5}
-              value={inputs.width ?? (properties as { widthMm: number }).widthMm.toString()}
-              onChange={(event) =>
-                handlePropertyChange('widthMm', event.target.value)
-              }
-            />
+              <span className={styles.label}>{t.properties.width}</span>
+              <input
+                className={styles.input}
+                type="number"
+                min={0}
+                step={0.5}
+                value={inputs.width ?? (properties as { widthMm: number }).widthMm.toString()}
+                onChange={(event) => handlePropertyChange("widthMm", event.target.value)}
+              />
             </label>
             <label className={styles.field}>
-            <span className={styles.label}>{t.properties.height}</span>
-            <input
-              className={styles.input}
-              type="number"
-              min={0}
-              step={0.5}
-              value={inputs.height ?? (properties as { heightMm: number }).heightMm.toString()}
-              onChange={(event) =>
-                handlePropertyChange('heightMm', event.target.value)
-              }
-            />
+              <span className={styles.label}>{t.properties.height}</span>
+              <input
+                className={styles.input}
+                type="number"
+                min={0}
+                step={0.5}
+                value={inputs.height ?? (properties as { heightMm: number }).heightMm.toString()}
+                onChange={(event) => handlePropertyChange("heightMm", event.target.value)}
+              />
             </label>
           </>
         )}
@@ -304,9 +292,7 @@ export function ElementProperties({
                   inputs.outerDiameter ??
                   (properties as { outerDiameterMm: number }).outerDiameterMm.toString()
                 }
-                onChange={(event) =>
-                  handlePropertyChange('outerDiameterMm', event.target.value)
-                }
+                onChange={(event) => handlePropertyChange("outerDiameterMm", event.target.value)}
               />
             </label>
             <label className={styles.field}>
@@ -320,9 +306,7 @@ export function ElementProperties({
                   inputs.outerDepth ??
                   (properties as { outerDepthMm: number }).outerDepthMm.toString()
                 }
-                onChange={(event) =>
-                  handlePropertyChange('outerDepthMm', event.target.value)
-                }
+                onChange={(event) => handlePropertyChange("outerDepthMm", event.target.value)}
               />
             </label>
             <label className={styles.field}>
@@ -336,9 +320,7 @@ export function ElementProperties({
                   inputs.innerDiameter ??
                   (properties as { innerDiameterMm: number }).innerDiameterMm.toString()
                 }
-                onChange={(event) =>
-                  handlePropertyChange('innerDiameterMm', event.target.value)
-                }
+                onChange={(event) => handlePropertyChange("innerDiameterMm", event.target.value)}
               />
             </label>
             <label className={styles.field}>
@@ -352,9 +334,7 @@ export function ElementProperties({
                   inputs.innerDepth ??
                   (properties as { innerDepthMm: number }).innerDepthMm.toString()
                 }
-                onChange={(event) =>
-                  handlePropertyChange('innerDepthMm', event.target.value)
-                }
+                onChange={(event) => handlePropertyChange("innerDepthMm", event.target.value)}
               />
             </label>
             <label className={styles.field}>
@@ -368,9 +348,7 @@ export function ElementProperties({
                   inputs.embedDepth ??
                   (properties as { embedDepthMm: number }).embedDepthMm.toString()
                 }
-                onChange={(event) =>
-                  handlePropertyChange('embedDepthMm', event.target.value)
-                }
+                onChange={(event) => handlePropertyChange("embedDepthMm", event.target.value)}
               />
             </label>
           </>
@@ -390,17 +368,14 @@ export function ElementProperties({
             <label className={styles.field}>
               <span className={styles.label}>{t.properties.fontSize}</span>
               <input
-              className={styles.input}
-              type="number"
-              min={0}
-              step={1}
-              value={
-                inputs.fontSize ??
-                (properties as { fontSizePt: number }).fontSizePt.toString()
-              }
-                onChange={(event) =>
-                  handlePropertyChange('fontSizePt', event.target.value)
+                className={styles.input}
+                type="number"
+                min={0}
+                step={1}
+                value={
+                  inputs.fontSize ?? (properties as { fontSizePt: number }).fontSizePt.toString()
                 }
+                onChange={(event) => handlePropertyChange("fontSizePt", event.target.value)}
               />
             </label>
           </>

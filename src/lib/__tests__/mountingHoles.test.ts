@@ -1,16 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vite-plus/test";
 
-import { MIN_MOUNTING_HOLE_SPACING_MM, generateMountingHoles } from '../mountingHoles';
-import { DEFAULT_MOUNTING_HOLE_CONFIG } from '../panelTypes';
-import { createPanelDimensions } from '../units';
+import { MIN_MOUNTING_HOLE_SPACING_MM, generateMountingHoles } from "../mountingHoles";
+import { DEFAULT_MOUNTING_HOLE_CONFIG } from "../panelTypes";
+import { createPanelDimensions } from "../units";
 
-describe('mounting hole generation', () => {
-  it('creates four holes for a single spacing segment', () => {
+describe("mounting hole generation", () => {
+  it("creates four holes for a single spacing segment", () => {
     const dimensions = createPanelDimensions(5);
     const holes = generateMountingHoles({
       widthHp: dimensions.widthHp,
       widthMm: dimensions.widthMm,
-      heightMm: dimensions.heightMm
+      heightMm: dimensions.heightMm,
     });
 
     expect(holes).toHaveLength(4);
@@ -18,31 +18,29 @@ describe('mounting hole generation', () => {
     expect(xs).toHaveLength(2);
     holes.forEach((hole) => {
       expect(hole.diameterMm).toBe(DEFAULT_MOUNTING_HOLE_CONFIG.diameterMm);
-      expect(hole.shape).toBe('circle');
+      expect(hole.shape).toBe("circle");
     });
   });
 
-  it('adds extra columns when the panel exceeds the spacing', () => {
+  it("adds extra columns when the panel exceeds the spacing", () => {
     const dimensions = createPanelDimensions(30);
     const holes = generateMountingHoles({
       widthHp: dimensions.widthHp,
       widthMm: dimensions.widthMm,
-      heightMm: dimensions.heightMm
+      heightMm: dimensions.heightMm,
     });
 
-    const segments = Math.ceil(
-      dimensions.widthHp / DEFAULT_MOUNTING_HOLE_CONFIG.spacingHp
-    );
+    const segments = Math.ceil(dimensions.widthHp / DEFAULT_MOUNTING_HOLE_CONFIG.spacingHp);
     expect(holes).toHaveLength(segments * 4);
   });
 
-  it('clamps offsets when the panel is very narrow', () => {
+  it("clamps offsets when the panel is very narrow", () => {
     const dimensions = createPanelDimensions(1);
     const holes = generateMountingHoles({
       widthHp: dimensions.widthHp,
       widthMm: dimensions.widthMm,
       heightMm: dimensions.heightMm,
-      config: { horizontalOffsetMm: 50 }
+      config: { horizontalOffsetMm: 50 },
     });
 
     expect(holes.length).toBeGreaterThanOrEqual(2);
@@ -54,16 +52,16 @@ describe('mounting hole generation', () => {
     });
   });
 
-  it('supports slot mounting holes without exceeding panel width', () => {
+  it("supports slot mounting holes without exceeding panel width", () => {
     const dimensions = createPanelDimensions(4);
     const holes = generateMountingHoles({
       widthHp: dimensions.widthHp,
       widthMm: dimensions.widthMm,
       heightMm: dimensions.heightMm,
-      config: { shape: 'slot', slotLengthMm: 30, diameterMm: 3 }
+      config: { shape: "slot", slotLengthMm: 30, diameterMm: 3 },
     });
 
-    expect(holes.every((hole) => hole.shape === 'slot')).toBe(true);
+    expect(holes.every((hole) => hole.shape === "slot")).toBe(true);
     const topHoles = holes.filter((hole) => hole.center.y === holes[0]?.center.y);
     topHoles.forEach((hole) => {
       expect(hole.slotLengthMm).toBeLessThanOrEqual(dimensions.widthMm);

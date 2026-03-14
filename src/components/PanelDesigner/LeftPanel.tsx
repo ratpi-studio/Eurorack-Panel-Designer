@@ -1,10 +1,10 @@
-import React from 'react';
+import React from "react";
 
-import { ElementPalette } from '@components/ElementPalette/ElementPalette';
-import { PanelControls } from '@components/PanelControls/PanelControls';
-import { type PanelElementType, type PanelModel } from '@lib/panelTypes';
-import type { ReturnTypeUseI18n } from './types';
-import * as styles from './PanelDesigner.css';
+import { ElementPalette } from "@components/ElementPalette/ElementPalette";
+import { PanelControls } from "@components/PanelControls/PanelControls";
+import { type PanelElementType, type PanelModel } from "@lib/panelTypes";
+import type { ReturnTypeUseI18n } from "./types";
+import * as styles from "./PanelDesigner.css";
 
 interface LeftPanelProps {
   t: ReturnTypeUseI18n;
@@ -27,10 +27,10 @@ export function LeftPanel({
   onClose,
   onChangeWidthHp,
   onChangeWidthMm,
-  onSelectPaletteType
+  onSelectPaletteType,
 }: LeftPanelProps) {
   const containerClass = `${styles.leftColumn} ${
-    isCompact ? `${styles.drawer} ${styles.drawerLeft} ${showPanel ? styles.drawerOpen : ''}` : ''
+    isCompact ? `${styles.drawer} ${styles.drawerLeft} ${showPanel ? styles.drawerOpen : ""}` : ""
   }`;
 
   if (isCompact && !showPanel) {

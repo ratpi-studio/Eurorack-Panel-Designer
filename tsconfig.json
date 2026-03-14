@@ -15,7 +15,7 @@
     "isolatedModules": true,
     "esModuleInterop": true,
     "incremental": true,
-    "types": ["vite/client", "node"],
+    "types": ["vite-plus/client", "node"],
     "allowSyntheticDefaultImports": true,
     "verbatimModuleSyntax": true,
     "baseUrl": ".",
@@ -29,6 +29,6 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts", "vitest.config.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"],
   "exclude": ["node_modules", "dist"]
 }

@@ -1,9 +1,9 @@
-import React from 'react';
+import React from "react";
 
-import { useI18n } from '@i18n/I18nContext';
-import type { ReferenceImage } from '@lib/referenceImage';
+import { useI18n } from "@i18n/I18nContext";
+import type { ReferenceImage } from "@lib/referenceImage";
 
-import * as styles from './ReferenceImageControls.css';
+import * as styles from "./ReferenceImageControls.css";
 
 interface ReferenceImageControlsProps {
   image: ReferenceImage;
@@ -21,7 +21,7 @@ export function ReferenceImageControls({
   image,
   onChange,
   onReplace,
-  onRemove
+  onRemove,
 }: ReferenceImageControlsProps) {
   const t = useI18n();
 
@@ -50,8 +50,8 @@ export function ReferenceImageControls({
               onChange({
                 positionMm: {
                   ...image.positionMm,
-                  x: Math.max(0, sanitizeNumber(event.target.value, image.positionMm.x))
-                }
+                  x: Math.max(0, sanitizeNumber(event.target.value, image.positionMm.x)),
+                },
               })
             }
           />
@@ -67,8 +67,8 @@ export function ReferenceImageControls({
               onChange({
                 positionMm: {
                   ...image.positionMm,
-                  y: Math.max(0, sanitizeNumber(event.target.value, image.positionMm.y))
-                }
+                  y: Math.max(0, sanitizeNumber(event.target.value, image.positionMm.y)),
+                },
               })
             }
           />
@@ -96,7 +96,7 @@ export function ReferenceImageControls({
             value={image.heightMm.toFixed(1)}
             onChange={(event) =>
               onChange({
-                heightMm: Math.max(1, sanitizeNumber(event.target.value, image.heightMm))
+                heightMm: Math.max(1, sanitizeNumber(event.target.value, image.heightMm)),
               })
             }
           />
@@ -131,4 +131,3 @@ export function ReferenceImageControls({
     </div>
   );
 }
-

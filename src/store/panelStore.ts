@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
-import { createPanelElement } from '@lib/elements';
+import { createPanelElement } from "@lib/elements";
 import {
   DEFAULT_CLEARANCE_CONFIG,
   DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
@@ -15,10 +15,10 @@ import {
   type PanelElementPropertiesMap,
   type PanelModel,
   type PanelModelInput,
-  type Vector2
-} from '@lib/panelTypes';
-import { createPanelDimensions } from '@lib/units';
-import type { ReferenceImage } from '@lib/referenceImage';
+  type Vector2,
+} from "@lib/panelTypes";
+import { createPanelDimensions } from "@lib/units";
+import type { ReferenceImage } from "@lib/referenceImage";
 
 const DEFAULT_PANEL_WIDTH_CM = 10;
 
@@ -49,10 +49,7 @@ type PanelActions = {
   addSelectedElements: (ids: string[]) => void;
   toggleElementSelection: (id: string) => void;
   clearSelection: () => void;
-  setDraftProperties: (
-    type: PanelElementType,
-    properties: PanelElement['properties']
-  ) => void;
+  setDraftProperties: (type: PanelElementType, properties: PanelElement["properties"]) => void;
   addElement: (type: PanelElementType, positionMm: Vector2) => string;
   moveElement: (id: string, positionMm: Vector2) => void;
   moveElements: (updates: ElementsMoveInput[]) => void;
@@ -72,7 +69,7 @@ const createInitialModel = (): PanelModel =>
     options: { ...DEFAULT_PANEL_OPTIONS },
     mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG },
     elementHoleConfig: { ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG },
-    clearance: { ...DEFAULT_CLEARANCE_CONFIG }
+    clearance: { ...DEFAULT_CLEARANCE_CONFIG },
   });
 
 export const usePanelStore = create<PanelState & PanelActions>()(
@@ -91,7 +88,7 @@ export const usePanelStore = create<PanelState & PanelActions>()(
         set(() => ({
           selectedElementId: id,
           selectedElementIds: id ? [id] : [],
-          referenceImageSelected: false
+          referenceImageSelected: false,
         })),
       setSelectedElementIds: (ids) =>
         set(() => {
@@ -99,7 +96,7 @@ export const usePanelStore = create<PanelState & PanelActions>()(
           return {
             selectedElementIds: unique,
             selectedElementId: unique.length ? unique[unique.length - 1] : null,
-            referenceImageSelected: false
+            referenceImageSelected: false,
           };
         }),
       addSelectedElements: (ids) =>
@@ -118,7 +115,7 @@ export const usePanelStore = create<PanelState & PanelActions>()(
           return {
             selectedElementIds: nextIds,
             selectedElementId: lastAdded ?? state.selectedElementId,
-            referenceImageSelected: false
+            referenceImageSelected: false,
           };
         }),
       toggleElementSelection: (id) =>
@@ -131,14 +128,14 @@ export const usePanelStore = create<PanelState & PanelActions>()(
             return {
               selectedElementIds: [...state.selectedElementIds, id],
               selectedElementId: id,
-              referenceImageSelected: false
+              referenceImageSelected: false,
             };
           }
           const nextIds = state.selectedElementIds.filter((value) => value !== id);
           return {
             selectedElementIds: nextIds,
             selectedElementId: nextIds.length ? nextIds[nextIds.length - 1] : null,
-            referenceImageSelected: false
+            referenceImageSelected: false,
           };
         }),
       clearSelection: () =>
@@ -152,21 +149,21 @@ export const usePanelStore = create<PanelState & PanelActions>()(
             return { draftProperties: nextDraft };
           }
           return {
-            draftProperties: { ...state.draftProperties, [type]: sanitized }
+            draftProperties: { ...state.draftProperties, [type]: sanitized },
           };
         }),
       addElement: (type, positionMm) => {
         const element = withElementProperties(
           createPanelElement(type, positionMm),
-          get().draftProperties[type]
+          get().draftProperties[type],
         );
         set((state) => ({
           model: {
             ...state.model,
-            elements: [...state.model.elements, element]
+            elements: [...state.model.elements, element],
           },
           selectedElementId: element.id,
-          selectedElementIds: [element.id]
+          selectedElementIds: [element.id],
         }));
         return element.id;
       },
@@ -175,9 +172,9 @@ export const usePanelStore = create<PanelState & PanelActions>()(
           model: {
             ...state.model,
             elements: state.model.elements.map((element) =>
-              element.id === id ? { ...element, positionMm } : element
-            )
-          }
+              element.id === id ? { ...element, positionMm } : element,
+            ),
+          },
         })),
       moveElements: (updates) =>
         set((state) => {
@@ -191,8 +188,8 @@ export const usePanelStore = create<PanelState & PanelActions>()(
               elements: state.model.elements.map((element) => {
                 const nextPosition = updateMap.get(element.id);
                 return nextPosition ? { ...element, positionMm: nextPosition } : element;
-              })
-            }
+              }),
+            },
           };
         }),
       updateElement: (id, updater) =>
@@ -200,18 +197,18 @@ export const usePanelStore = create<PanelState & PanelActions>()(
           model: {
             ...state.model,
             elements: state.model.elements.map((element) =>
-              element.id === id ? updater(element) : element
-            )
-          }
+              element.id === id ? updater(element) : element,
+            ),
+          },
         })),
       removeElement: (id) =>
         set((state) => ({
           model: {
             ...state.model,
-            elements: state.model.elements.filter((element) => element.id !== id)
+            elements: state.model.elements.filter((element) => element.id !== id),
           },
           selectedElementIds: state.selectedElementIds.filter((elementId) => elementId !== id),
-          selectedElementId: state.selectedElementId === id ? null : state.selectedElementId
+          selectedElementId: state.selectedElementId === id ? null : state.selectedElementId,
         })),
       removeElements: (ids) =>
         set((state) => {
@@ -224,10 +221,12 @@ export const usePanelStore = create<PanelState & PanelActions>()(
           return {
             model: {
               ...state.model,
-              elements: nextElements
+              elements: nextElements,
             },
             selectedElementIds: nextSelection,
-            selectedElementId: nextSelection.length ? nextSelection[nextSelection.length - 1] : null
+            selectedElementId: nextSelection.length
+              ? nextSelection[nextSelection.length - 1]
+              : null,
           };
         }),
       setReferenceImage: (image) =>
@@ -235,7 +234,7 @@ export const usePanelStore = create<PanelState & PanelActions>()(
           referenceImage: image,
           referenceImageSelected: Boolean(image),
           selectedElementId: null,
-          selectedElementIds: []
+          selectedElementIds: [],
         })),
       updateReferenceImage: (updates) =>
         set((state) => {
@@ -243,14 +242,14 @@ export const usePanelStore = create<PanelState & PanelActions>()(
             return state;
           }
           return {
-            referenceImage: { ...state.referenceImage, ...updates }
+            referenceImage: { ...state.referenceImage, ...updates },
           };
         }),
       selectReferenceImage: (selected) =>
         set(() => ({
           referenceImageSelected: selected,
           selectedElementId: selected ? null : null,
-          selectedElementIds: selected ? [] : []
+          selectedElementIds: selected ? [] : [],
         })),
       reset: () =>
         set({
@@ -259,11 +258,11 @@ export const usePanelStore = create<PanelState & PanelActions>()(
           selectedElementIds: [],
           referenceImage: null,
           referenceImageSelected: false,
-          placementType: null
-        })
+          placementType: null,
+        }),
     }),
     {
-      name: 'panel-designer-store',
+      name: "panel-designer-store",
       version: 5,
       migrate: (state, version) => {
         const typedState = state as (PanelState & PanelActions) | undefined;
@@ -276,7 +275,7 @@ export const usePanelStore = create<PanelState & PanelActions>()(
             : createInitialModel();
           return {
             ...typedState,
-            model: nextModel
+            model: nextModel,
           };
         }
         if (version && version < 3) {
@@ -284,7 +283,7 @@ export const usePanelStore = create<PanelState & PanelActions>()(
             ...typedState,
             model: typedState.model
               ? normalizePanelModel(typedState.model as PanelModelInput)
-              : createInitialModel()
+              : createInitialModel(),
           };
         }
         if (version && version < 4) {
@@ -292,7 +291,7 @@ export const usePanelStore = create<PanelState & PanelActions>()(
             ...typedState,
             model: typedState.model
               ? normalizePanelModel(typedState.model as PanelModelInput)
-              : createInitialModel()
+              : createInitialModel(),
           };
         }
         if (version && version < 5) {
@@ -302,17 +301,17 @@ export const usePanelStore = create<PanelState & PanelActions>()(
             referenceImageSelected: false,
             model: typedState.model
               ? normalizePanelModel(typedState.model as PanelModelInput)
-              : createInitialModel()
+              : createInitialModel(),
           };
         }
         if (typedState.model) {
           return {
             ...typedState,
-            model: normalizePanelModel(typedState.model as PanelModelInput)
+            model: normalizePanelModel(typedState.model as PanelModelInput),
           };
         }
         return typedState;
-      }
-    }
-  )
+      },
+    },
+  ),
 );

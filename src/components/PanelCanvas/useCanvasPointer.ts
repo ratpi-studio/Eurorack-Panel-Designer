@@ -1,29 +1,25 @@
-import React from 'react';
+import React from "react";
 
-import { findElementAtPoint, getElementBounds } from '@lib/canvas/elementGeometry';
-import {
-  projectPanelPoint,
-  screenPointToPanel,
-  type CanvasTransform
-} from '@lib/canvas/transform';
+import { findElementAtPoint, getElementBounds } from "@lib/canvas/elementGeometry";
+import { projectPanelPoint, screenPointToPanel, type CanvasTransform } from "@lib/canvas/transform";
 import {
   PanelElementType,
   type PanelElement,
   type PanelModel,
   type PanelOptions,
   type Vector2,
-  type MountingHole
-} from '@lib/panelTypes';
-import type { ReferenceImage } from '@lib/referenceImage';
-import { type ClearanceLines } from '@lib/clearance';
-import { snapPointToGrid } from '@lib/grid';
-import * as styles from './PanelCanvas.css';
+  type MountingHole,
+} from "@lib/panelTypes";
+import type { ReferenceImage } from "@lib/referenceImage";
+import { type ClearanceLines } from "@lib/clearance";
+import { snapPointToGrid } from "@lib/grid";
+import * as styles from "./PanelCanvas.css";
 const MOUNTING_HOLE_HIT_PADDING_MM = 1;
 const CLEARANCE_LINE_HIT_MM = 3;
 const REFERENCE_IMAGE_HIT_PADDING_MM = 3;
 
 type DraftPropertiesState = Partial<{
-  [T in PanelElementType]: PanelElement['properties'];
+  [T in PanelElementType]: PanelElement["properties"];
 }>;
 
 type MoveState = {
@@ -33,7 +29,7 @@ type MoveState = {
   elementIds: string[];
 };
 
-type PointerMode = 'idle' | 'pan' | 'click' | 'move' | 'marquee' | 'clearance' | 'reference';
+type PointerMode = "idle" | "pan" | "click" | "move" | "marquee" | "clearance" | "reference";
 
 interface SelectionOverlay {
   left: number;
@@ -68,7 +64,10 @@ interface CanvasPointerOptions {
   pan: Vector2;
   placementType: PanelElementType | null;
   draftProperties: DraftPropertiesState;
-  displayOptions: Pick<PanelOptions, 'showGrid' | 'showMountingHoles' | 'gridSizeMm' | 'snapToGrid'>;
+  displayOptions: Pick<
+    PanelOptions,
+    "showGrid" | "showMountingHoles" | "gridSizeMm" | "snapToGrid"
+  >;
   selectedElementIds: string[];
   canvasSize: Vector2;
   onPlaceElement: (type: PanelElementType, positionMm: Vector2) => string;
@@ -89,13 +88,13 @@ interface CanvasPointerOptions {
   onSelectMountingHoles: () => void;
   onClearMountingHoleSelection: () => void;
   clearanceLines: ClearanceLines;
-  onClearanceLineChange: (line: 'top' | 'bottom', positionMm: number) => void;
+  onClearanceLineChange: (line: "top" | "bottom", positionMm: number) => void;
   onClearanceLineDragStart: () => void;
   onClearanceLineDragEnd: () => void;
 }
 
 function isPointInMountingHole(point: Vector2, hole: MountingHole, paddingMm = 0): boolean {
-  if (hole.shape === 'slot' && hole.slotLengthMm) {
+  if (hole.shape === "slot" && hole.slotLengthMm) {
     const radius = hole.diameterMm / 2 + paddingMm;
     const halfLength = Math.max(hole.slotLengthMm / 2 + paddingMm, radius);
     const innerHalf = Math.max(halfLength - radius, 0);
@@ -138,14 +137,14 @@ function isPointInReferenceImage(point: Vector2, info: ReferenceImage): boolean 
   return Math.abs(localX) <= halfWidth && Math.abs(localY) <= halfHeight;
 }
 
-function findClearanceLineAtPoint(point: Vector2, lines: ClearanceLines): 'top' | 'bottom' | null {
+function findClearanceLineAtPoint(point: Vector2, lines: ClearanceLines): "top" | "bottom" | null {
   const topDist = Math.abs(point.y - lines.topY);
   const bottomDist = Math.abs(point.y - lines.bottomY);
   const nearest = Math.min(topDist, bottomDist);
   if (nearest > CLEARANCE_LINE_HIT_MM) {
     return null;
   }
-  return topDist <= bottomDist ? 'top' : 'bottom';
+  return topDist <= bottomDist ? "top" : "bottom";
 }
 
 export function useCanvasPointer({
@@ -184,11 +183,11 @@ export function useCanvasPointer({
   clearanceLines,
   onClearanceLineChange,
   onClearanceLineDragStart,
-  onClearanceLineDragEnd
+  onClearanceLineDragEnd,
 }: CanvasPointerOptions): CanvasPointerResult {
   const panRef = React.useRef<Vector2>(pan);
   const pointerStartRef = React.useRef<Vector2 | null>(null);
-  const pointerModeRef = React.useRef<PointerMode>('idle');
+  const pointerModeRef = React.useRef<PointerMode>("idle");
   const referenceDragStartRef = React.useRef<{ offset: Vector2 } | null>(null);
   const panStartRef = React.useRef<Vector2 | null>(null);
   const moveStateRef = React.useRef<MoveState | null>(null);
@@ -196,17 +195,17 @@ export function useCanvasPointer({
   const [pointerPanelPos, setPointerPanelPos] = React.useState<Vector2 | null>(null);
   const [snapOverridden, setSnapOverridden] = React.useState(false);
   const [selectionRect, setSelectionRect] = React.useState<{ start: Vector2; end: Vector2 } | null>(
-    null
+    null,
   );
   const [isHoveringInteractive, setIsHoveringInteractive] = React.useState(false);
-  const selectionModeRef = React.useRef<'replace' | 'add'>('replace');
+  const selectionModeRef = React.useRef<"replace" | "add">("replace");
   const selectedElementSet = React.useMemo(() => new Set(selectedElementIds), [selectedElementIds]);
   const elementMap = React.useMemo(
     () => new Map(model.elements.map((element) => [element.id, element])),
-    [model.elements]
+    [model.elements],
   );
   const [referenceImageElement, setReferenceImageElement] = React.useState<HTMLImageElement | null>(
-    null
+    null,
   );
 
   React.useEffect(() => {
@@ -227,21 +226,21 @@ export function useCanvasPointer({
 
   React.useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Shift') {
+      if (event.key === "Shift") {
         setSnapOverridden(true);
       }
     };
     const onKeyUp = (event: KeyboardEvent) => {
-      if (event.key === 'Shift') {
+      if (event.key === "Shift") {
         setSnapOverridden(false);
       }
     };
 
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
     return () => {
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
     };
   }, []);
 
@@ -255,31 +254,30 @@ export function useCanvasPointer({
       left: Math.min(startPx.x, endPx.x),
       top: Math.min(startPx.y, endPx.y),
       width: Math.abs(endPx.x - startPx.x),
-      height: Math.abs(endPx.y - startPx.y)
+      height: Math.abs(endPx.y - startPx.y),
     };
   }, [selectionRect, transform]);
 
   const clampZoom = React.useCallback(
     (value: number) => Math.min(zoomLimits.max, Math.max(zoomLimits.min, value)),
-    [zoomLimits.max, zoomLimits.min]
+    [zoomLimits.max, zoomLimits.min],
   );
 
   const maybeSnap = React.useCallback(
     (point: Vector2): Vector2 =>
       displayOptions.snapToGrid && !snapOverridden
-        ? snapPointToGrid(
-            point,
-            displayOptions.gridSizeMm,
-            { x: model.dimensions.widthMm, y: model.dimensions.heightMm }
-          )
+        ? snapPointToGrid(point, displayOptions.gridSizeMm, {
+            x: model.dimensions.widthMm,
+            y: model.dimensions.heightMm,
+          })
         : point,
     [
       displayOptions.gridSizeMm,
       displayOptions.snapToGrid,
       snapOverridden,
       model.dimensions.heightMm,
-      model.dimensions.widthMm
-    ]
+      model.dimensions.widthMm,
+    ],
   );
 
   React.useEffect(() => {
@@ -297,7 +295,7 @@ export function useCanvasPointer({
       const rect = canvas.getBoundingClientRect();
       const pointerPx = {
         x: event.clientX - rect.left,
-        y: event.clientY - rect.top
+        y: event.clientY - rect.top,
       };
       const pointerPanel = screenPointToPanel(pointerPx, transform);
       if (!pointerPanel) {
@@ -316,7 +314,7 @@ export function useCanvasPointer({
       const nextPanelHeightPx = model.dimensions.heightMm * nextScale;
       const nextPan = {
         x: pointerPx.x - pointerPanel.x * nextScale - (canvasSize.x - nextPanelWidthPx) / 2,
-        y: pointerPx.y - pointerPanel.y * nextScale - (canvasSize.y - nextPanelHeightPx) / 2
+        y: pointerPx.y - pointerPanel.y * nextScale - (canvasSize.y - nextPanelHeightPx) / 2,
       };
 
       onZoomChange(nextZoom);
@@ -324,9 +322,9 @@ export function useCanvasPointer({
     };
 
     const listener = (event: WheelEvent) => handleWheel(event);
-    canvas.addEventListener('wheel', listener, { passive: false });
+    canvas.addEventListener("wheel", listener, { passive: false });
     return () => {
-      canvas.removeEventListener('wheel', listener);
+      canvas.removeEventListener("wheel", listener);
     };
   }, [
     canvasRef,
@@ -338,7 +336,7 @@ export function useCanvasPointer({
     transform,
     zoom,
     canvasSize.x,
-    canvasSize.y
+    canvasSize.y,
   ]);
 
   const updateHoverState = React.useCallback(
@@ -348,7 +346,7 @@ export function useCanvasPointer({
         return;
       }
       const pointerMode = pointerModeRef.current;
-      if (pointerMode !== 'idle' && pointerMode !== 'click') {
+      if (pointerMode !== "idle" && pointerMode !== "click") {
         setIsHoveringInteractive(false);
         return;
       }
@@ -357,7 +355,9 @@ export function useCanvasPointer({
         displayOptions.showMountingHoles && findMountingHoleAtPoint(pointPanel, mountingHoles);
       const clearanceHit = findClearanceLineAtPoint(pointPanel, clearanceLines);
       const refHit =
-        referenceImage && referenceImageElement && isPointInReferenceImage(pointPanel, referenceImage);
+        referenceImage &&
+        referenceImageElement &&
+        isPointInReferenceImage(pointPanel, referenceImage);
       setIsHoveringInteractive(Boolean(element || hole || clearanceHit || refHit));
     },
     [
@@ -366,8 +366,8 @@ export function useCanvasPointer({
       model.elements,
       mountingHoles,
       referenceImage,
-      referenceImageElement
-    ]
+      referenceImageElement,
+    ],
   );
 
   const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -382,7 +382,7 @@ export function useCanvasPointer({
 
     const additiveModifier = event.shiftKey || event.metaKey || event.ctrlKey;
     const shouldPan = event.button === 1 || event.button === 2 || event.altKey;
-    pointerModeRef.current = shouldPan ? 'pan' : 'click';
+    pointerModeRef.current = shouldPan ? "pan" : "click";
     pointerStartRef.current = { x: event.clientX, y: event.clientY };
     panStartRef.current = shouldPan ? { ...panRef.current } : null;
     setIsHoveringInteractive(false);
@@ -396,7 +396,7 @@ export function useCanvasPointer({
     const rect = canvas.getBoundingClientRect();
     const pointPx = {
       x: event.clientX - rect.left,
-      y: event.clientY - rect.top
+      y: event.clientY - rect.top,
     };
     const pointPanel = screenPointToPanel(pointPx, transform);
     if (!pointPanel) {
@@ -408,7 +408,7 @@ export function useCanvasPointer({
       onClearMountingHoleSelection();
       if (additiveModifier) {
         onToggleElementSelection(element.id);
-        pointerModeRef.current = 'idle';
+        pointerModeRef.current = "idle";
         return;
       }
 
@@ -433,30 +433,30 @@ export function useCanvasPointer({
         anchorId: element.id,
         pointerOffset: {
           x: element.positionMm.x - pointPanel.x,
-          y: element.positionMm.y - pointPanel.y
+          y: element.positionMm.y - pointPanel.y,
         },
         startPositions,
-        elementIds
+        elementIds,
       };
-      pointerModeRef.current = 'move';
+      pointerModeRef.current = "move";
       onMoveStart?.(element.id);
       return;
     }
 
     const hitHole = findMountingHoleAtPoint(pointPanel, mountingHoles);
     if (hitHole) {
-      pointerModeRef.current = 'idle';
+      pointerModeRef.current = "idle";
       onSelectMountingHoles();
       return;
     }
 
     if (referenceImage && isPointInReferenceImage(pointPanel, referenceImage)) {
-      pointerModeRef.current = 'reference';
+      pointerModeRef.current = "reference";
       referenceDragStartRef.current = {
         offset: {
           x: referenceImage.positionMm.x - pointPanel.x,
-          y: referenceImage.positionMm.y - pointPanel.y
-        }
+          y: referenceImage.positionMm.y - pointPanel.y,
+        },
       };
       onClearMountingHoleSelection();
       onSelectReferenceImage();
@@ -465,7 +465,7 @@ export function useCanvasPointer({
 
     const clearanceHit = findClearanceLineAtPoint(pointPanel, clearanceLines);
     if (clearanceHit) {
-      pointerModeRef.current = 'clearance';
+      pointerModeRef.current = "clearance";
       onClearanceLineDragStart();
       onClearanceLineChange(clearanceHit, pointPanel.y);
       return;
@@ -476,14 +476,14 @@ export function useCanvasPointer({
       onClearMountingHoleSelection();
       const newId = onPlaceElement(placementType, snappedPoint);
       onSelectElement(newId);
-      pointerModeRef.current = 'idle';
+      pointerModeRef.current = "idle";
       return;
     }
 
-    selectionModeRef.current = additiveModifier ? 'add' : 'replace';
+    selectionModeRef.current = additiveModifier ? "add" : "replace";
     setSelectionRect({ start: pointPanel, end: pointPanel });
     onClearMountingHoleSelection();
-    pointerModeRef.current = 'marquee';
+    pointerModeRef.current = "marquee";
   };
 
   const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -494,7 +494,7 @@ export function useCanvasPointer({
       return;
     }
 
-    if (pointerModeRef.current === 'pan') {
+    if (pointerModeRef.current === "pan") {
       if (!pointerStartRef.current || !panStartRef.current) {
         return;
       }
@@ -503,7 +503,7 @@ export function useCanvasPointer({
       const deltaY = event.clientY - pointerStartRef.current.y;
       const nextPan = {
         x: panStartRef.current.x + deltaX,
-        y: panStartRef.current.y + deltaY
+        y: panStartRef.current.y + deltaY,
       };
 
       onPanChange(nextPan);
@@ -514,35 +514,35 @@ export function useCanvasPointer({
     const rect = canvas.getBoundingClientRect();
     const pointPx = {
       x: event.clientX - rect.left,
-      y: event.clientY - rect.top
+      y: event.clientY - rect.top,
     };
     const pointPanel = screenPointToPanel(pointPx, transform);
     updateHoverState(pointPanel);
 
-    if (pointerModeRef.current === 'clearance') {
+    if (pointerModeRef.current === "clearance") {
       if (!pointPanel) {
         return;
       }
-      const activeLine = findClearanceLineAtPoint(pointPanel, clearanceLines) ?? 'top';
+      const activeLine = findClearanceLineAtPoint(pointPanel, clearanceLines) ?? "top";
       onClearanceLineChange(activeLine, pointPanel.y);
       setPointerPanelPos(pointPanel);
       return;
     }
 
-    if (pointerModeRef.current === 'reference') {
+    if (pointerModeRef.current === "reference") {
       if (!pointPanel || !referenceImage || !referenceDragStartRef.current) {
         return;
       }
       const snapped = maybeSnap({
         x: pointPanel.x + referenceDragStartRef.current.offset.x,
-        y: pointPanel.y + referenceDragStartRef.current.offset.y
+        y: pointPanel.y + referenceDragStartRef.current.offset.y,
       });
       onUpdateReferenceImage({ positionMm: snapped });
       setPointerPanelPos(pointPanel);
       return;
     }
 
-    if (pointerModeRef.current === 'move') {
+    if (pointerModeRef.current === "move") {
       if (!pointPanel || !moveStateRef.current) {
         return;
       }
@@ -553,12 +553,12 @@ export function useCanvasPointer({
       }
       const targetAnchor = {
         x: pointPanel.x + pointerOffset.x,
-        y: pointPanel.y + pointerOffset.y
+        y: pointPanel.y + pointerOffset.y,
       };
       const snappedAnchor = maybeSnap(targetAnchor);
       const delta = {
         x: snappedAnchor.x - anchorStart.x,
-        y: snappedAnchor.y - anchorStart.y
+        y: snappedAnchor.y - anchorStart.y,
       };
       const updates = elementIds.map((id) => {
         const start = startPositions[id];
@@ -566,8 +566,8 @@ export function useCanvasPointer({
           id,
           positionMm: {
             x: start.x + delta.x,
-            y: start.y + delta.y
-          }
+            y: start.y + delta.y,
+          },
         };
       });
       if (!updates.length) {
@@ -581,7 +581,7 @@ export function useCanvasPointer({
       return;
     }
 
-    if (pointerModeRef.current === 'marquee') {
+    if (pointerModeRef.current === "marquee") {
       if (!pointPanel) {
         return;
       }
@@ -589,9 +589,9 @@ export function useCanvasPointer({
         current
           ? {
               start: current.start,
-              end: pointPanel
+              end: pointPanel,
             }
-          : current
+          : current,
       );
       setPointerPanelPos(pointPanel);
       return;
@@ -605,12 +605,12 @@ export function useCanvasPointer({
 
     const canvas = canvasRef.current;
 
-    if (pointerModeRef.current === 'marquee' && selectionRect) {
+    if (pointerModeRef.current === "marquee" && selectionRect) {
       const bounds = {
         minX: Math.min(selectionRect.start.x, selectionRect.end.x),
         maxX: Math.max(selectionRect.start.x, selectionRect.end.x),
         minY: Math.min(selectionRect.start.y, selectionRect.end.y),
-        maxY: Math.max(selectionRect.start.y, selectionRect.end.y)
+        maxY: Math.max(selectionRect.start.y, selectionRect.end.y),
       };
       const selectedIds = model.elements
         .filter((element) => {
@@ -625,16 +625,16 @@ export function useCanvasPointer({
         .map((element) => element.id);
 
       if (selectedIds.length) {
-        if (selectionModeRef.current === 'add') {
+        if (selectionModeRef.current === "add") {
           onAddSelectedElements(selectedIds);
         } else {
           onSelectElements(selectedIds);
         }
-      } else if (selectionModeRef.current !== 'add') {
+      } else if (selectionModeRef.current !== "add") {
         onClearSelection();
         onClearMountingHoleSelection();
       }
-    } else if (pointerModeRef.current === 'click' && pointerStartRef.current && canvas) {
+    } else if (pointerModeRef.current === "click" && pointerStartRef.current && canvas) {
       const deltaX = event.clientX - pointerStartRef.current.x;
       const deltaY = event.clientY - pointerStartRef.current.y;
       const moved = Math.hypot(deltaX, deltaY);
@@ -643,7 +643,7 @@ export function useCanvasPointer({
         const rect = canvas.getBoundingClientRect();
         const pointPx = {
           x: event.clientX - rect.left,
-          y: event.clientY - rect.top
+          y: event.clientY - rect.top,
         };
         const pointPanel = screenPointToPanel(pointPx, transform);
         if (pointPanel) {
@@ -660,19 +660,19 @@ export function useCanvasPointer({
       }
     }
 
-    if (pointerModeRef.current === 'clearance') {
+    if (pointerModeRef.current === "clearance") {
       onClearanceLineDragEnd();
     }
-    if (pointerModeRef.current === 'reference') {
+    if (pointerModeRef.current === "reference") {
       referenceDragStartRef.current = null;
     }
 
-    pointerModeRef.current = 'idle';
+    pointerModeRef.current = "idle";
     pointerStartRef.current = null;
     panStartRef.current = null;
     moveStateRef.current = null;
     setSelectionRect(null);
-    selectionModeRef.current = 'replace';
+    selectionModeRef.current = "replace";
     setPointerPanelPos(null);
     setIsPanning(false);
     setIsHoveringInteractive(false);
@@ -685,13 +685,13 @@ export function useCanvasPointer({
   const handlePointerLeave = (event: React.PointerEvent<HTMLCanvasElement>) => {
     event.stopPropagation();
 
-    pointerModeRef.current = 'idle';
+    pointerModeRef.current = "idle";
     pointerStartRef.current = null;
     panStartRef.current = null;
     moveStateRef.current = null;
     referenceDragStartRef.current = null;
     setSelectionRect(null);
-    selectionModeRef.current = 'replace';
+    selectionModeRef.current = "replace";
     setIsPanning(false);
     setIsHoveringInteractive(false);
     onMoveEnd?.();
@@ -703,11 +703,11 @@ export function useCanvasPointer({
 
   const canvasClassName = [
     styles.canvas,
-    isPanning ? styles.canvasPanning : '',
-    !isPanning && isHoveringInteractive ? styles.canvasInteractive : ''
+    isPanning ? styles.canvasPanning : "",
+    !isPanning && isHoveringInteractive ? styles.canvasInteractive : "",
   ]
     .filter(Boolean)
-    .join(' ');
+    .join(" ");
 
   return {
     selectionOverlay,
@@ -719,6 +719,6 @@ export function useCanvasPointer({
     handlePointerMove,
     handlePointerUp,
     handlePointerLeave,
-    handleContextMenu
+    handleContextMenu,
   };
 }

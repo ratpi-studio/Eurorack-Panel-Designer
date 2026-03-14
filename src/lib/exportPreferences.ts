@@ -1,13 +1,13 @@
-export type ExportFormat = 'svg' | 'png' | 'stl' | 'kicadSvg' | 'kicadPcb';
+export type ExportFormat = "svg" | "png" | "stl" | "kicadSvg" | "kicadPcb";
 
-const PREFERENCES_STORAGE_KEY = 'eurorack-panel-preferences';
+const PREFERENCES_STORAGE_KEY = "eurorack-panel-preferences";
 
 interface PanelPreferences {
   preferredExportFormat?: ExportFormat;
 }
 
 function getStorage(): Storage | null {
-  if (typeof window !== 'undefined' && window.localStorage) {
+  if (typeof window !== "undefined" && window.localStorage) {
     return window.localStorage;
   }
   const globalStore = (globalThis as { localStorage?: Storage }).localStorage;
@@ -27,18 +27,18 @@ function readPreferences(): PanelPreferences {
 
   try {
     const parsed = JSON.parse(raw) as unknown;
-    if (!parsed || typeof parsed !== 'object') {
+    if (!parsed || typeof parsed !== "object") {
       return {};
     }
 
     const candidate = parsed as PanelPreferences;
     if (
       candidate.preferredExportFormat &&
-      candidate.preferredExportFormat !== 'svg' &&
-      candidate.preferredExportFormat !== 'png' &&
-      candidate.preferredExportFormat !== 'stl' &&
-      candidate.preferredExportFormat !== 'kicadSvg' &&
-      candidate.preferredExportFormat !== 'kicadPcb'
+      candidate.preferredExportFormat !== "svg" &&
+      candidate.preferredExportFormat !== "png" &&
+      candidate.preferredExportFormat !== "stl" &&
+      candidate.preferredExportFormat !== "kicadSvg" &&
+      candidate.preferredExportFormat !== "kicadPcb"
     ) {
       return {};
     }
@@ -67,9 +67,9 @@ export function setPreferredExportFormat(format: ExportFormat): void {
   const current = readPreferences();
   const next: PanelPreferences = {
     ...current,
-    preferredExportFormat: format
+    preferredExportFormat: format,
   };
   writePreferences(next);
 }
 
-export const DEFAULT_EXPORT_FORMAT: ExportFormat = 'svg';
+export const DEFAULT_EXPORT_FORMAT: ExportFormat = "svg";

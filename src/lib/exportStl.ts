@@ -1,21 +1,14 @@
-import {
-  BufferGeometry,
-  ExtrudeGeometry,
-  Mesh,
-  MeshStandardMaterial,
-  Path,
-  Shape
-} from 'three';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
+import { BufferGeometry, ExtrudeGeometry, Mesh, MeshStandardMaterial, Path, Shape } from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { STLExporter } from "three/examples/jsm/exporters/STLExporter.js";
 
 import {
   PanelElementType,
   type InsertElementProperties,
   type MountingHole,
   type PanelElement,
-  type PanelModel
-} from '@lib/panelTypes';
+  type PanelModel,
+} from "@lib/panelTypes";
 
 interface BuildPanelStlOptions {
   thicknessMm: number;
@@ -55,16 +48,13 @@ interface TriangleHole {
   height: number;
 }
 
-export function getCircularHoles(
-  model: PanelModel,
-  mountingHoles: MountingHole[]
-): CircularHole[] {
+export function getCircularHoles(model: PanelModel, mountingHoles: MountingHole[]): CircularHole[] {
   const circularHoles: CircularHole[] = mountingHoles
-    .filter((hole) => hole.shape !== 'slot')
+    .filter((hole) => hole.shape !== "slot")
     .map((hole) => ({
       centerX: hole.center.x,
       centerY: hole.center.y,
-      radius: hole.diameterMm / 2
+      radius: hole.diameterMm / 2,
     }));
 
   for (const element of model.elements) {
@@ -76,7 +66,7 @@ export function getCircularHoles(
         circularHoles.push({
           centerX: element.positionMm.x,
           centerY: element.positionMm.y,
-          radius: props.diameterMm / 2
+          radius: props.diameterMm / 2,
         });
         break;
       }
@@ -93,7 +83,7 @@ export function getCircularHoles(
         circularHoles.push({
           centerX: element.positionMm.x,
           centerY: element.positionMm.y,
-          radius: props.innerDiameterMm / 2
+          radius: props.innerDiameterMm / 2,
         });
         break;
       }
@@ -109,10 +99,7 @@ function getRectangularHoles(model: PanelModel): RectangularHole[] {
   const rectangularHoles: RectangularHole[] = [];
 
   for (const element of model.elements) {
-    if (
-      element.type !== PanelElementType.Switch &&
-      element.type !== PanelElementType.Rectangle
-    ) {
+    if (element.type !== PanelElementType.Switch && element.type !== PanelElementType.Rectangle) {
       continue;
     }
     const props = element.properties as { widthMm: number; heightMm: number };
@@ -120,7 +107,7 @@ function getRectangularHoles(model: PanelModel): RectangularHole[] {
       x: element.positionMm.x - props.widthMm / 2,
       y: element.positionMm.y - props.heightMm / 2,
       width: props.widthMm,
-      height: props.heightMm
+      height: props.heightMm,
     });
   }
 
@@ -142,24 +129,21 @@ function getOvalHoles(model: PanelModel): OvalHole[] {
       centerX: element.positionMm.x,
       centerY: element.positionMm.y,
       radiusX: props.widthMm / 2,
-      radiusY: props.heightMm / 2
+      radiusY: props.heightMm / 2,
     });
   }
 
   return ovalHoles;
 }
 
-function getSlotHoles(
-  model: PanelModel,
-  mountingHoles: MountingHole[]
-): SlotHole[] {
+function getSlotHoles(model: PanelModel, mountingHoles: MountingHole[]): SlotHole[] {
   const slotHoles: SlotHole[] = mountingHoles
-    .filter((hole) => hole.shape === 'slot' && (hole.slotLengthMm ?? hole.diameterMm) > 0)
+    .filter((hole) => hole.shape === "slot" && (hole.slotLengthMm ?? hole.diameterMm) > 0)
     .map((hole) => ({
       centerX: hole.center.x,
       centerY: hole.center.y,
       width: hole.slotLengthMm ?? hole.diameterMm,
-      height: hole.diameterMm
+      height: hole.diameterMm,
     }));
 
   for (const element of model.elements) {
@@ -174,7 +158,7 @@ function getSlotHoles(
       centerX: element.positionMm.x,
       centerY: element.positionMm.y,
       width: props.widthMm,
-      height: props.heightMm
+      height: props.heightMm,
     });
   }
 
@@ -196,7 +180,7 @@ function getTriangleHoles(model: PanelModel): TriangleHole[] {
       centerX: element.positionMm.x,
       centerY: element.positionMm.y,
       width: props.widthMm,
-      height: props.heightMm
+      height: props.heightMm,
     });
   }
 
@@ -235,15 +219,12 @@ function createTriangleHolePath(hole: TriangleHole): Path {
   return path;
 }
 
-function clampInsertProperties(
-  properties: InsertElementProperties,
-  panelThicknessMm: number
-) {
+function clampInsertProperties(properties: InsertElementProperties, panelThicknessMm: number) {
   const outerDepthMm = Math.max(properties.outerDepthMm, 0);
   const innerDepthMm = Math.min(Math.max(properties.innerDepthMm, 0), outerDepthMm);
   const embedDepthMm = Math.min(
     Math.max(properties.embedDepthMm, 0),
-    Math.min(panelThicknessMm, outerDepthMm || panelThicknessMm)
+    Math.min(panelThicknessMm, outerDepthMm || panelThicknessMm),
   );
   const outerRadius = Math.max(properties.outerDiameterMm / 2, 0);
   const innerRadius = Math.min(Math.max(properties.innerDiameterMm / 2, 0), outerRadius);
@@ -253,18 +234,16 @@ function clampInsertProperties(
     innerDepthMm,
     embedDepthMm,
     outerRadius,
-    innerRadius
+    innerRadius,
   };
 }
 
 function buildInsertGeometry(
   element: PanelElement & { type: PanelElementType.Insert; properties: InsertElementProperties },
-  panelThicknessMm: number
+  panelThicknessMm: number,
 ): BufferGeometry | null {
-  const { outerDepthMm, innerDepthMm, embedDepthMm, outerRadius, innerRadius } = clampInsertProperties(
-    element.properties,
-    panelThicknessMm
-  );
+  const { outerDepthMm, innerDepthMm, embedDepthMm, outerRadius, innerRadius } =
+    clampInsertProperties(element.properties, panelThicknessMm);
 
   if (outerDepthMm <= 0 || outerRadius <= 0) {
     return null;
@@ -287,7 +266,7 @@ function buildInsertGeometry(
   if (ringHeight > 0) {
     const ringGeometry = new ExtrudeGeometry(ringShape, {
       depth: ringHeight,
-      bevelEnabled: false
+      bevelEnabled: false,
     });
     ringGeometry.translate(element.positionMm.x, element.positionMm.y, baseZ);
     geometries.push(ringGeometry);
@@ -298,13 +277,9 @@ function buildInsertGeometry(
     plugShape.absarc(0, 0, outerRadius, 0, Math.PI * 2, false);
     const plugGeometry = new ExtrudeGeometry(plugShape, {
       depth: remainingHeight,
-      bevelEnabled: false
+      bevelEnabled: false,
     });
-    plugGeometry.translate(
-      element.positionMm.x,
-      element.positionMm.y,
-      baseZ + ringHeight
-    );
+    plugGeometry.translate(element.positionMm.x, element.positionMm.y, baseZ + ringHeight);
     geometries.push(plugGeometry);
   }
 
@@ -319,10 +294,7 @@ function buildInsertGeometry(
   return mergeGeometries(geometries) ?? null;
 }
 
-function buildPanelShape(
-  model: PanelModel,
-  mountingHoles: MountingHole[]
-): Shape {
+function buildPanelShape(model: PanelModel, mountingHoles: MountingHole[]): Shape {
   const shape = new Shape();
   const width = model.dimensions.widthMm;
   const height = model.dimensions.heightMm;
@@ -346,7 +318,7 @@ function buildPanelShape(
       0,
       Math.PI * 2,
       true, // clockwise for holes
-      0
+      0,
     );
     shape.holes.push(path);
   }
@@ -375,7 +347,7 @@ function buildPanelShape(
       0,
       Math.PI * 2,
       true,
-      0
+      0,
     );
     shape.holes.push(path);
   }
@@ -398,16 +370,16 @@ function buildPanelShape(
 export function createPanelExtrusion(
   model: PanelModel,
   mountingHoles: MountingHole[],
-  thicknessMm: number
+  thicknessMm: number,
 ): BufferGeometry {
   if (!Number.isFinite(thicknessMm) || thicknessMm <= 0) {
-    throw new Error('Panel thickness must be a positive number.');
+    throw new Error("Panel thickness must be a positive number.");
   }
 
   const shape = buildPanelShape(model, mountingHoles);
   const panelGeometry = new ExtrudeGeometry(shape, {
     depth: thicknessMm,
-    bevelEnabled: false
+    bevelEnabled: false,
   });
 
   const geometries: BufferGeometry[] = [panelGeometry];
@@ -416,8 +388,11 @@ export function createPanelExtrusion(
       continue;
     }
     const insertGeometry = buildInsertGeometry(
-      element as PanelElement & { type: PanelElementType.Insert; properties: InsertElementProperties },
-      thicknessMm
+      element as PanelElement & {
+        type: PanelElementType.Insert;
+        properties: InsertElementProperties;
+      },
+      thicknessMm,
     );
     if (insertGeometry) {
       geometries.push(insertGeometry);
@@ -425,9 +400,7 @@ export function createPanelExtrusion(
   }
 
   const merged =
-    geometries.length === 1
-      ? geometries[0]
-      : mergeGeometries(geometries) ?? panelGeometry;
+    geometries.length === 1 ? geometries[0] : (mergeGeometries(geometries) ?? panelGeometry);
 
   // Flip Y so the exported model matches the on-canvas orientation (origin top-left).
   merged.scale(1, -1, 1);
@@ -441,12 +414,12 @@ function geometryToStlString(geometry: BufferGeometry): string {
   const mesh = new Mesh(
     geometry,
     // Material is not used for STL export; keep a tiny default.
-    new MeshStandardMaterial()
+    new MeshStandardMaterial(),
   );
 
   const exporter = new STLExporter();
   const result = exporter.parse(mesh, { binary: false });
-  if (typeof result === 'string') {
+  if (typeof result === "string") {
     return normalizeStlHeader(result);
   }
 
@@ -457,14 +430,14 @@ function geometryToStlString(geometry: BufferGeometry): string {
 
 function normalizeStlHeader(stl: string): string {
   return stl
-    .replace(/^solid exported/, 'solid eurorack_panel')
-    .replace(/endsolid exported\s*$/, 'endsolid eurorack_panel\n');
+    .replace(/^solid exported/, "solid eurorack_panel")
+    .replace(/endsolid exported\s*$/, "endsolid eurorack_panel\n");
 }
 
 export function buildPanelStl(
   model: PanelModel,
   mountingHoles: MountingHole[],
-  options: BuildPanelStlOptions
+  options: BuildPanelStlOptions,
 ): string {
   const { thicknessMm } = options;
   const geometry = createPanelExtrusion(model, mountingHoles, thicknessMm);

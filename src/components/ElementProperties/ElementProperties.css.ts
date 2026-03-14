@@ -1,29 +1,29 @@
-import { style } from '@vanilla-extract/css';
+import { style } from "@vanilla-extract/css";
 
-import { vars } from '@styles/theme.css';
+import { vars } from "@styles/theme.css";
 
 export const root = style({
-  display: 'flex',
-  flexDirection: 'column',
+  display: "flex",
+  flexDirection: "column",
   gap: vars.spacing.md,
   padding: vars.spacing.md,
-  borderRadius: '12px',
+  borderRadius: "12px",
   border: `1px solid ${vars.color.border}`,
   backgroundColor: vars.color.surface,
-  boxShadow: '0 12px 30px rgba(2, 6, 23, 0.35)'
+  boxShadow: "0 12px 30px rgba(2, 6, 23, 0.35)",
 });
 
 export const header = style({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: vars.spacing.sm
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: vars.spacing.sm,
 });
 
 export const actions = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: vars.spacing.xs
+  display: "flex",
+  alignItems: "center",
+  gap: vars.spacing.xs,
 });
 
 export const importButton = style({
@@ -31,97 +31,97 @@ export const importButton = style({
   backgroundColor: vars.color.surface,
   color: vars.color.textPrimary,
   fontWeight: 600,
-  borderRadius: '8px',
+  borderRadius: "8px",
   padding: `8px ${vars.spacing.sm}`,
-  cursor: 'pointer',
+  cursor: "pointer",
   selectors: {
-    '&:hover': {
-      borderColor: vars.color.accent
-    }
-  }
+    "&:hover": {
+      borderColor: vars.color.accent,
+    },
+  },
 });
 
 export const title = style({
-  fontSize: '14px',
-  letterSpacing: '0.04em',
-  textTransform: 'uppercase',
-  color: vars.color.textSecondary
+  fontSize: "14px",
+  letterSpacing: "0.04em",
+  textTransform: "uppercase",
+  color: vars.color.textSecondary,
 });
 
 export const subtitle = style({
-  fontSize: '13px',
-  color: vars.color.textPrimary
+  fontSize: "13px",
+  color: vars.color.textPrimary,
 });
 
 export const removeButton = style({
-  border: 'none',
-  backgroundColor: '#ef4444',
-  color: '#0f172a',
+  border: "none",
+  backgroundColor: "#ef4444",
+  color: "#0f172a",
   fontWeight: 600,
-  borderRadius: '8px',
+  borderRadius: "8px",
   padding: `8px ${vars.spacing.sm}`,
-  cursor: 'pointer',
+  cursor: "pointer",
   selectors: {
-    '&:hover': {
-      backgroundColor: '#fb7185'
-    }
-  }
+    "&:hover": {
+      backgroundColor: "#fb7185",
+    },
+  },
 });
 
 export const grid = style({
-  display: 'grid',
-  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-  gap: vars.spacing.sm
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  gap: vars.spacing.sm,
 });
 
 export const field = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '6px'
+  display: "flex",
+  flexDirection: "column",
+  gap: "6px",
 });
 
 export const fieldWide = style([
   field,
   {
-    gridColumn: 'span 2'
-  }
+    gridColumn: "span 2",
+  },
 ]);
 
 export const label = style({
-  fontSize: '12px',
+  fontSize: "12px",
   color: vars.color.textSecondary,
-  letterSpacing: '0.04em',
-  textTransform: 'uppercase'
+  letterSpacing: "0.04em",
+  textTransform: "uppercase",
 });
 
 export const input = style({
-  width: '100%',
-  height: '36px',
+  width: "100%",
+  height: "36px",
   padding: `0 ${vars.spacing.sm}`,
-  borderRadius: '8px',
+  borderRadius: "8px",
   border: `1px solid ${vars.color.border}`,
-  backgroundColor: '#0b1220',
+  backgroundColor: "#0b1220",
   color: vars.color.textPrimary,
-  fontSize: '14px',
-  outline: 'none',
+  fontSize: "14px",
+  outline: "none",
   selectors: {
-    '&:focus': {
+    "&:focus": {
       borderColor: vars.color.accent,
-      boxShadow: `0 0 0 2px rgba(56, 189, 248, 0.25)`
-    }
-  }
+      boxShadow: `0 0 0 2px rgba(56, 189, 248, 0.25)`,
+    },
+  },
 });
 
 export const empty = style({
   padding: vars.spacing.md,
-  borderRadius: '12px',
+  borderRadius: "12px",
   border: `1px dashed ${vars.color.border}`,
   color: vars.color.textSecondary,
-  textAlign: 'center'
+  textAlign: "center",
 });
 
 export const selectionSummary = style({
-  fontSize: '13px',
+  fontSize: "13px",
   color: vars.color.textPrimary,
-  lineHeight: 1.5
+  lineHeight: 1.5,
 });
