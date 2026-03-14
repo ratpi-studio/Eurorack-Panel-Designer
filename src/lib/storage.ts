@@ -1,14 +1,7 @@
-import {
-  type PanelModel,
-  type SerializedPanel
-} from './panelTypes';
-import {
-  deserializePanelModel,
-  parseSerializedPanel,
-  serializePanelModel
-} from './serialization';
+import { type PanelModel, type SerializedPanel } from "./panelTypes";
+import { deserializePanelModel, parseSerializedPanel, serializePanelModel } from "./serialization";
 
-const STORAGE_KEY = 'eurorack-panel-projects';
+const STORAGE_KEY = "eurorack-panel-projects";
 
 export interface StoredProject {
   name: string;
@@ -17,7 +10,7 @@ export interface StoredProject {
 }
 
 function getStorage(): Storage | null {
-  if (typeof window !== 'undefined' && window.localStorage) {
+  if (typeof window !== "undefined" && window.localStorage) {
     return window.localStorage;
   }
   const globalStore = (globalThis as { localStorage?: Storage }).localStorage;
@@ -38,23 +31,21 @@ function hydrateProjects(raw: unknown): StoredProject[] {
   return raw
     .map((entry) => {
       if (
-        typeof entry !== 'object' ||
+        typeof entry !== "object" ||
         entry === null ||
-        typeof (entry as StoredProject).name !== 'string' ||
-        typeof (entry as StoredProject).updatedAt !== 'number' ||
+        typeof (entry as StoredProject).name !== "string" ||
+        typeof (entry as StoredProject).updatedAt !== "number" ||
         !(entry as StoredProject).payload
       ) {
         return null;
       }
 
       try {
-        const parsedPayload = parseSerializedPanel(
-          (entry as StoredProject).payload
-        );
+        const parsedPayload = parseSerializedPanel((entry as StoredProject).payload);
         return {
           name: (entry as StoredProject).name,
           payload: parsedPayload,
-          updatedAt: (entry as StoredProject).updatedAt
+          updatedAt: (entry as StoredProject).updatedAt,
         };
       } catch {
         return null;
@@ -95,12 +86,12 @@ export function saveProject(name: string, model: PanelModel): StoredProject[] {
   const payload = parseSerializedPanel(serializePanelModel(model));
   const projects = readProjects();
   const existingIndex = projects.findIndex(
-    (project) => project.name.toLowerCase() === name.toLowerCase()
+    (project) => project.name.toLowerCase() === name.toLowerCase(),
   );
   const nextEntry: StoredProject = {
     name,
     payload,
-    updatedAt: Date.now()
+    updatedAt: Date.now(),
   };
 
   if (existingIndex >= 0) {
@@ -115,9 +106,7 @@ export function saveProject(name: string, model: PanelModel): StoredProject[] {
 
 export function loadProject(name: string): PanelModel | null {
   const projects = readProjects();
-  const match = projects.find(
-    (project) => project.name.toLowerCase() === name.toLowerCase()
-  );
+  const match = projects.find((project) => project.name.toLowerCase() === name.toLowerCase());
   if (!match) {
     return null;
   }
@@ -126,7 +115,7 @@ export function loadProject(name: string): PanelModel | null {
 
 export function deleteProject(name: string): StoredProject[] {
   const projects = readProjects().filter(
-    (project) => project.name.toLowerCase() !== name.toLowerCase()
+    (project) => project.name.toLowerCase() !== name.toLowerCase(),
   );
   persist(projects);
   return projects;

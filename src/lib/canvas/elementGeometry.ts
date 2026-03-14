@@ -2,8 +2,8 @@ import {
   PanelElementType,
   type LabelElementProperties,
   type PanelElement,
-  type Vector2
-} from '@lib/panelTypes';
+  type Vector2,
+} from "@lib/panelTypes";
 
 const LABEL_CHAR_WIDTH_RATIO = 0.6;
 const LABEL_LINE_HEIGHT_RATIO = 1.25;
@@ -28,27 +28,22 @@ export interface NearestElementDistance {
   distanceMm: number;
 }
 
-export function getLabelSizeMm(
-  properties: LabelElementProperties
-): LabelSizeMm {
+export function getLabelSizeMm(properties: LabelElementProperties): LabelSizeMm {
   const fontSizeMm = Math.max(2, properties.fontSizePt * PT_TO_MM);
   const textLength = properties.text?.length ?? 0;
   const widthMm = Math.max(
     fontSizeMm,
-    fontSizeMm * LABEL_CHAR_WIDTH_RATIO * Math.max(textLength, 1)
+    fontSizeMm * LABEL_CHAR_WIDTH_RATIO * Math.max(textLength, 1),
   );
   const heightMm = fontSizeMm * LABEL_LINE_HEIGHT_RATIO;
 
   return { widthMm, heightMm };
 }
 
-function convertToElementSpace(
-  point: Vector2,
-  element: PanelElement
-): Vector2 {
+function convertToElementSpace(point: Vector2, element: PanelElement): Vector2 {
   const translated = {
     x: point.x - element.positionMm.x,
-    y: point.y - element.positionMm.y
+    y: point.y - element.positionMm.y,
   };
 
   const rotation = -((element.rotationDeg ?? 0) * Math.PI) / 180;
@@ -59,19 +54,14 @@ function convertToElementSpace(
   return rotatePoint(translated, rotation);
 }
 
-function isPointInOval(
-  point: Vector2,
-  widthMm: number,
-  heightMm: number
-): boolean {
+function isPointInOval(point: Vector2, widthMm: number, heightMm: number): boolean {
   const halfWidth = widthMm / 2;
   const halfHeight = heightMm / 2;
   if (halfWidth <= 0 || halfHeight <= 0) {
     return false;
   }
   const normalized =
-    (point.x / halfWidth) * (point.x / halfWidth) +
-    (point.y / halfHeight) * (point.y / halfHeight);
+    (point.x / halfWidth) * (point.x / halfWidth) + (point.y / halfHeight) * (point.y / halfHeight);
   return normalized <= 1;
 }
 
@@ -125,10 +115,7 @@ function isPointInTriangle(point: Vector2, widthMm: number, heightMm: number): b
   return u >= 0 && v >= 0 && u + v <= 1;
 }
 
-function isPointInsideElement(
-  pointMm: Vector2,
-  element: PanelElement
-): boolean {
+function isPointInsideElement(pointMm: Vector2, element: PanelElement): boolean {
   const localPoint = convertToElementSpace(pointMm, element);
 
   switch (element.type) {
@@ -142,39 +129,21 @@ function isPointInsideElement(
     case PanelElementType.Rectangle: {
       const halfWidth = element.properties.widthMm / 2;
       const halfHeight = element.properties.heightMm / 2;
-      return (
-        Math.abs(localPoint.x) <= halfWidth &&
-        Math.abs(localPoint.y) <= halfHeight
-      );
+      return Math.abs(localPoint.x) <= halfWidth && Math.abs(localPoint.y) <= halfHeight;
     }
     case PanelElementType.Oval:
-      return isPointInOval(
-        localPoint,
-        element.properties.widthMm,
-        element.properties.heightMm
-      );
+      return isPointInOval(localPoint, element.properties.widthMm, element.properties.heightMm);
     case PanelElementType.Slot:
-      return isPointInSlot(
-        localPoint,
-        element.properties.widthMm,
-        element.properties.heightMm
-      );
+      return isPointInSlot(localPoint, element.properties.widthMm, element.properties.heightMm);
     case PanelElementType.Triangle:
-      return isPointInTriangle(
-        localPoint,
-        element.properties.widthMm,
-        element.properties.heightMm
-      );
+      return isPointInTriangle(localPoint, element.properties.widthMm, element.properties.heightMm);
     case PanelElementType.Insert: {
       const radius = element.properties.outerDiameterMm / 2;
       return localPoint.x ** 2 + localPoint.y ** 2 <= radius ** 2;
     }
     case PanelElementType.Label: {
       const { widthMm, heightMm } = getLabelSizeMm(element.properties);
-      return (
-        Math.abs(localPoint.x) <= widthMm / 2 &&
-        Math.abs(localPoint.y) <= heightMm / 2
-      );
+      return Math.abs(localPoint.x) <= widthMm / 2 && Math.abs(localPoint.y) <= heightMm / 2;
     }
     default:
       return false;
@@ -183,7 +152,7 @@ function isPointInsideElement(
 
 export function findElementAtPoint(
   pointMm: Vector2,
-  elements: PanelElement[]
+  elements: PanelElement[],
 ): PanelElement | null {
   for (let index = elements.length - 1; index >= 0; index -= 1) {
     const element = elements[index];
@@ -198,19 +167,18 @@ export function findElementAtPoint(
 export function computeNearestElementDistances(
   pointMm: Vector2,
   elements: PanelElement[],
-  maxCount = 3
+  maxCount = 3,
 ): NearestElementDistance[] {
-  const distances = elements
-    .map((element) => {
-      const dx = element.positionMm.x - pointMm.x;
-      const dy = element.positionMm.y - pointMm.y;
-      const distanceMm = Math.hypot(dx, dy);
-      return {
-        elementId: element.id,
-        center: { ...element.positionMm },
-        distanceMm
-      };
-    });
+  const distances = elements.map((element) => {
+    const dx = element.positionMm.x - pointMm.x;
+    const dy = element.positionMm.y - pointMm.y;
+    const distanceMm = Math.hypot(dx, dy);
+    return {
+      elementId: element.id,
+      center: { ...element.positionMm },
+      distanceMm,
+    };
+  });
 
   distances.sort((a, b) => a.distanceMm - b.distanceMm);
   return maxCount > 0 ? distances.slice(0, maxCount) : [];
@@ -220,7 +188,7 @@ function getRectBounds(
   center: Vector2,
   widthMm: number,
   heightMm: number,
-  rotationDeg: number
+  rotationDeg: number,
 ): ElementBounds {
   const rotation = (rotationDeg * Math.PI) / 180;
   if (rotation === 0) {
@@ -228,7 +196,7 @@ function getRectBounds(
       minX: center.x - widthMm / 2,
       maxX: center.x + widthMm / 2,
       minY: center.y - heightMm / 2,
-      maxY: center.y + heightMm / 2
+      maxY: center.y + heightMm / 2,
     };
   }
   const halfWidth = widthMm / 2;
@@ -241,7 +209,7 @@ function getRectBounds(
     minX: center.x - dx,
     maxX: center.x + dx,
     minY: center.y - dy,
-    maxY: center.y + dy
+    maxY: center.y + dy,
   };
 }
 
@@ -249,7 +217,7 @@ function getTriangleBounds(
   center: Vector2,
   widthMm: number,
   heightMm: number,
-  rotationDeg: number
+  rotationDeg: number,
 ): ElementBounds {
   const rotation = (rotationDeg * Math.PI) / 180;
   const halfWidth = widthMm / 2;
@@ -257,7 +225,7 @@ function getTriangleBounds(
   const localPoints: Vector2[] = [
     { x: 0, y: -halfHeight },
     { x: halfWidth, y: halfHeight },
-    { x: -halfWidth, y: halfHeight }
+    { x: -halfWidth, y: halfHeight },
   ];
 
   let minX = Infinity;
@@ -269,7 +237,7 @@ function getTriangleBounds(
     const rotated = rotatePoint(point, rotation);
     const world = {
       x: center.x + rotated.x,
-      y: center.y + rotated.y
+      y: center.y + rotated.y,
     };
     minX = Math.min(minX, world.x);
     maxX = Math.max(maxX, world.x);
@@ -282,7 +250,7 @@ function getTriangleBounds(
       minX: center.x,
       maxX: center.x,
       minY: center.y,
-      maxY: center.y
+      maxY: center.y,
     };
   }
 
@@ -300,7 +268,7 @@ export function getElementBounds(element: PanelElement): ElementBounds {
         minX: element.positionMm.x - radius,
         maxX: element.positionMm.x + radius,
         minY: element.positionMm.y - radius,
-        maxY: element.positionMm.y + radius
+        maxY: element.positionMm.y + radius,
       };
     }
     case PanelElementType.Switch:
@@ -311,7 +279,7 @@ export function getElementBounds(element: PanelElement): ElementBounds {
         element.positionMm,
         element.properties.widthMm,
         element.properties.heightMm,
-        rotation
+        rotation,
       );
     }
     case PanelElementType.Triangle: {
@@ -319,7 +287,7 @@ export function getElementBounds(element: PanelElement): ElementBounds {
         element.positionMm,
         element.properties.widthMm,
         element.properties.heightMm,
-        rotation
+        rotation,
       );
     }
     case PanelElementType.Insert: {
@@ -328,7 +296,7 @@ export function getElementBounds(element: PanelElement): ElementBounds {
         minX: element.positionMm.x - radius,
         maxX: element.positionMm.x + radius,
         minY: element.positionMm.y - radius,
-        maxY: element.positionMm.y + radius
+        maxY: element.positionMm.y + radius,
       };
     }
     case PanelElementType.Label: {
@@ -351,6 +319,6 @@ function rotatePoint(point: Vector2, rotationRad: number): Vector2 {
   const sin = Math.sin(rotationRad);
   return {
     x: point.x * cos - point.y * sin,
-    y: point.x * sin + point.y * cos
+    y: point.x * sin + point.y * cos,
   };
 }

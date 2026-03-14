@@ -1,7 +1,7 @@
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from "react-hot-toast";
 
-import { PanelDesigner } from '@components/PanelDesigner/PanelDesigner';
-import { I18nProvider } from '@i18n/I18nContext';
+import { PanelDesigner } from "@components/PanelDesigner/PanelDesigner";
+import { I18nProvider } from "@i18n/I18nContext";
 
 export function App() {
   return (
@@ -10,24 +10,24 @@ export function App() {
         position="top-right"
         toastOptions={{
           style: {
-            background: '#0b1426',
-            color: '#e2e8f0',
-            border: '1px solid #1e293b'
+            background: "#0b1426",
+            color: "#e2e8f0",
+            border: "1px solid #1e293b",
           },
           success: {
             style: {
-              background: '#0b1426',
-              color: '#e2e8f0',
-              border: '1px solid #0ea5e9'
-            }
+              background: "#0b1426",
+              color: "#e2e8f0",
+              border: "1px solid #0ea5e9",
+            },
           },
           error: {
             style: {
-              background: '#0b1426',
-              color: '#fecdd3',
-              border: '1px solid #b91c1c'
-            }
-          }
+              background: "#0b1426",
+              color: "#fecdd3",
+              border: "1px solid #b91c1c",
+            },
+          },
         }}
       />
       <PanelDesigner />

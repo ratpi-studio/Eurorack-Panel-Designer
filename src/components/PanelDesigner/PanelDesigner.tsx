@@ -1,13 +1,13 @@
-import React from 'react';
+import React from "react";
 
-import { PanelCanvas } from '@components/PanelCanvas/PanelCanvas';
-import { LeftPanel } from '@components/PanelDesigner/LeftPanel';
-import { PanelHeader } from '@components/PanelDesigner/PanelHeader';
-import { RightPanel } from '@components/PanelDesigner/RightPanel';
-import { useResponsivePanels } from '@components/PanelDesigner/useResponsivePanels';
-import { useI18n } from '@i18n/I18nContext';
-import { createPanelElement } from '@lib/elements';
-import { generateMountingHoles } from '@lib/mountingHoles';
+import { PanelCanvas } from "@components/PanelCanvas/PanelCanvas";
+import { LeftPanel } from "@components/PanelDesigner/LeftPanel";
+import { PanelHeader } from "@components/PanelDesigner/PanelHeader";
+import { RightPanel } from "@components/PanelDesigner/RightPanel";
+import { useResponsivePanels } from "@components/PanelDesigner/useResponsivePanels";
+import { useI18n } from "@i18n/I18nContext";
+import { createPanelElement } from "@lib/elements";
+import { generateMountingHoles } from "@lib/mountingHoles";
 import {
   PanelElementType,
   withElementProperties,
@@ -16,28 +16,28 @@ import {
   type MountingHole,
   type MountingHoleConfig,
   type PanelModel,
-  type Vector2
-} from '@lib/panelTypes';
-import { createPanelDimensions, hpToMm, mmToCm } from '@lib/units';
-import { changelogEntries } from '@lib/changelog';
-import { computeElementMountingHoles } from '@lib/elementMountingHoles';
-import type { ReferenceImage } from '@lib/referenceImage';
-import { computeClearanceLines, applyClearanceLinePosition } from '@lib/clearance';
-import { type ExportFormat } from '@lib/exportPreferences';
-import { usePanelStore } from '@store/panelStore';
-import { usePanelHistory } from '@store/usePanelHistory';
-import { useProjects } from '@store/useProjects';
-import toast from 'react-hot-toast';
-import * as styles from './PanelDesigner.css';
+  type Vector2,
+} from "@lib/panelTypes";
+import { createPanelDimensions, hpToMm, mmToCm } from "@lib/units";
+import { changelogEntries } from "@lib/changelog";
+import { computeElementMountingHoles } from "@lib/elementMountingHoles";
+import type { ReferenceImage } from "@lib/referenceImage";
+import { computeClearanceLines, applyClearanceLinePosition } from "@lib/clearance";
+import { type ExportFormat } from "@lib/exportPreferences";
+import { usePanelStore } from "@store/panelStore";
+import { usePanelHistory } from "@store/usePanelHistory";
+import { useProjects } from "@store/useProjects";
+import toast from "react-hot-toast";
+import * as styles from "./PanelDesigner.css";
 
 const DEFAULT_ZOOM = 1;
 const DEFAULT_PAN: Vector2 = { x: 0, y: 0 };
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 4;
 const LazyStlPreview = React.lazy(() =>
-  import('@components/StlPreview/StlPreview').then((module) => ({
-    default: module.StlPreview
-  }))
+  import("@components/StlPreview/StlPreview").then((module) => ({
+    default: module.StlPreview,
+  })),
 );
 
 function computeMountingHoles(model: PanelModel): MountingHole[] {
@@ -45,7 +45,7 @@ function computeMountingHoles(model: PanelModel): MountingHole[] {
     widthHp: model.dimensions.widthHp,
     widthMm: model.dimensions.widthMm,
     heightMm: model.dimensions.heightMm,
-    config: model.mountingHoleConfig
+    config: model.mountingHoleConfig,
   });
 }
 
@@ -78,8 +78,8 @@ export function PanelDesigner() {
     message: string;
     onConfirm: () => void;
   } | null>(null);
-  const [stlFileNameInput, setStlFileNameInput] = React.useState('');
-  const [stlThicknessInput, setStlThicknessInput] = React.useState('2');
+  const [stlFileNameInput, setStlFileNameInput] = React.useState("");
+  const [stlThicknessInput, setStlThicknessInput] = React.useState("2");
   const { isCompact, showLeftPanel, showRightPanel, setShowLeftPanel, setShowRightPanel } =
     useResponsivePanels();
   const [mountingHolesSelected, setMountingHolesSelected] = React.useState(false);
@@ -132,33 +132,30 @@ export function PanelDesigner() {
     updateElement,
     updateElementProperties,
     removeElement,
-    removeElements
+    removeElements,
   } = usePanelHistory();
 
-      const mountingHoles = React.useMemo(
-        () => computeMountingHoles(panelModel),
-        [panelModel]
-      );
+  const mountingHoles = React.useMemo(() => computeMountingHoles(panelModel), [panelModel]);
 
   const elementMountingHoles = React.useMemo(
     () => computeElementMountingHoles(panelModel.elements, panelModel.elementHoleConfig),
-    [panelModel.elements, panelModel.elementHoleConfig]
+    [panelModel.elements, panelModel.elementHoleConfig],
   );
 
   const clearanceLines = React.useMemo(
     () => computeClearanceLines(panelModel.clearance, panelModel.dimensions.heightMm),
-    [panelModel.clearance, panelModel.dimensions.heightMm]
+    [panelModel.clearance, panelModel.dimensions.heightMm],
   );
 
   const handleSetWidthFromMm = React.useCallback(
     (widthMm: number) => {
       updateModel((prev) => ({
         ...prev,
-        dimensions: createPanelDimensions(mmToCm(widthMm))
+        dimensions: createPanelDimensions(mmToCm(widthMm)),
       }));
       clearSelection();
     },
-    [clearSelection, updateModel]
+    [clearSelection, updateModel],
   );
 
   const handleSetWidthFromHp = React.useCallback(
@@ -173,12 +170,12 @@ export function PanelDesigner() {
 
         return {
           ...prev,
-          dimensions: createPanelDimensions(widthCm, currentMmPerHp)
+          dimensions: createPanelDimensions(widthCm, currentMmPerHp),
         };
       });
       clearSelection();
     },
-    [clearSelection, updateModel]
+    [clearSelection, updateModel],
   );
 
   const resetView = React.useCallback(() => {
@@ -188,7 +185,7 @@ export function PanelDesigner() {
 
   const clampZoom = React.useCallback(
     (value: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value)),
-    []
+    [],
   );
 
   const handleZoomChange = React.useCallback(
@@ -198,13 +195,13 @@ export function PanelDesigner() {
         return Number.isFinite(resolved) ? resolved : prev;
       });
     },
-    [clampZoom]
+    [clampZoom],
   );
 
   const handlePanChange = React.useCallback((nextPan: Vector2) => {
     setPan({
       x: Number.isFinite(nextPan.x) ? nextPan.x : 0,
-      y: Number.isFinite(nextPan.y) ? nextPan.y : 0
+      y: Number.isFinite(nextPan.y) ? nextPan.y : 0,
     });
   }, []);
 
@@ -214,17 +211,17 @@ export function PanelDesigner() {
         ...prev,
         options: {
           ...prev.options,
-          ...options
-        }
+          ...options,
+        },
       }));
     },
-    [updateModel]
+    [updateModel],
   );
 
   const combinedMountingHoles = React.useMemo(
     () =>
       elementMountingHoles.length ? [...mountingHoles, ...elementMountingHoles] : mountingHoles,
-    [elementMountingHoles, mountingHoles]
+    [elementMountingHoles, mountingHoles],
   );
 
   const {
@@ -249,11 +246,11 @@ export function PanelDesigner() {
     handleExportKicadPcb,
     exportFormat,
     setExportFormat,
-    handleReset
+    handleReset,
   } = useProjects({
     mountingHoles: combinedMountingHoles,
     resetView,
-    clearHistory
+    clearHistory,
   });
 
   const projectNameBeforeEditRef = React.useRef(projectName);
@@ -303,16 +300,16 @@ export function PanelDesigner() {
 
   const handleProjectNameKeyDown = React.useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>) => {
-      if (event.key === 'Enter') {
+      if (event.key === "Enter") {
         event.preventDefault();
         handleCommitProjectName();
       }
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         event.preventDefault();
         handleCancelProjectNameEdit();
       }
     },
-    [handleCancelProjectNameEdit, handleCommitProjectName]
+    [handleCancelProjectNameEdit, handleCommitProjectName],
   );
 
   const leftVisible = !isCompact || showLeftPanel;
@@ -325,11 +322,11 @@ export function PanelDesigner() {
     }
     const { message, variant } = statusMessage;
     const toastId = `status-${variant}-${message}`;
-    if (variant === 'error') {
+    if (variant === "error") {
       toast.error(message, { id: toastId });
       return;
     }
-    if (variant === 'success') {
+    if (variant === "success") {
       toast.success(message, { id: toastId });
       return;
     }
@@ -340,36 +337,35 @@ export function PanelDesigner() {
     (type: PanelElementType, positionMm: Vector2) => {
       return addElement(type, positionMm);
     },
-    [addElement]
+    [addElement],
   );
 
   const handleMoveElement = React.useCallback(
     (elementId: string, positionMm: Vector2) => {
       moveElement(elementId, positionMm);
     },
-    [moveElement]
+    [moveElement],
   );
 
   const handleUpdateElement = React.useCallback(
     (elementId: string, updater: (element: PanelElement) => PanelElement) => {
       updateElement(elementId, updater);
     },
-    [updateElement]
+    [updateElement],
   );
 
-
   const handleUpdateProperties = React.useCallback(
-    (elementId: string, properties: PanelElement['properties']) => {
+    (elementId: string, properties: PanelElement["properties"]) => {
       updateElementProperties(elementId, properties);
     },
-    [updateElementProperties]
+    [updateElementProperties],
   );
 
   const handleRemoveElement = React.useCallback(
     (elementId: string) => {
       removeElement(elementId);
     },
-    [removeElement]
+    [removeElement],
   );
 
   const handleRemoveSelection = React.useCallback(() => {
@@ -393,17 +389,15 @@ export function PanelDesigner() {
       const target = event.target as HTMLElement | null;
       const isEditingField =
         target &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable);
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
 
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         setPlacementType(null);
         clearSelection();
         return;
       }
 
-      if (!isEditingField && (event.key === 'Backspace' || event.key === 'Delete')) {
+      if (!isEditingField && (event.key === "Backspace" || event.key === "Delete")) {
         if (referenceImageSelected && referenceImage) {
           event.preventDefault();
           handleRemoveReferenceImage();
@@ -416,7 +410,7 @@ export function PanelDesigner() {
         return;
       }
 
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z') {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
         event.preventDefault();
         if (event.shiftKey) {
           redo();
@@ -429,9 +423,9 @@ export function PanelDesigner() {
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown, { passive: false });
+    window.addEventListener("keydown", handleKeyDown, { passive: false });
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [
     clearSelection,
@@ -443,12 +437,12 @@ export function PanelDesigner() {
     redo,
     selectedElementIds.length,
     setPlacementType,
-    undo
+    undo,
   ]);
 
   const selectedElement = React.useMemo(
     () => panelModel.elements.find((element) => element.id === selectedElementId) ?? null,
-    [panelModel.elements, selectedElementId]
+    [panelModel.elements, selectedElementId],
   );
 
   const draftElement = React.useMemo<PanelElement | null>(() => {
@@ -458,7 +452,7 @@ export function PanelDesigner() {
     const base = createPanelElement(placementType, { x: 0, y: 0 });
     return {
       ...withElementProperties(base, draftProperties[placementType] ?? null),
-      id: 'draft'
+      id: "draft",
     };
   }, [draftProperties, placementType]);
 
@@ -472,10 +466,10 @@ export function PanelDesigner() {
       }
       handleUpdateElement(target.id, (element) => ({
         ...element,
-        mountingHoleRotationDeg: rotationDeg
+        mountingHoleRotationDeg: rotationDeg,
       }));
     },
-    [handleUpdateElement, selectedElement]
+    [handleUpdateElement, selectedElement],
   );
 
   const handleSelectPaletteType = React.useCallback(
@@ -483,7 +477,7 @@ export function PanelDesigner() {
       clearSelection();
       setPlacementType(type);
     },
-    [clearSelection, setPlacementType]
+    [clearSelection, setPlacementType],
   );
 
   const handleImportReferenceImageClick = React.useCallback(() => {
@@ -514,7 +508,7 @@ export function PanelDesigner() {
           }
           const positionMm = {
             x: panelModel.dimensions.widthMm / 2,
-            y: panelModel.dimensions.heightMm / 2
+            y: panelModel.dimensions.heightMm / 2,
           };
           setReferenceImage({
             dataUrl,
@@ -524,14 +518,14 @@ export function PanelDesigner() {
             rotationDeg: 0,
             opacity: 0.35,
             naturalWidth: img.width,
-            naturalHeight: img.height
+            naturalHeight: img.height,
           });
           selectReferenceImage(true);
         };
         img.src = dataUrl;
       };
       reader.readAsDataURL(file);
-      event.target.value = '';
+      event.target.value = "";
     },
     [
       panelModel.dimensions.heightMm,
@@ -539,28 +533,28 @@ export function PanelDesigner() {
       selectReferenceImage,
       setReferenceImage,
       setPlacementType,
-      setMountingHolesSelected
-    ]
+      setMountingHolesSelected,
+    ],
   );
 
   const handleReferenceImageChange = React.useCallback(
     (updates: Partial<ReferenceImage>) => {
       updateReferenceImage(updates);
     },
-    [updateReferenceImage]
+    [updateReferenceImage],
   );
 
   const exportButtonLabel = React.useMemo(() => {
     switch (exportFormat) {
-      case 'png':
+      case "png":
         return t.projects.exportPng;
-      case 'stl':
+      case "stl":
         return t.projects.exportStl;
-      case 'kicadSvg':
+      case "kicadSvg":
         return t.projects.exportKicadSvg;
-      case 'kicadPcb':
+      case "kicadPcb":
         return t.projects.exportKicadPcb;
-      case 'svg':
+      case "svg":
       default:
         return t.projects.exportSvg;
     }
@@ -570,24 +564,24 @@ export function PanelDesigner() {
     t.projects.exportKicadSvg,
     t.projects.exportPng,
     t.projects.exportStl,
-    t.projects.exportSvg
+    t.projects.exportSvg,
   ]);
 
   const handleExportClick = React.useCallback(() => {
     switch (exportFormat) {
-      case 'png':
+      case "png":
         handleExportPng();
         return;
-      case 'stl':
+      case "stl":
         openStlExportModal();
         return;
-      case 'kicadSvg':
+      case "kicadSvg":
         handleExportKicadSvg();
         return;
-      case 'kicadPcb':
+      case "kicadPcb":
         handleExportKicadPcb();
         return;
-      case 'svg':
+      case "svg":
       default:
         handleExportSvg();
     }
@@ -597,7 +591,7 @@ export function PanelDesigner() {
     handleExportKicadSvg,
     handleExportPng,
     handleExportSvg,
-    openStlExportModal
+    openStlExportModal,
   ]);
 
   const handleSelectExportFormat = React.useCallback(
@@ -606,19 +600,19 @@ export function PanelDesigner() {
       setIsExportMenuOpen(false);
 
       switch (format) {
-        case 'png':
+        case "png":
           handleExportPng();
           return;
-        case 'stl':
+        case "stl":
           openStlExportModal();
           return;
-        case 'kicadSvg':
+        case "kicadSvg":
           handleExportKicadSvg();
           return;
-        case 'kicadPcb':
+        case "kicadPcb":
           handleExportKicadPcb();
           return;
-        case 'svg':
+        case "svg":
         default:
           handleExportSvg();
       }
@@ -629,8 +623,8 @@ export function PanelDesigner() {
       handleExportPng,
       handleExportSvg,
       openStlExportModal,
-      setExportFormat
-    ]
+      setExportFormat,
+    ],
   );
 
   const handleConfirmStlExport = React.useCallback(() => {
@@ -652,11 +646,11 @@ export function PanelDesigner() {
         ...prev,
         mountingHoleConfig: {
           ...prev.mountingHoleConfig,
-          ...updates
-        }
+          ...updates,
+        },
       }));
     },
-    [updateModel]
+    [updateModel],
   );
 
   const handleElementHoleConfigChange = React.useCallback(
@@ -665,15 +659,15 @@ export function PanelDesigner() {
         ...prev,
         elementHoleConfig: {
           ...prev.elementHoleConfig,
-          ...updates
-        }
+          ...updates,
+        },
       }));
     },
-    [updateModel]
+    [updateModel],
   );
 
   const handleClearanceLineChange = React.useCallback(
-    (line: 'top' | 'bottom', positionMm: number) => {
+    (line: "top" | "bottom", positionMm: number) => {
       updateModel(
         (prev) => ({
           ...prev,
@@ -681,19 +675,19 @@ export function PanelDesigner() {
             prev.clearance,
             prev.dimensions.heightMm,
             line,
-            positionMm
-          )
+            positionMm,
+          ),
         }),
         {
-          skipHistory: isClearanceDragActiveRef.current && clearanceHistoryPushedRef.current
-        }
+          skipHistory: isClearanceDragActiveRef.current && clearanceHistoryPushedRef.current,
+        },
       );
 
       if (isClearanceDragActiveRef.current && !clearanceHistoryPushedRef.current) {
         clearanceHistoryPushedRef.current = true;
       }
     },
-    [updateModel]
+    [updateModel],
   );
 
   const handleClearanceDragStart = React.useCallback(() => {
@@ -740,7 +734,7 @@ export function PanelDesigner() {
     if (selectedSavedName) {
       const name = selectedSavedName;
       openConfirmDialog(t.projects.messages.confirmDeleteSelected(name), () =>
-        handleDeleteProject(name)
+        handleDeleteProject(name),
       );
     } else {
       openConfirmDialog(t.projects.messages.confirmReset, () => handleReset());
@@ -758,10 +752,10 @@ export function PanelDesigner() {
       }
       updateElement(selectedElement.id, (element) => ({
         ...element,
-        positionMm
+        positionMm,
       }));
     },
-    [selectedElement, updateElement]
+    [selectedElement, updateElement],
   );
 
   const handleChangeElementRotation = React.useCallback(
@@ -771,14 +765,14 @@ export function PanelDesigner() {
       }
       handleUpdateElement(selectedElement.id, (element) => ({
         ...element,
-        rotationDeg
+        rotationDeg,
       }));
     },
-    [handleUpdateElement, selectedElement]
+    [handleUpdateElement, selectedElement],
   );
 
   const handleChangeElementProperties = React.useCallback(
-    (properties: PanelElement['properties']) => {
+    (properties: PanelElement["properties"]) => {
       if (selectedElement) {
         handleUpdateProperties(selectedElement.id, properties);
         return;
@@ -787,7 +781,7 @@ export function PanelDesigner() {
         setDraftProperties(placementType, properties);
       }
     },
-    [handleUpdateProperties, placementType, selectedElement, setDraftProperties]
+    [handleUpdateProperties, placementType, selectedElement, setDraftProperties],
   );
 
   const handleRemoveElementOrPlacement = React.useCallback(() => {
@@ -805,10 +799,10 @@ export function PanelDesigner() {
       }
       handleUpdateElement(selectedElement.id, (element) => ({
         ...element,
-        mountingHolesEnabled: enabled
+        mountingHolesEnabled: enabled,
       }));
     },
-    [handleUpdateElement, selectedElement]
+    [handleUpdateElement, selectedElement],
   );
 
   const projectPanelProps = {
@@ -840,7 +834,7 @@ export function PanelDesigner() {
     onToggleExportMenu: handleToggleExportMenu,
     onExportClick: handleExportClick,
     onExportJson: handleExportJson,
-    onSelectExportFormat: handleSelectExportFormat
+    onSelectExportFormat: handleSelectExportFormat,
   };
 
   const propertiesPanelProps = {
@@ -869,7 +863,7 @@ export function PanelDesigner() {
     onChangeDraftProperties: setDraftProperties,
     onChangeElementHoleConfig: handleElementHoleConfigChange,
     onChangeElementHoleRotation: handleSelectedElementHoleRotationChange,
-    onToggleElementHoleEnabled: handleToggleElementHoleEnabled
+    onToggleElementHoleEnabled: handleToggleElementHoleEnabled,
   };
 
   return (

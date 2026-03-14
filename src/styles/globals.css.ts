@@ -1,46 +1,46 @@
-import { globalStyle } from '@vanilla-extract/css';
+import { globalStyle } from "@vanilla-extract/css";
 
-import { vars } from './theme.css';
+import { vars } from "./theme.css";
 
-globalStyle('*', {
-  boxSizing: 'border-box',
+globalStyle("*", {
+  boxSizing: "border-box",
 });
 
-globalStyle('html, body, #root', {
+globalStyle("html, body, #root", {
   margin: 0,
   padding: 0,
-  height: '100%',
+  height: "100%",
   fontFamily: vars.font.body,
   backgroundColor: vars.color.background,
   color: vars.color.textPrimary,
 });
 
-globalStyle('body', {
-  display: 'flex',
-  flexDirection: 'column',
-  minHeight: '100vh',
+globalStyle("body", {
+  display: "flex",
+  flexDirection: "column",
+  minHeight: "100vh",
 });
 
-globalStyle('#root', {
+globalStyle("#root", {
   flex: 1,
-  display: 'flex',
-  flexDirection: 'column',
+  display: "flex",
+  flexDirection: "column",
   minHeight: 0,
 });
 
-globalStyle('main', {
+globalStyle("main", {
   flex: 1,
   minHeight: 0,
-  display: 'flex',
-  flexDirection: 'column',
-  backgroundColor: 'transparent',
+  display: "flex",
+  flexDirection: "column",
+  backgroundColor: "transparent",
 });
 
-globalStyle('h1', {
+globalStyle("h1", {
   marginBottom: vars.spacing.md,
 });
 
-globalStyle('p', {
+globalStyle("p", {
   margin: 0,
   color: vars.color.textSecondary,
 });

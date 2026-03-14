@@ -1,6 +1,6 @@
-import React from 'react';
+import React from "react";
 
-import { enUS } from '@i18n/en_US';
+import { enUS } from "@i18n/en_US";
 
 type I18n = typeof enUS;
 
@@ -20,9 +20,8 @@ export function useI18n(): I18n {
   const context = React.useContext(I18nContext);
 
   if (!context) {
-    throw new Error('useI18n must be used within an I18nProvider');
+    throw new Error("useI18n must be used within an I18nProvider");
   }
 
   return context;
 }
-

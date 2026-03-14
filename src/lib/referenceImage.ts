@@ -1,4 +1,4 @@
-import type { Vector2 } from './panelTypes';
+import type { Vector2 } from "./panelTypes";
 
 export interface ReferenceImage {
   dataUrl: string;
@@ -10,4 +10,3 @@ export interface ReferenceImage {
   naturalWidth: number;
   naturalHeight: number;
 }
-

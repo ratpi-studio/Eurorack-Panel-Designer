@@ -1,9 +1,9 @@
 import {
   DEFAULT_MOUNTING_HOLE_CONFIG,
   type MountingHole,
-  type MountingHoleConfig
-} from './panelTypes';
-import { hpToMm } from './units';
+  type MountingHoleConfig,
+} from "./panelTypes";
+import { hpToMm } from "./units";
 
 interface MountingHoleInput {
   widthHp: number;
@@ -27,7 +27,7 @@ export function generateMountingHoles({
   widthHp,
   widthMm,
   heightMm,
-  config
+  config,
 }: MountingHoleInput): MountingHole[] {
   if (widthHp <= 0 || widthMm <= 0 || heightMm <= 0) {
     return [];
@@ -35,19 +35,19 @@ export function generateMountingHoles({
 
   const resolvedConfig: MountingHoleConfig = {
     ...DEFAULT_MOUNTING_HOLE_CONFIG,
-    ...config
+    ...config,
   };
 
   const slotLengthMm =
-    resolvedConfig.shape === 'slot'
+    resolvedConfig.shape === "slot"
       ? Math.min(
           Math.max(resolvedConfig.slotLengthMm, resolvedConfig.diameterMm),
-          Math.max(widthMm - resolvedConfig.horizontalOffsetMm * 2, resolvedConfig.diameterMm)
+          Math.max(widthMm - resolvedConfig.horizontalOffsetMm * 2, resolvedConfig.diameterMm),
         )
       : undefined;
 
   const horizontalFootprint =
-    resolvedConfig.shape === 'slot' && slotLengthMm
+    resolvedConfig.shape === "slot" && slotLengthMm
       ? slotLengthMm / 2
       : resolvedConfig.diameterMm / 2;
 
@@ -85,7 +85,7 @@ export function generateMountingHoles({
       const minSeparation = Math.max(
         resolvedConfig.diameterMm,
         horizontalFootprint,
-        MIN_MOUNTING_HOLE_SPACING_MM
+        MIN_MOUNTING_HOLE_SPACING_MM,
       );
 
       if (separation < minSeparation) {
@@ -102,14 +102,14 @@ export function generateMountingHoles({
           center: { x, y: topY },
           diameterMm: resolvedConfig.diameterMm,
           shape: resolvedConfig.shape,
-          slotLengthMm
+          slotLengthMm,
         },
         {
           center: { x, y: bottomY },
           diameterMm: resolvedConfig.diameterMm,
           shape: resolvedConfig.shape,
-          slotLengthMm
-        }
+          slotLengthMm,
+        },
       );
     });
   }

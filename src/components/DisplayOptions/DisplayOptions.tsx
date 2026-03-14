@@ -1,9 +1,9 @@
-import React from 'react';
+import React from "react";
 
-import { useI18n } from '@i18n/I18nContext';
-import type { PanelOptions } from '@lib/panelTypes';
+import { useI18n } from "@i18n/I18nContext";
+import type { PanelOptions } from "@lib/panelTypes";
 
-import * as styles from './DisplayOptions.css';
+import * as styles from "./DisplayOptions.css";
 
 interface DisplayOptionsProps {
   options: PanelOptions;
@@ -11,11 +11,7 @@ interface DisplayOptionsProps {
   onResetView: () => void;
 }
 
-export function DisplayOptions({
-  options,
-  onChange,
-  onResetView
-}: DisplayOptionsProps) {
+export function DisplayOptions({ options, onChange, onResetView }: DisplayOptionsProps) {
   const t = useI18n();
   const [gridInput, setGridInput] = React.useState(() => options.gridSizeMm.toString());
 
@@ -23,14 +19,13 @@ export function DisplayOptions({
     setGridInput(options.gridSizeMm.toString());
   }, [options.gridSizeMm]);
 
-  const handleToggle =
-    (key: keyof PanelOptions) => (event: React.ChangeEvent<HTMLInputElement>) =>
-      onChange({ [key]: event.target.checked });
+  const handleToggle = (key: keyof PanelOptions) => (event: React.ChangeEvent<HTMLInputElement>) =>
+    onChange({ [key]: event.target.checked });
 
   const handleGridSize = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = event.target;
     setGridInput(value);
-    if (value.trim() === '') {
+    if (value.trim() === "") {
       return;
     }
     const parsed = Number.parseFloat(value);
@@ -45,18 +40,14 @@ export function DisplayOptions({
       <div className={styles.title}>{t.display.title}</div>
       <div className={styles.options}>
         <label className={styles.option}>
-          <input
-            type="checkbox"
-            checked={options.showGrid}
-            onChange={handleToggle('showGrid')}
-          />
+          <input type="checkbox" checked={options.showGrid} onChange={handleToggle("showGrid")} />
           <span>{t.display.grid}</span>
         </label>
         <label className={styles.option}>
           <input
             type="checkbox"
             checked={options.snapToGrid}
-            onChange={handleToggle('snapToGrid')}
+            onChange={handleToggle("snapToGrid")}
           />
           <span>{t.display.snap}</span>
         </label>
@@ -64,7 +55,7 @@ export function DisplayOptions({
           <input
             type="checkbox"
             checked={options.showMountingHoles}
-            onChange={handleToggle('showMountingHoles')}
+            onChange={handleToggle("showMountingHoles")}
           />
           <span>{t.display.holes}</span>
         </label>

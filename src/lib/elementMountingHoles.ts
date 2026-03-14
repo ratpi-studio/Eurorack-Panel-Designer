@@ -2,8 +2,8 @@ import {
   PanelElementType,
   type ElementMountingHoleConfig,
   type MountingHole,
-  type PanelElement
-} from './panelTypes';
+  type PanelElement,
+} from "./panelTypes";
 
 function getElementExtent(element: PanelElement): number | null {
   switch (element.type) {
@@ -28,7 +28,7 @@ function getElementExtent(element: PanelElement): number | null {
 
 export function computeElementMountingHoles(
   elements: PanelElement[],
-  config: ElementMountingHoleConfig
+  config: ElementMountingHoleConfig,
 ): MountingHole[] {
   if (!config.enabled || config.count <= 0 || config.diameterMm <= 0) {
     return [];
@@ -40,7 +40,7 @@ export function computeElementMountingHoles(
 
   elements.forEach((element) => {
     const elementEnabled =
-      typeof element.mountingHolesEnabled === 'boolean'
+      typeof element.mountingHolesEnabled === "boolean"
         ? element.mountingHolesEnabled
         : config.enabled;
     if (!elementEnabled) {
@@ -55,18 +55,17 @@ export function computeElementMountingHoles(
       return;
     }
     const elementRotation = ((element.rotationDeg ?? 0) * Math.PI) / 180;
-    const holeRotation =
-      ((element.mountingHoleRotationDeg ?? config.rotationDeg) * Math.PI) / 180;
+    const holeRotation = ((element.mountingHoleRotationDeg ?? config.rotationDeg) * Math.PI) / 180;
 
     for (let index = 0; index < config.count; index += 1) {
       const angle = holeRotation + elementRotation + index * angleStep;
       holes.push({
         center: {
           x: element.positionMm.x + Math.cos(angle) * radius,
-          y: element.positionMm.y + Math.sin(angle) * radius
+          y: element.positionMm.y + Math.sin(angle) * radius,
         },
         diameterMm: config.diameterMm,
-        shape: 'circle'
+        shape: "circle",
       });
     }
   });

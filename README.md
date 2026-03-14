@@ -42,15 +42,16 @@ Single-page web app to sketch Eurorack front panels. The canvas mirrors a real 3
 
 ## Scripts
 
-| Command        | Description                              |
-|---------------|------------------------------------------|
-| `yarn dev`    | Run the Vite dev server with HMR.        |
-| `yarn build`  | Type-check then build the production SPA.|
-| `yarn preview`| Preview the production build locally.    |
-| `yarn test`   | Execute Vitest unit tests.               |
-| `yarn lint`   | Run oxlint with the project config.      |
+| Command        | Description                               |
+| -------------- | ----------------------------------------- |
+| `yarn dev`     | Run the Vite dev server with HMR.         |
+| `yarn build`   | Type-check then build the production SPA. |
+| `yarn preview` | Preview the production build locally.     |
+| `yarn test`    | Execute Vitest unit tests.                |
+| `yarn lint`    | Run oxlint with the project config.       |
 
 ## Usage tips
+
 - Adjust panel width through either the mm or HP input; the other unit updates instantly and the canvas resizes.
 - Pick an element in the palette, click on the canvas to place it, then drag to reposition. Use the right-hand panel to fine-tune coordinates, rotation, or dimensions.
 - Keep `Shift` pressed to temporarily disable snapping, `Esc` to cancel placement, `⌘/Ctrl + Z` and `⌘/Ctrl + Shift + Z` for undo/redo.

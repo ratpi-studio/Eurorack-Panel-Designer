@@ -1,6 +1,6 @@
-import React from 'react';
+import React from "react";
 
-import { type Vector2 } from '@lib/panelTypes';
+import { type Vector2 } from "@lib/panelTypes";
 
 const CANVAS_WIDTH_PX = 1200;
 const CANVAS_HEIGHT_PX = 720;
@@ -14,7 +14,7 @@ export function useCanvasSize(): CanvasSizeResult {
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const [canvasSize, setCanvasSize] = React.useState<Vector2>({
     x: CANVAS_WIDTH_PX,
-    y: CANVAS_HEIGHT_PX
+    y: CANVAS_HEIGHT_PX,
   });
 
   React.useLayoutEffect(() => {

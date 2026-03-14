@@ -13,8 +13,8 @@ This file describes the conventions to follow when working on this repository.
 - Language: strict `TypeScript` (`"strict": true` in `tsconfig.json`).
 - UI: `React` with function components and hooks.
 - Global state: managed via dedicated React hooks (and/or Context) exposing the panel model and UI state.
-- Styles: `vanilla-extract` only.  
-  - No Tailwind.  
+- Styles: `vanilla-extract` only.
+  - No Tailwind.
   - No CSS-in-JS like styled-components/emotion.
 - Lint: `oxlint` for JS/TS.
 - Formatting: `prettier` recommended, standard config if added.

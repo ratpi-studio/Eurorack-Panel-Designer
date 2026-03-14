@@ -1,8 +1,8 @@
-import React from 'react';
+import React from "react";
 
-import * as styles from './PanelDesigner.css';
+import * as styles from "./PanelDesigner.css";
 
-const GITHUB_REPO_URL = 'https://github.com/ratpi-studio/Eurorack-Panel-Designer';
+const GITHUB_REPO_URL = "https://github.com/ratpi-studio/Eurorack-Panel-Designer";
 
 interface PanelHeaderProps {
   title: string;

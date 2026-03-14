@@ -2,21 +2,18 @@ import {
   PanelElementType,
   type MountingHole,
   type PanelElement,
-  type Vector2
-} from '@lib/panelTypes';
-import { type ClearanceLines } from '@lib/clearance';
-import type { ReferenceImage } from '@lib/referenceImage';
+  type Vector2,
+} from "@lib/panelTypes";
+import { type ClearanceLines } from "@lib/clearance";
+import type { ReferenceImage } from "@lib/referenceImage";
 
 import {
   computeNearestElementDistances,
   getLabelSizeMm,
   PT_TO_MM,
-  type NearestElementDistance
-} from './elementGeometry';
-import {
-  projectPanelPoint,
-  type CanvasTransform
-} from './transform';
+  type NearestElementDistance,
+} from "./elementGeometry";
+import { projectPanelPoint, type CanvasTransform } from "./transform";
 
 export interface PanelCanvasPalette {
   panelFill: string;
@@ -78,12 +75,19 @@ export function drawPanelScene({
   referenceImage,
   clearanceLines,
   panelSizeMm,
-  showGhostDistances
+  showGhostDistances,
 }: PanelSceneDrawingOptions) {
   drawPanelArea(context, transform, palette);
 
   if (referenceImage && referenceImage.image.complete) {
-    drawReferenceImage(context, transform, referenceImage.info, referenceImage.image, palette, referenceImage.selected);
+    drawReferenceImage(
+      context,
+      transform,
+      referenceImage.info,
+      referenceImage.image,
+      palette,
+      referenceImage.selected,
+    );
   }
 
   if (showGrid) {
@@ -111,7 +115,7 @@ export function drawPanelScene({
     elementStrokeColor,
     palette.selection,
     fontFamily,
-    selectionAnimation
+    selectionAnimation,
   );
 
   if (ghostElement) {
@@ -122,13 +126,20 @@ export function drawPanelScene({
       elementFillColors,
       elementStrokeColor,
       palette.selection,
-      fontFamily
+      fontFamily,
     );
 
     if (showGhostDistances) {
       const distances = computeNearestElementDistances(ghostElement.positionMm, elements);
       if (distances.length > 0) {
-        drawGhostDistances(context, transform, ghostElement.positionMm, distances, palette, fontFamily);
+        drawGhostDistances(
+          context,
+          transform,
+          ghostElement.positionMm,
+          distances,
+          palette,
+          fontFamily,
+        );
       }
     }
   }
@@ -137,7 +148,7 @@ export function drawPanelScene({
 function drawPanelArea(
   context: CanvasRenderingContext2D,
   transform: CanvasTransform,
-  palette: PanelCanvasPalette
+  palette: PanelCanvasPalette,
 ) {
   context.save();
   context.fillStyle = palette.panelFill;
@@ -148,7 +159,7 @@ function drawPanelArea(
     transform.origin.x,
     transform.origin.y,
     transform.panelSizePx.x,
-    transform.panelSizePx.y
+    transform.panelSizePx.y,
   );
   context.fill();
   context.stroke();
@@ -161,7 +172,7 @@ function drawGhostDistances(
   ghostCenterMm: Vector2,
   distances: NearestElementDistance[],
   palette: PanelCanvasPalette,
-  fontFamily: string
+  fontFamily: string,
 ) {
   const origin = projectPanelPoint(ghostCenterMm, transform);
   context.save();
@@ -183,7 +194,7 @@ function drawGhostDistances(
     context.setLineDash([]);
     context.font = `10px ${fontFamily}`;
     context.fillStyle = palette.clearanceLabel;
-    context.textBaseline = 'bottom';
+    context.textBaseline = "bottom";
     const label = `${entry.distanceMm.toFixed(1)} mm`;
     context.fillText(label, labelX + 4, labelY - 4);
     context.restore();
@@ -198,7 +209,7 @@ function drawClearanceLines(
   panelSizeMm: Vector2,
   clearanceLines: ClearanceLines,
   palette: PanelCanvasPalette,
-  fontFamily: string
+  fontFamily: string,
 ) {
   context.save();
   context.strokeStyle = palette.clearanceLine;
@@ -217,7 +228,7 @@ function drawClearanceLines(
     context.setLineDash([]);
     context.font = `10px ${fontFamily}`;
     context.fillStyle = palette.clearanceLabel;
-    context.textBaseline = 'bottom';
+    context.textBaseline = "bottom";
     const distanceLabel = `${distanceMm.toFixed(1)} mm`;
     context.fillText(`clearance · ${distanceLabel}`, start.x + 8, start.y - labelOffset);
     context.restore();
@@ -237,7 +248,7 @@ function drawReferenceImage(
   info: ReferenceImage,
   image: HTMLImageElement,
   palette: PanelCanvasPalette,
-  selected: boolean
+  selected: boolean,
 ) {
   const centerPx = projectPanelPoint(info.positionMm, transform);
   const halfWidthPx = (info.widthMm / 2) * transform.scale;
@@ -264,7 +275,7 @@ function drawGrid(
   context: CanvasRenderingContext2D,
   transform: CanvasTransform,
   gridSizeMm: number,
-  palette: PanelCanvasPalette
+  palette: PanelCanvasPalette,
 ) {
   const stepPx = gridSizeMm * transform.scale;
   if (!Number.isFinite(stepPx) || stepPx < 4) {
@@ -337,7 +348,7 @@ function drawMountingHoles(
   holes: MountingHole[],
   transform: CanvasTransform,
   palette: PanelCanvasPalette,
-  highlight: boolean
+  highlight: boolean,
 ) {
   context.save();
   context.fillStyle = palette.mountingHoleFill;
@@ -347,7 +358,7 @@ function drawMountingHoles(
     const center = projectPanelPoint(hole.center, transform);
     const strokeColor = highlight ? palette.selection : palette.mountingHoleStroke;
     context.strokeStyle = strokeColor;
-    if (hole.shape === 'slot' && hole.slotLengthMm) {
+    if (hole.shape === "slot" && hole.slotLengthMm) {
       const radius = Math.max((hole.diameterMm / 2) * transform.scale, 1);
       const halfLength = Math.max((hole.slotLengthMm / 2) * transform.scale, radius);
       const offset = Math.max(halfLength - radius, 0);
@@ -382,7 +393,7 @@ function drawElements(
   elementStrokeColor: string,
   selectionColor: string,
   fontFamily: string,
-  selectionAnimation?: SelectionAnimationState
+  selectionAnimation?: SelectionAnimationState,
 ) {
   elements.forEach((element) => {
     const center = projectPanelPoint(element.positionMm, transform);
@@ -406,7 +417,7 @@ function drawElements(
           elementFillColors[element.type],
           elementStrokeColor,
           selectionColor,
-          selectionAnimation
+          selectionAnimation,
         );
         break;
       }
@@ -420,7 +431,7 @@ function drawElements(
           elementFillColors[element.type],
           elementStrokeColor,
           selectionColor,
-          selectionAnimation
+          selectionAnimation,
         );
         break;
       }
@@ -433,7 +444,7 @@ function drawElements(
           elementFillColors[element.type],
           elementStrokeColor,
           selectionColor,
-          selectionAnimation
+          selectionAnimation,
         );
         break;
       }
@@ -446,7 +457,7 @@ function drawElements(
           elementFillColors[element.type],
           elementStrokeColor,
           selectionColor,
-          selectionAnimation
+          selectionAnimation,
         );
         break;
       }
@@ -459,7 +470,7 @@ function drawElements(
           elementFillColors[element.type],
           elementStrokeColor,
           selectionColor,
-          selectionAnimation
+          selectionAnimation,
         );
         break;
       }
@@ -472,7 +483,7 @@ function drawElements(
           elementFillColors[element.type],
           elementStrokeColor,
           selectionColor,
-          selectionAnimation
+          selectionAnimation,
         );
         break;
       }
@@ -485,7 +496,7 @@ function drawElements(
           elementFillColors[element.type],
           selectionColor,
           fontFamily,
-          selectionAnimation
+          selectionAnimation,
         );
         break;
       }
@@ -504,7 +515,7 @@ function drawGhostElement(
   elementFillColors: Record<PanelElementType, string>,
   elementStrokeColor: string,
   selectionColor: string,
-  fontFamily: string
+  fontFamily: string,
 ) {
   context.save();
   context.globalAlpha = 0.4;
@@ -516,7 +527,7 @@ function drawGhostElement(
     elementFillColors,
     elementStrokeColor,
     selectionColor,
-    fontFamily
+    fontFamily,
   );
   context.restore();
 }
@@ -529,7 +540,7 @@ function drawCircularElement(
   fillColor: string,
   strokeColor: string,
   selectionColor: string,
-  selectionAnimation?: SelectionAnimationState
+  selectionAnimation?: SelectionAnimationState,
 ) {
   if (
     element.type !== PanelElementType.Jack &&
@@ -561,12 +572,9 @@ function drawRectangularElement(
   fillColor: string,
   strokeColor: string,
   selectionColor: string,
-  selectionAnimation?: SelectionAnimationState
+  selectionAnimation?: SelectionAnimationState,
 ) {
-  if (
-    element.type !== PanelElementType.Switch &&
-    element.type !== PanelElementType.Rectangle
-  ) {
+  if (element.type !== PanelElementType.Switch && element.type !== PanelElementType.Rectangle) {
     return;
   }
 
@@ -581,13 +589,7 @@ function drawRectangularElement(
   context.stroke();
 
   if (isSelected) {
-    drawSelectionRect(
-      context,
-      width + 12,
-      height + 12,
-      selectionColor,
-      selectionAnimation
-    );
+    drawSelectionRect(context, width + 12, height + 12, selectionColor, selectionAnimation);
   }
 }
 
@@ -599,7 +601,7 @@ function drawOvalElement(
   fillColor: string,
   strokeColor: string,
   selectionColor: string,
-  selectionAnimation?: SelectionAnimationState
+  selectionAnimation?: SelectionAnimationState,
 ) {
   if (element.type !== PanelElementType.Oval) {
     return;
@@ -621,7 +623,7 @@ function drawOvalElement(
       element.properties.widthMm * scale + 12,
       element.properties.heightMm * scale + 12,
       selectionColor,
-      selectionAnimation
+      selectionAnimation,
     );
   }
 }
@@ -634,7 +636,7 @@ function drawSlotElement(
   fillColor: string,
   strokeColor: string,
   selectionColor: string,
-  selectionAnimation?: SelectionAnimationState
+  selectionAnimation?: SelectionAnimationState,
 ) {
   if (element.type !== PanelElementType.Slot) {
     return;
@@ -664,7 +666,7 @@ function drawSlotElement(
       element.properties.widthMm * scale + 12,
       element.properties.heightMm * scale + 12,
       selectionColor,
-      selectionAnimation
+      selectionAnimation,
     );
   }
 }
@@ -677,7 +679,7 @@ function drawTriangleElement(
   fillColor: string,
   strokeColor: string,
   selectionColor: string,
-  selectionAnimation?: SelectionAnimationState
+  selectionAnimation?: SelectionAnimationState,
 ) {
   if (element.type !== PanelElementType.Triangle) {
     return;
@@ -702,7 +704,7 @@ function drawTriangleElement(
       element.properties.widthMm * scale + 12,
       element.properties.heightMm * scale + 12,
       selectionColor,
-      selectionAnimation
+      selectionAnimation,
     );
   }
 }
@@ -715,7 +717,7 @@ function drawInsertElement(
   fillColor: string,
   strokeColor: string,
   selectionColor: string,
-  selectionAnimation?: SelectionAnimationState
+  selectionAnimation?: SelectionAnimationState,
 ) {
   if (element.type !== PanelElementType.Insert) {
     return;
@@ -751,17 +753,17 @@ function drawLabelElement(
   fillColor: string,
   selectionColor: string,
   fontFamily: string,
-  selectionAnimation?: SelectionAnimationState
+  selectionAnimation?: SelectionAnimationState,
 ) {
   if (element.type !== PanelElementType.Label) {
     return;
   }
 
-  const text = element.properties.text ?? '';
+  const text = element.properties.text ?? "";
   const fontSizePx = Math.max(6, element.properties.fontSizePt * PT_TO_MM * scale);
   context.fillStyle = fillColor;
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
+  context.textAlign = "center";
+  context.textBaseline = "middle";
   context.font = `${fontSizePx}px ${fontFamily}`;
   context.fillText(text, 0, 0);
 
@@ -772,7 +774,7 @@ function drawLabelElement(
       size.widthMm * scale + 12,
       size.heightMm * scale + 12,
       selectionColor,
-      selectionAnimation
+      selectionAnimation,
     );
   }
 }
@@ -781,7 +783,7 @@ function drawSelectionCircle(
   context: CanvasRenderingContext2D,
   radius: number,
   selectionColor: string,
-  selectionAnimation?: SelectionAnimationState
+  selectionAnimation?: SelectionAnimationState,
 ) {
   context.save();
   context.strokeStyle = selectionColor;
@@ -801,7 +803,7 @@ function drawSelectionRect(
   width: number,
   height: number,
   selectionColor: string,
-  selectionAnimation?: SelectionAnimationState
+  selectionAnimation?: SelectionAnimationState,
 ) {
   context.save();
   context.strokeStyle = selectionColor;
@@ -814,7 +816,7 @@ function drawSelectionRect(
     (-width / 2) * pulseScale,
     (-height / 2) * pulseScale,
     width * pulseScale,
-    height * pulseScale
+    height * pulseScale,
   );
   context.restore();
 }
