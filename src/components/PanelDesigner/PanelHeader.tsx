@@ -3,6 +3,8 @@ import React from "react";
 import * as styles from "./PanelDesigner.css";
 
 const GITHUB_REPO_URL = "https://github.com/ratpi-studio/Eurorack-Panel-Designer";
+const logoSrc = `${import.meta.env.BASE_URL}images/logo.svg`;
+const supportImageSrc = `${import.meta.env.BASE_URL}images/kofi5.png`;
 
 interface PanelHeaderProps {
   title: string;
@@ -15,7 +17,7 @@ export function PanelHeader({ title, changelogLabel, onOpenChangelog }: PanelHea
     <section className={styles.header}>
       <div className={styles.headerTop}>
         <div>
-          <img src="/images/logo.svg" alt={title} className={styles.logo} />
+          <img src={logoSrc} alt={title} className={styles.logo} />
         </div>
         <div className={styles.headerActions}>
           <a
@@ -42,7 +44,7 @@ export function PanelHeader({ title, changelogLabel, onOpenChangelog }: PanelHea
           >
             <img
               className={styles.supportImage}
-              src="/images/kofi5.png"
+              src={supportImageSrc}
               alt="Buy me a coffee on Ko-fi"
             />
           </a>
