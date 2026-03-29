@@ -2,21 +2,37 @@ import React from "react";
 
 import { findElementAtPoint, getElementBounds } from "@lib/canvas/elementGeometry";
 import { projectPanelPoint, screenPointToPanel, type CanvasTransform } from "@lib/canvas/transform";
+import { type ClearanceLines } from "@lib/clearance";
+import { snapPointToGrid } from "@lib/grid";
 import {
   PanelElementType,
+  type MountingHole,
   type PanelElement,
   type PanelModel,
   type PanelOptions,
   type Vector2,
-  type MountingHole,
 } from "@lib/panelTypes";
-import type { ReferenceImage } from "@lib/referenceImage";
-import { type ClearanceLines } from "@lib/clearance";
-import { snapPointToGrid } from "@lib/grid";
+import {
+  getReferenceImageControlPositions,
+  getReferenceImageHandleDirection,
+  getReferenceImageRotationRad,
+  isPointInReferenceImage,
+  resizeReferenceImageFromHandle,
+  REFERENCE_IMAGE_HANDLE_HIT_RADIUS_PX,
+  REFERENCE_IMAGE_RESIZE_HANDLES,
+  REFERENCE_IMAGE_ROTATION_HANDLE_OFFSET_PX,
+  type ReferenceImage,
+  type ReferenceImageControlHandle,
+  type ReferenceImageResizeHandle,
+} from "@lib/referenceImage";
+
 import * as styles from "./PanelCanvas.css";
+
 const MOUNTING_HOLE_HIT_PADDING_MM = 1;
 const CLEARANCE_LINE_HIT_MM = 3;
 const REFERENCE_IMAGE_HIT_PADDING_MM = 3;
+const DEFAULT_CANVAS_CURSOR = "crosshair";
+const REFERENCE_IMAGE_CONTROL_HANDLES = [...REFERENCE_IMAGE_RESIZE_HANDLES, "rotate"] as const;
 
 type DraftPropertiesState = Partial<{
   [T in PanelElementType]: PanelElement["properties"];
@@ -29,7 +45,32 @@ type MoveState = {
   elementIds: string[];
 };
 
-type PointerMode = "idle" | "pan" | "click" | "move" | "marquee" | "clearance" | "reference";
+type ReferenceInteractionState =
+  | {
+      type: "move";
+      offset: Vector2;
+    }
+  | {
+      type: "resize";
+      handle: ReferenceImageResizeHandle;
+      startImage: ReferenceImage;
+    }
+  | {
+      type: "rotate";
+      startImage: ReferenceImage;
+      pointerAngleOffsetRad: number;
+    };
+
+type PointerMode =
+  | "idle"
+  | "pan"
+  | "click"
+  | "move"
+  | "marquee"
+  | "clearance"
+  | "reference-move"
+  | "reference-resize"
+  | "reference-rotate";
 
 interface SelectionOverlay {
   left: number;
@@ -44,6 +85,7 @@ interface CanvasPointerResult {
   referenceImageElement: HTMLImageElement | null;
   snapOverridden: boolean;
   canvasClassName: string;
+  canvasCursor: React.CSSProperties["cursor"];
   handlePointerDown: (event: React.PointerEvent<HTMLCanvasElement>) => void;
   handlePointerMove: (event: React.PointerEvent<HTMLCanvasElement>) => void;
   handlePointerUp: (event: React.PointerEvent<HTMLCanvasElement>) => void;
@@ -93,6 +135,13 @@ interface CanvasPointerOptions {
   onClearanceLineDragEnd: () => void;
 }
 
+function cloneReferenceImage(image: ReferenceImage): ReferenceImage {
+  return {
+    ...image,
+    positionMm: { ...image.positionMm },
+  };
+}
+
 function isPointInMountingHole(point: Vector2, hole: MountingHole, paddingMm = 0): boolean {
   if (hole.shape === "slot" && hole.slotLengthMm) {
     const radius = hole.diameterMm / 2 + paddingMm;
@@ -124,19 +173,6 @@ function findMountingHoleAtPoint(point: Vector2, holes: MountingHole[]): Mountin
   return null;
 }
 
-function isPointInReferenceImage(point: Vector2, info: ReferenceImage): boolean {
-  const halfWidth = info.widthMm / 2 + REFERENCE_IMAGE_HIT_PADDING_MM;
-  const halfHeight = info.heightMm / 2 + REFERENCE_IMAGE_HIT_PADDING_MM;
-  const rad = ((info.rotationDeg ?? 0) * Math.PI) / 180;
-  const cos = Math.cos(-rad);
-  const sin = Math.sin(-rad);
-  const dx = point.x - info.positionMm.x;
-  const dy = point.y - info.positionMm.y;
-  const localX = dx * cos - dy * sin;
-  const localY = dx * sin + dy * cos;
-  return Math.abs(localX) <= halfWidth && Math.abs(localY) <= halfHeight;
-}
-
 function findClearanceLineAtPoint(point: Vector2, lines: ClearanceLines): "top" | "bottom" | null {
   const topDist = Math.abs(point.y - lines.topY);
   const bottomDist = Math.abs(point.y - lines.bottomY);
@@ -147,13 +183,46 @@ function findClearanceLineAtPoint(point: Vector2, lines: ClearanceLines): "top" 
   return topDist <= bottomDist ? "top" : "bottom";
 }
 
+function getReferencePointerAngle(point: Vector2, center: Vector2): number {
+  return Math.atan2(point.y - center.y, point.x - center.x);
+}
+
+function normalizeHalfTurn(angleRad: number): number {
+  const halfTurn = Math.PI;
+  let normalized = angleRad % halfTurn;
+  if (normalized < 0) {
+    normalized += halfTurn;
+  }
+  return normalized;
+}
+
+function getReferenceResizeCursor(
+  handle: ReferenceImageResizeHandle,
+  rotationDeg: number,
+): React.CSSProperties["cursor"] {
+  const direction = getReferenceImageHandleDirection(handle);
+  const angle = Math.atan2(direction.y, direction.x) + (rotationDeg * Math.PI) / 180;
+  const step = Math.round(normalizeHalfTurn(angle) / (Math.PI / 4)) % 4;
+
+  switch (step) {
+    case 0:
+      return "ew-resize";
+    case 1:
+      return "nwse-resize";
+    case 2:
+      return "ns-resize";
+    default:
+      return "nesw-resize";
+  }
+}
+
 export function useCanvasPointer({
   canvasRef,
   transform,
   model,
   mountingHoles,
   referenceImage,
-  referenceImageSelected: _referenceImageSelected,
+  referenceImageSelected,
   mountingHolesSelected: _mountingHolesSelected,
   zoom,
   zoomLimits,
@@ -188,7 +257,7 @@ export function useCanvasPointer({
   const panRef = React.useRef<Vector2>(pan);
   const pointerStartRef = React.useRef<Vector2 | null>(null);
   const pointerModeRef = React.useRef<PointerMode>("idle");
-  const referenceDragStartRef = React.useRef<{ offset: Vector2 } | null>(null);
+  const referenceInteractionRef = React.useRef<ReferenceInteractionState | null>(null);
   const panStartRef = React.useRef<Vector2 | null>(null);
   const moveStateRef = React.useRef<MoveState | null>(null);
   const [isPanning, setIsPanning] = React.useState(false);
@@ -198,6 +267,8 @@ export function useCanvasPointer({
     null,
   );
   const [isHoveringInteractive, setIsHoveringInteractive] = React.useState(false);
+  const [canvasCursor, setCanvasCursor] =
+    React.useState<React.CSSProperties["cursor"]>(DEFAULT_CANVAS_CURSOR);
   const selectionModeRef = React.useRef<"replace" | "add">("replace");
   const selectedElementSet = React.useMemo(() => new Set(selectedElementIds), [selectedElementIds]);
   const elementMap = React.useMemo(
@@ -280,6 +351,35 @@ export function useCanvasPointer({
     ],
   );
 
+  const findReferenceControlAtPoint = React.useCallback(
+    (pointPx: Vector2): ReferenceImageControlHandle | null => {
+      if (!referenceImage || !referenceImageSelected || transform.scale <= 0) {
+        return null;
+      }
+
+      const rotationOffsetMm =
+        REFERENCE_IMAGE_ROTATION_HANDLE_OFFSET_PX / Math.max(transform.scale, 1);
+      const controls = getReferenceImageControlPositions(referenceImage, rotationOffsetMm);
+      const maxDistanceSq = REFERENCE_IMAGE_HANDLE_HIT_RADIUS_PX ** 2;
+      let closestHandle: ReferenceImageControlHandle | null = null;
+      let closestDistanceSq = Infinity;
+
+      REFERENCE_IMAGE_CONTROL_HANDLES.forEach((handle) => {
+        const controlPointPx = projectPanelPoint(controls[handle], transform);
+        const dx = pointPx.x - controlPointPx.x;
+        const dy = pointPx.y - controlPointPx.y;
+        const distanceSq = dx * dx + dy * dy;
+        if (distanceSq <= maxDistanceSq && distanceSq < closestDistanceSq) {
+          closestHandle = handle;
+          closestDistanceSq = distanceSq;
+        }
+      });
+
+      return closestHandle;
+    },
+    [referenceImage, referenceImageSelected, transform],
+  );
+
   React.useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) {
@@ -340,33 +440,81 @@ export function useCanvasPointer({
   ]);
 
   const updateHoverState = React.useCallback(
-    (pointPanel: Vector2 | null) => {
-      if (!pointPanel) {
+    (pointPanel: Vector2 | null, pointPx: Vector2 | null) => {
+      if (!pointPanel || !pointPx) {
         setIsHoveringInteractive(false);
+        setCanvasCursor(DEFAULT_CANVAS_CURSOR);
         return;
       }
+
       const pointerMode = pointerModeRef.current;
       if (pointerMode !== "idle" && pointerMode !== "click") {
-        setIsHoveringInteractive(false);
         return;
       }
+
+      const selectedReferenceHandle = findReferenceControlAtPoint(pointPx);
+      if (selectedReferenceHandle && referenceImage) {
+        setIsHoveringInteractive(true);
+        setCanvasCursor(
+          selectedReferenceHandle === "rotate"
+            ? "crosshair"
+            : getReferenceResizeCursor(selectedReferenceHandle, referenceImage.rotationDeg),
+        );
+        return;
+      }
+
+      if (
+        referenceImage &&
+        referenceImageSelected &&
+        isPointInReferenceImage(pointPanel, referenceImage, REFERENCE_IMAGE_HIT_PADDING_MM)
+      ) {
+        setIsHoveringInteractive(true);
+        setCanvasCursor("grab");
+        return;
+      }
+
       const element = findElementAtPoint(pointPanel, model.elements);
+      if (element) {
+        setIsHoveringInteractive(true);
+        setCanvasCursor("pointer");
+        return;
+      }
+
       const hole =
         displayOptions.showMountingHoles && findMountingHoleAtPoint(pointPanel, mountingHoles);
+      if (hole) {
+        setIsHoveringInteractive(true);
+        setCanvasCursor("pointer");
+        return;
+      }
+
       const clearanceHit = findClearanceLineAtPoint(pointPanel, clearanceLines);
-      const refHit =
+      if (clearanceHit) {
+        setIsHoveringInteractive(true);
+        setCanvasCursor("ns-resize");
+        return;
+      }
+
+      if (
         referenceImage &&
-        referenceImageElement &&
-        isPointInReferenceImage(pointPanel, referenceImage);
-      setIsHoveringInteractive(Boolean(element || hole || clearanceHit || refHit));
+        isPointInReferenceImage(pointPanel, referenceImage, REFERENCE_IMAGE_HIT_PADDING_MM)
+      ) {
+        setIsHoveringInteractive(true);
+        setCanvasCursor("grab");
+        return;
+      }
+
+      setIsHoveringInteractive(false);
+      setCanvasCursor(DEFAULT_CANVAS_CURSOR);
     },
     [
       clearanceLines,
       displayOptions.showMountingHoles,
+      findReferenceControlAtPoint,
       model.elements,
       mountingHoles,
       referenceImage,
-      referenceImageElement,
+      referenceImageSelected,
     ],
   );
 
@@ -390,6 +538,7 @@ export function useCanvasPointer({
     if (shouldPan) {
       event.preventDefault();
       setIsPanning(true);
+      setCanvasCursor("grabbing");
       return;
     }
 
@@ -403,12 +552,60 @@ export function useCanvasPointer({
       return;
     }
 
+    const selectedReferenceHandle = findReferenceControlAtPoint(pointPx);
+    if (referenceImage && referenceImageSelected && selectedReferenceHandle) {
+      onClearMountingHoleSelection();
+      onSelectReferenceImage();
+
+      if (selectedReferenceHandle === "rotate") {
+        referenceInteractionRef.current = {
+          type: "rotate",
+          startImage: cloneReferenceImage(referenceImage),
+          pointerAngleOffsetRad:
+            getReferencePointerAngle(pointPanel, referenceImage.positionMm) -
+            getReferenceImageRotationRad(referenceImage),
+        };
+        pointerModeRef.current = "reference-rotate";
+        setCanvasCursor("crosshair");
+        return;
+      }
+
+      referenceInteractionRef.current = {
+        type: "resize",
+        handle: selectedReferenceHandle,
+        startImage: cloneReferenceImage(referenceImage),
+      };
+      pointerModeRef.current = "reference-resize";
+      setCanvasCursor(getReferenceResizeCursor(selectedReferenceHandle, referenceImage.rotationDeg));
+      return;
+    }
+
+    if (
+      referenceImage &&
+      referenceImageSelected &&
+      isPointInReferenceImage(pointPanel, referenceImage, REFERENCE_IMAGE_HIT_PADDING_MM)
+    ) {
+      pointerModeRef.current = "reference-move";
+      referenceInteractionRef.current = {
+        type: "move",
+        offset: {
+          x: referenceImage.positionMm.x - pointPanel.x,
+          y: referenceImage.positionMm.y - pointPanel.y,
+        },
+      };
+      onClearMountingHoleSelection();
+      onSelectReferenceImage();
+      setCanvasCursor("grabbing");
+      return;
+    }
+
     const element = findElementAtPoint(pointPanel, model.elements);
     if (element) {
       onClearMountingHoleSelection();
       if (additiveModifier) {
         onToggleElementSelection(element.id);
         pointerModeRef.current = "idle";
+        setCanvasCursor(DEFAULT_CANVAS_CURSOR);
         return;
       }
 
@@ -439,6 +636,7 @@ export function useCanvasPointer({
         elementIds,
       };
       pointerModeRef.current = "move";
+      setCanvasCursor("grabbing");
       onMoveStart?.(element.id);
       return;
     }
@@ -447,12 +645,17 @@ export function useCanvasPointer({
     if (hitHole) {
       pointerModeRef.current = "idle";
       onSelectMountingHoles();
+      setCanvasCursor("pointer");
       return;
     }
 
-    if (referenceImage && isPointInReferenceImage(pointPanel, referenceImage)) {
-      pointerModeRef.current = "reference";
-      referenceDragStartRef.current = {
+    if (
+      referenceImage &&
+      isPointInReferenceImage(pointPanel, referenceImage, REFERENCE_IMAGE_HIT_PADDING_MM)
+    ) {
+      pointerModeRef.current = "reference-move";
+      referenceInteractionRef.current = {
+        type: "move",
         offset: {
           x: referenceImage.positionMm.x - pointPanel.x,
           y: referenceImage.positionMm.y - pointPanel.y,
@@ -460,6 +663,7 @@ export function useCanvasPointer({
       };
       onClearMountingHoleSelection();
       onSelectReferenceImage();
+      setCanvasCursor("grabbing");
       return;
     }
 
@@ -468,6 +672,7 @@ export function useCanvasPointer({
       pointerModeRef.current = "clearance";
       onClearanceLineDragStart();
       onClearanceLineChange(clearanceHit, pointPanel.y);
+      setCanvasCursor("ns-resize");
       return;
     }
 
@@ -477,6 +682,7 @@ export function useCanvasPointer({
       const newId = onPlaceElement(placementType, snappedPoint);
       onSelectElement(newId);
       pointerModeRef.current = "idle";
+      setCanvasCursor(DEFAULT_CANVAS_CURSOR);
       return;
     }
 
@@ -484,6 +690,7 @@ export function useCanvasPointer({
     setSelectionRect({ start: pointPanel, end: pointPanel });
     onClearMountingHoleSelection();
     pointerModeRef.current = "marquee";
+    setCanvasCursor(DEFAULT_CANVAS_CURSOR);
   };
 
   const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -517,7 +724,7 @@ export function useCanvasPointer({
       y: event.clientY - rect.top,
     };
     const pointPanel = screenPointToPanel(pointPx, transform);
-    updateHoverState(pointPanel);
+    updateHoverState(pointPanel, pointPx);
 
     if (pointerModeRef.current === "clearance") {
       if (!pointPanel) {
@@ -529,15 +736,44 @@ export function useCanvasPointer({
       return;
     }
 
-    if (pointerModeRef.current === "reference") {
-      if (!pointPanel || !referenceImage || !referenceDragStartRef.current) {
+    if (pointerModeRef.current === "reference-move") {
+      const interaction = referenceInteractionRef.current;
+      if (!pointPanel || !referenceImage || !interaction || interaction.type !== "move") {
         return;
       }
       const snapped = maybeSnap({
-        x: pointPanel.x + referenceDragStartRef.current.offset.x,
-        y: pointPanel.y + referenceDragStartRef.current.offset.y,
+        x: pointPanel.x + interaction.offset.x,
+        y: pointPanel.y + interaction.offset.y,
       });
       onUpdateReferenceImage({ positionMm: snapped });
+      setPointerPanelPos(pointPanel);
+      return;
+    }
+
+    if (pointerModeRef.current === "reference-resize") {
+      const interaction = referenceInteractionRef.current;
+      if (!pointPanel || !interaction || interaction.type !== "resize") {
+        return;
+      }
+      const nextPoint = maybeSnap(pointPanel);
+      onUpdateReferenceImage(
+        resizeReferenceImageFromHandle(interaction.startImage, interaction.handle, nextPoint),
+      );
+      setPointerPanelPos(pointPanel);
+      return;
+    }
+
+    if (pointerModeRef.current === "reference-rotate") {
+      const interaction = referenceInteractionRef.current;
+      if (!pointPanel || !interaction || interaction.type !== "rotate") {
+        return;
+      }
+      const nextRotationDeg =
+        ((getReferencePointerAngle(pointPanel, interaction.startImage.positionMm) -
+          interaction.pointerAngleOffsetRad) *
+          180) /
+        Math.PI;
+      onUpdateReferenceImage({ rotationDeg: nextRotationDeg });
       setPointerPanelPos(pointPanel);
       return;
     }
@@ -663,22 +899,30 @@ export function useCanvasPointer({
     if (pointerModeRef.current === "clearance") {
       onClearanceLineDragEnd();
     }
-    if (pointerModeRef.current === "reference") {
-      referenceDragStartRef.current = null;
-    }
 
     pointerModeRef.current = "idle";
     pointerStartRef.current = null;
     panStartRef.current = null;
     moveStateRef.current = null;
+    referenceInteractionRef.current = null;
     setSelectionRect(null);
     selectionModeRef.current = "replace";
     setPointerPanelPos(null);
     setIsPanning(false);
     setIsHoveringInteractive(false);
+    setCanvasCursor(DEFAULT_CANVAS_CURSOR);
     onMoveEnd?.();
+
     if (canvas) {
       canvas.releasePointerCapture(event.pointerId);
+
+      const rect = canvas.getBoundingClientRect();
+      const pointPx = {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
+      };
+      const pointPanel = screenPointToPanel(pointPx, transform);
+      updateHoverState(pointPanel, pointPx);
     }
   };
 
@@ -689,11 +933,12 @@ export function useCanvasPointer({
     pointerStartRef.current = null;
     panStartRef.current = null;
     moveStateRef.current = null;
-    referenceDragStartRef.current = null;
+    referenceInteractionRef.current = null;
     setSelectionRect(null);
     selectionModeRef.current = "replace";
     setIsPanning(false);
     setIsHoveringInteractive(false);
+    setCanvasCursor(DEFAULT_CANVAS_CURSOR);
     onMoveEnd?.();
   };
 
@@ -715,6 +960,7 @@ export function useCanvasPointer({
     referenceImageElement,
     snapOverridden,
     canvasClassName,
+    canvasCursor,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,

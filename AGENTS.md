@@ -1,61 +1,131 @@
-# AGENTS – eurorack_panel_designer
+# AGENTS - eurorack_panel_designer
 
-This file describes the conventions to follow when working on this repository.
+This file documents the conventions that match the project in its current form.
 
-## 1. Project vision
+## 1. Project snapshot
 
-- Web app for designing Eurorack panels with a central canvas.
-- Keep feature additions consistent with the existing UX (canvas-focused, DIY-friendly).
+- Single-page web app for designing 3U Eurorack panels around a central canvas.
+- The app is local-first: editor state is persisted in the browser, projects can be saved locally, and layouts can be imported/exported.
+- Core user flows today include:
+  - panel sizing in mm / HP
+  - element placement and editing
+  - mounting holes and clearance guides
+  - reference image overlay
+  - undo / redo
+  - JSON, PNG, SVG, KiCad, and STL export
 
-## 2. Required stack and technical choices
+Keep changes aligned with that product shape: practical, canvas-first, DIY-friendly, and export-oriented.
 
-- Framework: `React` (v19) + `Vite` (SPA, client-side rendering).
-- Language: strict `TypeScript` (`"strict": true` in `tsconfig.json`).
-- UI: `React` with function components and hooks.
-- Global state: managed via dedicated React hooks (and/or Context) exposing the panel model and UI state.
-- Styles: `vanilla-extract` only.
-  - No Tailwind.
-  - No CSS-in-JS like styled-components/emotion.
-- Lint: `oxlint` for JS/TS.
-- Formatting: `prettier` recommended, standard config if added.
-- Tests: unit tests for business logic (conversions, hole generation, serialization) as soon as a module gains complexity.
+## 2. Current stack
 
-## 3. Code organization
+- Framework: `React 19`
+- Build tooling: `Vite` through `vite-plus`
+- Language: strict `TypeScript`
+- State: `zustand` for the main editor store, with dedicated hooks around history and project workflows
+- Styling: `vanilla-extract` only
+- Notifications: `react-hot-toast`
+- 3D/STL preview and geometry helpers: `three`
+- Monitoring / analytics: `@sentry/react` and `@vercel/analytics`
+- Tests: `Vitest`
 
-- Use the current structure as the template:
-  - `src/` root for the SPA.
-  - `src/components/` for reusable React components.
-  - `src/store/` for the global state access layer.
-  - `src/lib/` for pure business logic (no React).
-  - `src/styles/` for `vanilla-extract` themes and styles.
-- Keep computation logic (units, holes, etc.) in `lib/`, not in components.
-- Components should contain minimal logic: rendering + orchestration of `store`/`lib` calls.
+Use the repository scripts instead of ad hoc commands when possible:
 
-## 4. Coding conventions
+- `yarn dev`
+- `yarn build`
+- `yarn lint`
+- `yarn test`
+- `yarn check`
 
-- Always write TypeScript (`.ts` / `.tsx`); no `.js` for application code.
-- File names: `PascalCase` for components, `camelCase` for utility modules.
-- Avoid default exports (the root `App` component can stay default-exported).
-- Avoid single-letter variables except in obvious, tiny loops.
-- Prefer pure functions in `lib` (no side effects).
-- Keep components small and focused; create subcomponents if a file grows too long or complex.
+## 3. Architecture map
 
-## 5. Canvas and business logic
+- `src/components/`
+  - React UI and orchestration.
+  - `PanelDesigner` is the main shell.
+  - `PanelCanvas` and its hooks handle canvas interaction and rendering orchestration.
+- `src/store/`
+  - `panelStore.ts` is the main persisted Zustand store.
+  - `usePanelHistory.ts` owns undo / redo behavior.
+  - `useProjects.ts` owns save/load/import/export workflows and browser project management.
+- `src/lib/`
+  - Non-React model logic, geometry, unit conversion, serialization, storage helpers, export builders, and canvas drawing helpers.
+  - `src/lib/canvas/` contains drawing and transform logic used by the canvas and PNG export path.
+- `src/i18n/`
+  - User-facing copy lives here. The app currently ships with `en_US.ts`.
+- `src/styles/`
+  - Shared theme tokens and global styles via `vanilla-extract`.
+- `scripts/`
+  - Small maintenance scripts, currently including the Sentry release bump helper.
 
-- Panel and element rendering must be driven by a clear data model in `store`/`lib`, not internal canvas component state.
-- cm → mm → HP conversions and hole generation must be testable without React (`lib/` functions).
-- The canvas should simply project that state (zoom, pan, grid, holes, elements) into pixels.
+## 4. Code conventions
 
-## 6. Adding dependencies
+- Always write application code in TypeScript (`.ts` / `.tsx`).
+- Prefer named exports. The current app entry points already follow this pattern.
+- Use `PascalCase` for React components and `camelCase` for utility / domain modules.
+- Prefer path aliases for cross-folder imports:
+  - `@components`
+  - `@lib`
+  - `@store`
+  - `@i18n`
+  - `@styles`
+- Keep React components focused on rendering and orchestration.
+- Move calculations, geometry, serialization, and export logic out of components and into `src/lib/`.
+- Keep new user-facing copy in the i18n layer instead of hardcoding strings in components.
+- Use `vanilla-extract` `.css.ts` files for styling. Do not introduce Tailwind, CSS modules, or CSS-in-JS.
 
-- Before adding a library:
-  - Check whether the feature can be built with the current stack.
-  - Prefer lightweight, well-maintained libraries.
-- Do not add:
-  - Other frontend frameworks (e.g., Vue, Svelte).
-  - Other global state managers (Redux, MobX, etc.) unless explicitly documented by new architecture notes.
+## 5. State and model rules
 
-## 7. Documentation and PRs
+- `PanelModel` and related types in `src/lib/panelTypes.ts` are the source of truth for the editor data model.
+- The canvas must remain a projection of store state, not an independent source of truth.
+- When changing the panel schema or element model, update all affected layers together:
+  - `src/lib/panelTypes.ts`
+  - normalization logic
+  - serialization / deserialization
+  - persisted Zustand migrations in `src/store/panelStore.ts`
+  - local project storage compatibility
+  - exports and geometry helpers
+  - relevant tests
+- Browser persistence matters in this project. Backward compatibility or explicit migration is required when saved data formats change.
 
-- Document important decisions in PR comments or the README.
-- Keep this `AGENTS.md` file up to date if conventions evolve.
+## 6. Canvas, geometry, and export guidance
+
+- Keep unit conversion (`cm`, `mm`, `HP`), mounting hole generation, clearance rules, and geometry helpers testable without React.
+- Canvas interaction logic belongs in the dedicated canvas hooks and `src/lib/canvas/` helpers, not in unrelated UI components.
+- Export logic belongs in `src/lib/` and supporting store hooks, not inline in presentation components.
+- `three` is already part of the project for STL generation / preview. Reuse that stack for 3D-related work instead of adding another rendering solution.
+- If you add a new element type, wire it through the full pipeline:
+  - element type definitions
+  - element factory / defaults
+  - properties editor UI
+  - canvas rendering
+  - clearance / mounting-hole interactions if relevant
+  - serialization
+  - export logic
+  - tests
+
+## 7. Testing and quality
+
+- Add or update Vitest coverage for non-trivial business logic, especially in:
+  - units and conversions
+  - hole generation
+  - element geometry
+  - serialization / migrations
+  - storage
+  - export helpers
+- Keep tests under the existing `src/lib/**/*.test.ts` pattern.
+- Run `yarn test`, `yarn lint`, and `yarn build` after meaningful changes when feasible.
+
+## 8. Documentation and repo-specific notes
+
+- Keep documentation in English.
+- Update `README.md` when user-facing behavior or setup changes materially.
+- `CHANGELOG.md` is consumed by a virtual module in `vite.config.ts`. Keep the existing heading format (`## version - date`) unless you also update the parser.
+- Keep this `AGENTS.md` file in sync when project conventions evolve.
+
+## 9. Dependency policy
+
+- Prefer the existing stack and patterns before adding new libraries.
+- Favor lightweight dependencies with a clear maintenance story.
+- Do not introduce:
+  - another frontend framework
+  - another state manager unless the architecture is intentionally changed
+  - another styling system

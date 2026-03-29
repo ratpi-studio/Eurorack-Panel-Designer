@@ -5,7 +5,13 @@ import {
   type Vector2,
 } from "@lib/panelTypes";
 import { type ClearanceLines } from "@lib/clearance";
-import type { ReferenceImage } from "@lib/referenceImage";
+import {
+  getReferenceImageControlPositions,
+  REFERENCE_IMAGE_HANDLE_SIZE_PX,
+  REFERENCE_IMAGE_RESIZE_HANDLES,
+  REFERENCE_IMAGE_ROTATION_HANDLE_OFFSET_PX,
+  type ReferenceImage,
+} from "@lib/referenceImage";
 
 import {
   computeNearestElementDistances,
@@ -262,12 +268,53 @@ function drawReferenceImage(
   }
   context.globalAlpha = Math.min(Math.max(info.opacity, 0), 1);
   context.drawImage(image, -halfWidthPx, -halfHeightPx, halfWidthPx * 2, halfHeightPx * 2);
+  context.globalAlpha = 1;
   if (selected) {
     context.strokeStyle = palette.selection;
     context.lineWidth = 1.5;
     context.setLineDash([6, 4]);
     context.strokeRect(-halfWidthPx, -halfHeightPx, halfWidthPx * 2, halfHeightPx * 2);
   }
+  context.restore();
+
+  if (!selected) {
+    return;
+  }
+
+  const rotationOffsetMm = REFERENCE_IMAGE_ROTATION_HANDLE_OFFSET_PX / Math.max(transform.scale, 1);
+  const controls = getReferenceImageControlPositions(info, rotationOffsetMm);
+  const topCenter = projectPanelPoint(controls.top, transform);
+  const rotationHandle = projectPanelPoint(controls.rotate, transform);
+  const halfHandleSizePx = REFERENCE_IMAGE_HANDLE_SIZE_PX / 2;
+
+  context.save();
+  context.strokeStyle = palette.selection;
+  context.fillStyle = "#f8fafc";
+  context.lineWidth = 1.5;
+  context.setLineDash([]);
+
+  context.beginPath();
+  context.moveTo(topCenter.x, topCenter.y);
+  context.lineTo(rotationHandle.x, rotationHandle.y);
+  context.stroke();
+
+  REFERENCE_IMAGE_RESIZE_HANDLES.forEach((handle) => {
+    const point = projectPanelPoint(controls[handle], transform);
+    context.beginPath();
+    context.rect(
+      point.x - halfHandleSizePx,
+      point.y - halfHandleSizePx,
+      REFERENCE_IMAGE_HANDLE_SIZE_PX,
+      REFERENCE_IMAGE_HANDLE_SIZE_PX,
+    );
+    context.fill();
+    context.stroke();
+  });
+
+  context.beginPath();
+  context.arc(rotationHandle.x, rotationHandle.y, halfHandleSizePx, 0, Math.PI * 2);
+  context.fill();
+  context.stroke();
   context.restore();
 }
 
