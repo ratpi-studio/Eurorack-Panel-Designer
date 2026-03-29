@@ -32,9 +32,6 @@ jobs:
       - name: Check formatting and lint
         run: vp check
 
-      - name: Typecheck
-        run: corepack yarn exec tsc --noEmit
-
       - name: Run tests
         run: vp test
 

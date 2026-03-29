@@ -29,26 +29,30 @@ Single-page web app to sketch Eurorack front panels. The canvas mirrors a real 3
 
 ## Getting started
 
-1. Install [Node.js 20+](https://nodejs.org/) and [Yarn 4](https://yarnpkg.com/getting-started/install).
-2. Install dependencies:
+1. Install [Node.js 20+](https://nodejs.org/).
+2. Install the [Vite+ CLI (`vp`)](https://viteplus.dev/) globally.
+3. Install dependencies:
    ```bash
-   yarn install
+   vp install
    ```
-3. Start the dev server:
+   This repository is configured for `pnpm`, and `vp` will use it automatically.
+4. Start the dev server:
    ```bash
-   yarn dev
+   vp dev
    ```
    Vite serves the app at `http://localhost:5173` by default.
 
-## Scripts
+## Commands
 
 | Command        | Description                               |
 | -------------- | ----------------------------------------- |
-| `yarn dev`     | Run the Vite dev server with HMR.         |
-| `yarn build`   | Type-check then build the production SPA. |
-| `yarn preview` | Preview the production build locally.     |
-| `yarn test`    | Execute Vitest unit tests.                |
-| `yarn lint`    | Run oxlint with the project config.       |
+| `vp install`   | Install dependencies through `pnpm`.      |
+| `vp dev`       | Run the Vite dev server with HMR.         |
+| `vp run build` | Type-check then build the production SPA. |
+| `vp preview`   | Preview the production build locally.     |
+| `vp test`      | Execute Vitest unit tests.                |
+| `vp lint`      | Run oxlint with the project config.       |
+| `vp check`     | Run formatting, linting, and type checks. |
 
 ## Usage tips
 

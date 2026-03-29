@@ -7,8 +7,6 @@ dist/
 dist-ssr/
 *.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
@@ -37,18 +35,7 @@ tsconfig.tsbuildinfo
 !.vscode/extensions.json
 !.vscode/settings.json
 
-# Yarn Berry
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
-!.yarn/cache
-.pnp.*
-
 .vscode/
-.yarn/
 
 .editorconfig
 tsconfig.tsbuildinfo
