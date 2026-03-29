@@ -130,6 +130,7 @@ export function PanelCanvas({
     referenceImageElement,
     snapOverridden,
     canvasClassName,
+    canvasCursor,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
@@ -245,6 +246,7 @@ export function PanelCanvas({
         ref={canvasRef}
         className={canvasClassName}
         role="presentation"
+        style={{ cursor: canvasCursor }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
