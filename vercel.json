@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "installCommand": "corepack enable && corepack prepare yarn@4.12.0 --activate && yarn install --immutable",
-  "buildCommand": "corepack enable && corepack prepare yarn@4.12.0 --activate && yarn build"
+  "installCommand": "corepack enable && corepack prepare pnpm@10.33.0 --activate && pnpm install --frozen-lockfile",
+  "buildCommand": "corepack enable && corepack prepare pnpm@10.33.0 --activate && pnpm run build"
 }

@@ -151,6 +151,9 @@ if (releaseName) {
 const useSentry = Boolean(env.SENTRY_AUTH_TOKEN && env.SENTRY_ORG && env.SENTRY_PROJECT);
 
 export default defineConfig({
+  staged: {
+    "*": "vp check --fix"
+  },
   lint: {
     plugins: ["react", "import", "typescript", "vitest"],
     env: {

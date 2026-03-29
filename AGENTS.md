@@ -27,14 +27,16 @@ Keep changes aligned with that product shape: practical, canvas-first, DIY-frien
 - 3D/STL preview and geometry helpers: `three`
 - Monitoring / analytics: `@sentry/react` and `@vercel/analytics`
 - Tests: `Vitest`
+- Package manager: `pnpm`, typically invoked through `vp`
 
-Use the repository scripts instead of ad hoc commands when possible:
+Prefer Vite+ commands when working in the repository:
 
-- `yarn dev`
-- `yarn build`
-- `yarn lint`
-- `yarn test`
-- `yarn check`
+- `vp install`
+- `vp dev`
+- `vp lint`
+- `vp test`
+- `vp check`
+- `vp run build`
 
 ## 3. Architecture map
 
@@ -112,7 +114,7 @@ Use the repository scripts instead of ad hoc commands when possible:
   - storage
   - export helpers
 - Keep tests under the existing `src/lib/**/*.test.ts` pattern.
-- Run `yarn test`, `yarn lint`, and `yarn build` after meaningful changes when feasible.
+- Run `vp test`, `vp lint`, and `vp run build` after meaningful changes when feasible.
 
 ## 8. Documentation and repo-specific notes
 
