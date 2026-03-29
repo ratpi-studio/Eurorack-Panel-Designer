@@ -17,14 +17,14 @@
     "incremental": true,
     "types": ["vite-plus/client", "node"],
     "allowSyntheticDefaultImports": true,
+    "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
-    "baseUrl": ".",
     "paths": {
-      "@components/*": ["src/components/*"],
-      "@lib/*": ["src/lib/*"],
-      "@store/*": ["src/store/*"],
-      "@i18n/*": ["src/i18n/*"],
-      "@styles/*": ["src/styles/*"]
+      "@components/*": ["./src/components/*"],
+      "@lib/*": ["./src/lib/*"],
+      "@store/*": ["./src/store/*"],
+      "@i18n/*": ["./src/i18n/*"],
+      "@styles/*": ["./src/styles/*"]
     },
     "noEmit": true,
     "jsx": "react-jsx"
