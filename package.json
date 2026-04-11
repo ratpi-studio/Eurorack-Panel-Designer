@@ -43,6 +43,7 @@
   "simple-git-hooks": {
     "pre-commit": "vp run bump:sentry-release"
   },
+  "packageManager": "pnpm@10.33.0",
   "pnpm": {
     "overrides": {
       "vite": "npm:@voidzero-dev/vite-plus-core@latest",
@@ -55,6 +56,5 @@
         }
       }
     }
-  },
-  "packageManager": "pnpm@10.33.0"
+  }
 }

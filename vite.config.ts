@@ -152,7 +152,7 @@ const useSentry = Boolean(env.SENTRY_AUTH_TOKEN && env.SENTRY_ORG && env.SENTRY_
 
 export default defineConfig({
   staged: {
-    "*": "vp check --fix"
+    "*": "vp check --fix",
   },
   lint: {
     plugins: ["react", "import", "typescript", "vitest"],

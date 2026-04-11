@@ -57,9 +57,7 @@ const HANDLE_DIRECTIONS: Record<ReferenceImageResizeHandle, ReferenceImageHandle
   left: { x: -1, y: 0 },
 };
 
-export function getReferenceImageRotationRad(
-  image: Pick<ReferenceImage, "rotationDeg">,
-): number {
+export function getReferenceImageRotationRad(image: Pick<ReferenceImage, "rotationDeg">): number {
   return ((image.rotationDeg ?? 0) * Math.PI) / 180;
 }
 
