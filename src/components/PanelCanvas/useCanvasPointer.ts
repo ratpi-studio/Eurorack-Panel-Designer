@@ -576,7 +576,9 @@ export function useCanvasPointer({
         startImage: cloneReferenceImage(referenceImage),
       };
       pointerModeRef.current = "reference-resize";
-      setCanvasCursor(getReferenceResizeCursor(selectedReferenceHandle, referenceImage.rotationDeg));
+      setCanvasCursor(
+        getReferenceResizeCursor(selectedReferenceHandle, referenceImage.rotationDeg),
+      );
       return;
     }
 
