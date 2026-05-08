@@ -1,6 +1,8 @@
+import polygonClipping from "polygon-clipping";
 import { BufferGeometry, ExtrudeGeometry, Mesh, MeshStandardMaterial, Path, Shape } from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { STLExporter } from "three/examples/jsm/exporters/STLExporter.js";
+import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 
 import {
   PanelElementType,
@@ -8,10 +10,25 @@ import {
   type MountingHole,
   type PanelElement,
   type PanelModel,
+  type SvgArtworkElementProperties,
+  type SvgViewBox,
 } from "@lib/panelTypes";
+import {
+  buildPanelSurfaceMultiPolygon,
+  type SurfaceMultiPolygon,
+  type SurfacePolygon,
+  type SurfaceRing,
+} from "@lib/panelSurface";
+import { buildSvgArtworkMaskMarkup, isBlackSvgPaint, isSvgArtworkElement } from "@lib/svgArtwork";
+import { expandSvgPatterns } from "@lib/svgPatternExpand";
 
 interface BuildPanelStlOptions {
   thicknessMm: number;
+}
+
+export interface BuildPanelStlResult {
+  stl: string;
+  warnings: string[];
 }
 
 interface CircularHole {
@@ -294,6 +311,433 @@ function buildInsertGeometry(
   return mergeGeometries(geometries) ?? null;
 }
 
+function closeRing(ring: SurfaceRing): SurfaceRing {
+  if (ring.length < 2) {
+    return ring;
+  }
+  const first = ring[0];
+  const last = ring[ring.length - 1];
+  if (first[0] === last[0] && first[1] === last[1]) {
+    return ring;
+  }
+  return [...ring, first];
+}
+
+function transformSvgPoint(
+  point: { x: number; y: number },
+  element: PanelElement & {
+    type: PanelElementType.SvgArtwork;
+    properties: SvgArtworkElementProperties;
+  },
+): [number, number] {
+  const { properties } = element;
+  const viewBox = properties.viewBox;
+  const localX = ((point.x - viewBox.minX) / viewBox.width - 0.5) * properties.widthMm;
+  const localY = ((point.y - viewBox.minY) / viewBox.height - 0.5) * properties.heightMm;
+  const rotation = ((element.rotationDeg ?? 0) * Math.PI) / 180;
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  return [
+    element.positionMm.x + localX * cos - localY * sin,
+    element.positionMm.y + localX * sin + localY * cos,
+  ];
+}
+
+function shapeToPolygon(
+  shape: Shape,
+  element: PanelElement & {
+    type: PanelElementType.SvgArtwork;
+    properties: SvgArtworkElementProperties;
+  },
+): SurfacePolygon | null {
+  const extracted = shape.extractPoints(20);
+  const outer = closeRing(extracted.shape.map((point) => transformSvgPoint(point, element)));
+  if (outer.length < 4) {
+    return null;
+  }
+  const holes = extracted.holes
+    .map((hole) => closeRing(hole.map((point) => transformSvgPoint(point, element))))
+    .filter((ring) => ring.length >= 4);
+  return [outer, ...holes];
+}
+
+interface StrokeStyleLike {
+  stroke?: string;
+  strokeWidth?: string | number;
+  strokeLineJoin?: string;
+  strokeLineCap?: string;
+  strokeMiterLimit?: string | number;
+}
+
+function strokeBufferToPolygons(
+  buffer: BufferGeometry,
+  element: PanelElement & {
+    type: PanelElementType.SvgArtwork;
+    properties: SvgArtworkElementProperties;
+  },
+): SurfaceMultiPolygon {
+  const positions = buffer.getAttribute("position");
+  if (!positions) {
+    return [];
+  }
+  const array = positions.array;
+  const triangles: SurfaceMultiPolygon = [];
+  for (let index = 0; index + 8 < array.length; index += 9) {
+    const ring: SurfaceRing = [
+      transformSvgPoint({ x: array[index], y: array[index + 1] }, element),
+      transformSvgPoint({ x: array[index + 3], y: array[index + 4] }, element),
+      transformSvgPoint({ x: array[index + 6], y: array[index + 7] }, element),
+    ];
+    triangles.push([closeRing(ring)]);
+  }
+  if (!triangles.length) {
+    return [];
+  }
+  try {
+    return polygonClipping.union(triangles as polygonClipping.MultiPolygon) as SurfaceMultiPolygon;
+  } catch {
+    return triangles;
+  }
+}
+
+function strokePathToPolygons(
+  shapePath: ReturnType<SVGLoader["parse"]>["paths"][number],
+  element: PanelElement & {
+    type: PanelElementType.SvgArtwork;
+    properties: SvgArtworkElementProperties;
+  },
+): SurfaceMultiPolygon {
+  const style = (shapePath.userData?.style ?? {}) as StrokeStyleLike;
+  if (!style.stroke || style.stroke === "none") {
+    return [];
+  }
+  const strokeWidth = Number(style.strokeWidth);
+  if (!Number.isFinite(strokeWidth) || strokeWidth <= 0) {
+    return [];
+  }
+  const polygons: SurfaceMultiPolygon = [];
+  for (const subPath of shapePath.subPaths) {
+    const points = subPath.getPoints(20);
+    if (points.length < 2) {
+      continue;
+    }
+    let buffer: BufferGeometry | null = null;
+    try {
+      buffer = SVGLoader.pointsToStroke(
+        points,
+        style as unknown as Parameters<typeof SVGLoader.pointsToStroke>[1],
+        6,
+        0,
+      );
+    } catch {
+      buffer = null;
+    }
+    if (!buffer) {
+      continue;
+    }
+    polygons.push(...strokeBufferToPolygons(buffer, element));
+    buffer.dispose();
+  }
+  return polygons;
+}
+
+function parseSvgNumber(value: string | undefined, fallback = 0): number {
+  if (!value) {
+    return fallback;
+  }
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function parseSvgAttributes(markup: string): Record<string, string> {
+  const attributes: Record<string, string> = {};
+  markup.replace(
+    /([a-zA-Z_:][\w:.-]*)\s*=\s*(['"])(.*?)\2/g,
+    (_match, name: string, _quote: string, value: string) => {
+      attributes[name] = value;
+      return "";
+    },
+  );
+  return attributes;
+}
+
+function parseSvgStyleAttribute(value: string | undefined): Record<string, string> {
+  if (!value) {
+    return {};
+  }
+  return value.split(";").reduce<Record<string, string>>((acc, declaration) => {
+    const [rawProperty, ...rawValue] = declaration.split(":");
+    const property = rawProperty?.trim().toLowerCase();
+    const declarationValue = rawValue.join(":").trim();
+    if (property && declarationValue) {
+      acc[property] = declarationValue;
+    }
+    return acc;
+  }, {});
+}
+
+function hasSvgArtworkPaint(rawAttributes: string): boolean {
+  const attributes = parseSvgAttributes(rawAttributes);
+  const style = parseSvgStyleAttribute(attributes.style);
+  const fill = style.fill ?? attributes.fill;
+  const stroke = style.stroke ?? attributes.stroke;
+  if (fill === undefined && stroke === undefined) {
+    return true;
+  }
+  return isBlackSvgPaint(fill) || isBlackSvgPaint(stroke);
+}
+
+function parsePointsAttribute(value: string | undefined): Array<{ x: number; y: number }> {
+  if (!value) {
+    return [];
+  }
+  const numbers = value
+    .trim()
+    .split(/[\s,]+/)
+    .map((part) => Number.parseFloat(part))
+    .filter((part) => Number.isFinite(part));
+  const points: Array<{ x: number; y: number }> = [];
+  for (let index = 0; index < numbers.length - 1; index += 2) {
+    points.push({ x: numbers[index], y: numbers[index + 1] });
+  }
+  return points;
+}
+
+function parseViewBox(svgText: string): SvgViewBox {
+  const match = svgText.match(/\bviewBox\s*=\s*(['"])(.*?)\1/i);
+  if (!match) {
+    return { minX: 0, minY: 0, width: 100, height: 100 };
+  }
+  const parts = match[2]
+    .trim()
+    .split(/[\s,]+/)
+    .map((part) => Number.parseFloat(part));
+  if (parts.length !== 4 || parts.some((part) => !Number.isFinite(part))) {
+    return { minX: 0, minY: 0, width: 100, height: 100 };
+  }
+  return {
+    minX: parts[0],
+    minY: parts[1],
+    width: Math.max(parts[2], 1),
+    height: Math.max(parts[3], 1),
+  };
+}
+
+function fallbackSvgArtworkToMultiPolygon(
+  element: PanelElement & {
+    type: PanelElementType.SvgArtwork;
+    properties: SvgArtworkElementProperties;
+  },
+  svgText: string,
+): SurfaceMultiPolygon {
+  const viewBox = parseViewBox(svgText);
+  const fallbackElement = {
+    ...element,
+    properties: {
+      ...element.properties,
+      viewBox,
+    },
+  };
+  const polygons: SurfacePolygon[] = [];
+
+  svgText.replace(/<rect\b([^>]*)\/?>/gi, (_match, rawAttributes: string) => {
+    if (!hasSvgArtworkPaint(rawAttributes)) {
+      return "";
+    }
+    const attributes = parseSvgAttributes(rawAttributes);
+    const x = parseSvgNumber(attributes.x);
+    const y = parseSvgNumber(attributes.y);
+    const width = parseSvgNumber(attributes.width);
+    const height = parseSvgNumber(attributes.height);
+    if (width <= 0 || height <= 0) {
+      return "";
+    }
+    const ring = closeRing(
+      [
+        { x, y },
+        { x: x + width, y },
+        { x: x + width, y: y + height },
+        { x, y: y + height },
+      ].map((point) => transformSvgPoint(point, fallbackElement)),
+    );
+    polygons.push([ring]);
+    return "";
+  });
+
+  svgText.replace(
+    /<(polygon|polyline)\b([^>]*)\/?>/gi,
+    (_match, tagName: string, rawAttributes: string) => {
+      if (tagName.toLowerCase() !== "polygon") {
+        return "";
+      }
+      if (!hasSvgArtworkPaint(rawAttributes)) {
+        return "";
+      }
+      const attributes = parseSvgAttributes(rawAttributes);
+      const ring = closeRing(
+        parsePointsAttribute(attributes.points).map((point) =>
+          transformSvgPoint(point, fallbackElement),
+        ),
+      );
+      if (ring.length >= 4) {
+        polygons.push([ring]);
+      }
+      return "";
+    },
+  );
+
+  return polygons;
+}
+
+function svgArtworkToMultiPolygon(
+  element: PanelElement & {
+    type: PanelElementType.SvgArtwork;
+    properties: SvgArtworkElementProperties;
+  },
+): SurfaceMultiPolygon {
+  const maskedSvgText = buildSvgArtworkMaskMarkup(element.properties.svgText, "#000000");
+  const expandedSvgText = expandSvgPatterns(maskedSvgText);
+  if (typeof DOMParser !== "undefined") {
+    try {
+      const loader = new SVGLoader();
+      const data = loader.parse(expandedSvgText);
+      const polygons: SurfaceMultiPolygon = [];
+      for (const path of data.paths) {
+        const fillStyle = (path.userData?.style ?? {}) as { fill?: string };
+        if (fillStyle.fill && fillStyle.fill !== "none") {
+          for (const shape of SVGLoader.createShapes(path)) {
+            const polygon = shapeToPolygon(shape, element);
+            if (polygon) {
+              polygons.push(polygon);
+            }
+          }
+        }
+        polygons.push(...strokePathToPolygons(path, element));
+      }
+      if (polygons.length) {
+        return polygons;
+      }
+    } catch {
+      // Fall through to the small parser for simple SVGs.
+    }
+  }
+
+  return fallbackSvgArtworkToMultiPolygon(element, expandedSvgText);
+}
+
+function ringToShape(ring: SurfaceRing): Shape | null {
+  if (ring.length < 3) {
+    return null;
+  }
+  const shape = new Shape();
+  shape.moveTo(ring[0][0], ring[0][1]);
+  for (let index = 1; index < ring.length; index += 1) {
+    shape.lineTo(ring[index][0], ring[index][1]);
+  }
+  return shape;
+}
+
+function ringToPath(ring: SurfaceRing): Path | null {
+  if (ring.length < 3) {
+    return null;
+  }
+  const path = new Path();
+  path.moveTo(ring[0][0], ring[0][1]);
+  for (let index = 1; index < ring.length; index += 1) {
+    path.lineTo(ring[index][0], ring[index][1]);
+  }
+  return path;
+}
+
+function multiPolygonToExtrusions({
+  artwork,
+  panelSurface,
+  baseZ,
+  depth,
+}: {
+  artwork: SurfaceMultiPolygon;
+  panelSurface: SurfaceMultiPolygon;
+  baseZ: number;
+  depth: number;
+}): BufferGeometry[] {
+  if (depth <= 0 || !artwork.length) {
+    return [];
+  }
+
+  let clipped: SurfaceMultiPolygon;
+  try {
+    clipped = polygonClipping.intersection(
+      artwork as polygonClipping.MultiPolygon,
+      panelSurface as polygonClipping.MultiPolygon,
+    ) as SurfaceMultiPolygon;
+  } catch {
+    return [];
+  }
+
+  if (!clipped.length) {
+    return [];
+  }
+
+  const geometries: BufferGeometry[] = [];
+  for (const polygon of clipped) {
+    const [outer, ...holes] = polygon;
+    if (!outer) {
+      continue;
+    }
+    const shape = ringToShape(outer);
+    if (!shape) {
+      continue;
+    }
+    for (const hole of holes) {
+      const path = ringToPath(hole);
+      if (path) {
+        shape.holes.push(path);
+      }
+    }
+    const geometry = new ExtrudeGeometry(shape, {
+      depth,
+      bevelEnabled: false,
+    });
+    geometry.translate(0, 0, baseZ);
+    geometries.push(geometry);
+  }
+  return geometries;
+}
+
+function buildSvgArtworkGeometry(
+  element: PanelElement & {
+    type: PanelElementType.SvgArtwork;
+    properties: SvgArtworkElementProperties;
+  },
+  panelSurface: SurfaceMultiPolygon,
+  panelThicknessMm: number,
+  warnings: string[],
+): BufferGeometry[] {
+  const artworkThickness = Math.max(element.properties.stlThicknessMm, 0);
+  if (artworkThickness <= 0) {
+    return [];
+  }
+
+  const artworkMultiPolygon = svgArtworkToMultiPolygon(element);
+  if (!artworkMultiPolygon.length) {
+    warnings.push(element.properties.sourceName || element.id);
+    return [];
+  }
+
+  const penetration = Math.min(
+    Math.max(element.properties.stlPenetrationMm, 0),
+    panelThicknessMm,
+    artworkThickness,
+  );
+  const baseZ = panelThicknessMm - penetration;
+  return multiPolygonToExtrusions({
+    artwork: artworkMultiPolygon,
+    panelSurface,
+    baseZ,
+    depth: artworkThickness,
+  });
+}
+
 function buildPanelShape(model: PanelModel, mountingHoles: MountingHole[]): Shape {
   const shape = new Shape();
   const width = model.dimensions.widthMm;
@@ -371,6 +815,7 @@ export function createPanelExtrusion(
   model: PanelModel,
   mountingHoles: MountingHole[],
   thicknessMm: number,
+  warnings: string[] = [],
 ): BufferGeometry {
   if (!Number.isFinite(thicknessMm) || thicknessMm <= 0) {
     throw new Error("Panel thickness must be a positive number.");
@@ -383,19 +828,32 @@ export function createPanelExtrusion(
   });
 
   const geometries: BufferGeometry[] = [panelGeometry];
+  const panelSurface = buildPanelSurfaceMultiPolygon({
+    panelSizeMm: {
+      x: model.dimensions.widthMm,
+      y: model.dimensions.heightMm,
+    },
+    mountingHoles,
+    elements: model.elements,
+  });
+
   for (const element of model.elements) {
-    if (element.type !== PanelElementType.Insert) {
+    if (element.type === PanelElementType.Insert) {
+      const insertGeometry = buildInsertGeometry(
+        element as PanelElement & {
+          type: PanelElementType.Insert;
+          properties: InsertElementProperties;
+        },
+        thicknessMm,
+      );
+      if (insertGeometry) {
+        geometries.push(insertGeometry);
+      }
       continue;
     }
-    const insertGeometry = buildInsertGeometry(
-      element as PanelElement & {
-        type: PanelElementType.Insert;
-        properties: InsertElementProperties;
-      },
-      thicknessMm,
-    );
-    if (insertGeometry) {
-      geometries.push(insertGeometry);
+
+    if (isSvgArtworkElement(element)) {
+      geometries.push(...buildSvgArtworkGeometry(element, panelSurface, thicknessMm, warnings));
     }
   }
 
@@ -439,7 +897,20 @@ export function buildPanelStl(
   mountingHoles: MountingHole[],
   options: BuildPanelStlOptions,
 ): string {
+  const { stl } = buildPanelStlWithWarnings(model, mountingHoles, options);
+  return stl;
+}
+
+export function buildPanelStlWithWarnings(
+  model: PanelModel,
+  mountingHoles: MountingHole[],
+  options: BuildPanelStlOptions,
+): BuildPanelStlResult {
   const { thicknessMm } = options;
-  const geometry = createPanelExtrusion(model, mountingHoles, thicknessMm);
-  return geometryToStlString(geometry);
+  const warnings: string[] = [];
+  const geometry = createPanelExtrusion(model, mountingHoles, thicknessMm, warnings);
+  return {
+    stl: geometryToStlString(geometry),
+    warnings,
+  };
 }

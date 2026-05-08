@@ -104,6 +104,14 @@ export const icon = style({
   backgroundColor: "#050c1b",
 });
 
+export const svgToolIcon = style({
+  width: "36px",
+  height: "36px",
+  objectFit: "contain",
+  display: "block",
+  pointerEvents: "none",
+});
+
 export const cardContent = style({
   display: "flex",
   flexDirection: "column",

@@ -18,6 +18,7 @@ export enum PanelElementType {
   Slot = "slot",
   Triangle = "triangle",
   Insert = "insert",
+  SvgArtwork = "svgArtwork",
 }
 
 interface PanelElementBase<
@@ -59,6 +60,25 @@ export interface InsertElementProperties extends PanelElementPropertiesBase {
   embedDepthMm: number;
 }
 
+export interface SvgViewBox {
+  minX: number;
+  minY: number;
+  width: number;
+  height: number;
+}
+
+export interface SvgArtworkElementProperties extends PanelElementPropertiesBase {
+  svgText: string;
+  viewBox: SvgViewBox;
+  widthMm: number;
+  heightMm: number;
+  color: string;
+  stlThicknessMm: number;
+  stlPenetrationMm: number;
+  sourceName?: string;
+  sourceId?: string;
+}
+
 export type PanelElementPropertiesMap = {
   [PanelElementType.Jack]: CircularElementProperties;
   [PanelElementType.Potentiometer]: CircularElementProperties;
@@ -70,6 +90,7 @@ export type PanelElementPropertiesMap = {
   [PanelElementType.Slot]: RectangularElementProperties;
   [PanelElementType.Triangle]: RectangularElementProperties;
   [PanelElementType.Insert]: InsertElementProperties;
+  [PanelElementType.SvgArtwork]: SvgArtworkElementProperties;
 };
 
 type PanelElementForType<TType extends PanelElementType> = PanelElementBase<
@@ -87,7 +108,8 @@ export type PanelElement =
   | PanelElementForType<PanelElementType.Oval>
   | PanelElementForType<PanelElementType.Slot>
   | PanelElementForType<PanelElementType.Triangle>
-  | PanelElementForType<PanelElementType.Insert>;
+  | PanelElementForType<PanelElementType.Insert>
+  | PanelElementForType<PanelElementType.SvgArtwork>;
 
 export interface PanelDimensions {
   widthCm: number;
@@ -141,11 +163,15 @@ export function normalizePanelModel(model: PanelModelInput): PanelModel {
   const clearanceOverrides = model.clearance ?? DEFAULT_CLEARANCE_CONFIG;
   const elementEnableDefault = elementOverrides.enabled ?? false;
   const normalizedElements =
-    model.elements?.map((element) =>
-      typeof element.mountingHolesEnabled === "boolean"
-        ? element
-        : { ...element, mountingHolesEnabled: elementEnableDefault },
-    ) ?? [];
+    model.elements
+      ?.map((element) => {
+        const properties = sanitizePropertiesForType(element.type, element.properties);
+        const base =
+          typeof element.mountingHolesEnabled === "boolean"
+            ? element
+            : { ...element, mountingHolesEnabled: elementEnableDefault };
+        return (properties ? { ...base, properties } : base) as PanelElement;
+      }) ?? [];
   return {
     ...model,
     mountingHoleConfig: {
@@ -239,7 +265,7 @@ export interface SerializedPanel {
   model: PanelModel;
 }
 
-export const SERIALIZATION_VERSION = 4;
+export const SERIALIZATION_VERSION = 5;
 
 function isCircularElementProperties(
   properties: PanelElement["properties"],
@@ -268,6 +294,42 @@ function isInsertElementProperties(
     "innerDiameterMm" in properties &&
     "innerDepthMm" in properties &&
     "embedDepthMm" in properties
+  );
+}
+
+function isSvgViewBox(value: unknown): value is SvgViewBox {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as SvgViewBox;
+  return (
+    typeof candidate.minX === "number" &&
+    typeof candidate.minY === "number" &&
+    typeof candidate.width === "number" &&
+    typeof candidate.height === "number" &&
+    candidate.width > 0 &&
+    candidate.height > 0
+  );
+}
+
+function isSvgArtworkElementProperties(
+  properties: PanelElement["properties"],
+): properties is SvgArtworkElementProperties {
+  return (
+    "svgText" in properties &&
+    "viewBox" in properties &&
+    "widthMm" in properties &&
+    "heightMm" in properties &&
+    "color" in properties &&
+    "stlThicknessMm" in properties &&
+    "stlPenetrationMm" in properties &&
+    typeof properties.svgText === "string" &&
+    isSvgViewBox(properties.viewBox) &&
+    typeof properties.widthMm === "number" &&
+    typeof properties.heightMm === "number" &&
+    typeof properties.color === "string" &&
+    typeof properties.stlThicknessMm === "number" &&
+    typeof properties.stlPenetrationMm === "number"
   );
 }
 
@@ -304,6 +366,20 @@ export function sanitizePropertiesForType<TType extends PanelElementType>(
     case PanelElementType.Label:
       if (isLabelElementProperties(properties)) {
         return { ...properties } as PanelElementPropertiesMap[TType];
+      }
+      return null;
+    case PanelElementType.SvgArtwork:
+      if (isSvgArtworkElementProperties(properties)) {
+        return {
+          ...properties,
+          widthMm: Math.max(1, properties.widthMm),
+          heightMm: Math.max(1, properties.heightMm),
+          stlThicknessMm: Math.max(0, properties.stlThicknessMm),
+          stlPenetrationMm: Math.max(0, properties.stlPenetrationMm),
+          sourceName:
+            typeof properties.sourceName === "string" ? properties.sourceName : undefined,
+          sourceId: typeof properties.sourceId === "string" ? properties.sourceId : undefined,
+        } as PanelElementPropertiesMap[TType];
       }
       return null;
     default:
@@ -363,6 +439,16 @@ export function withElementProperties(
     }
     case PanelElementType.Label: {
       const nextProperties = sanitizePropertiesForType(PanelElementType.Label, properties);
+      if (!nextProperties) {
+        return element;
+      }
+      return {
+        ...element,
+        properties: nextProperties,
+      };
+    }
+    case PanelElementType.SvgArtwork: {
+      const nextProperties = sanitizePropertiesForType(PanelElementType.SvgArtwork, properties);
       if (!nextProperties) {
         return element;
       }

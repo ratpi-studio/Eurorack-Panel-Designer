@@ -1,7 +1,13 @@
 import React from "react";
 
 import { useI18n } from "@i18n/I18nContext";
-import { PanelElementType, type PanelElement, type Vector2 } from "@lib/panelTypes";
+import {
+  PanelElementType,
+  type PanelElement,
+  type SvgArtworkElementProperties,
+  type Vector2,
+} from "@lib/panelTypes";
+import { getSvgArtworkAspectRatio } from "@lib/svgArtwork";
 
 import * as styles from "./ElementProperties.css";
 
@@ -97,6 +103,19 @@ export function ElementProperties({
       return;
     }
 
+    if (element.type === PanelElementType.SvgArtwork) {
+      const props = element.properties as SvgArtworkElementProperties;
+      setInputs({
+        ...base,
+        width: props.widthMm.toString(),
+        height: props.heightMm.toString(),
+        color: props.color,
+        stlThickness: props.stlThicknessMm.toString(),
+        stlPenetration: props.stlPenetrationMm.toString(),
+      });
+      return;
+    }
+
     setInputs(base);
   }, [element]);
 
@@ -176,6 +195,50 @@ export function ElementProperties({
     onChangeProperties({
       ...properties,
       text: value,
+    });
+  };
+
+  const handleSvgSizeChange = (axis: "width" | "height", value: string) => {
+    if (element?.type !== PanelElementType.SvgArtwork) {
+      return;
+    }
+    setInputs((prev) => ({
+      ...prev,
+      [axis]: value,
+    }));
+    const next = sanitizeNumber(value);
+    if (next === null) {
+      return;
+    }
+    const props = properties as SvgArtworkElementProperties;
+    const ratio = getSvgArtworkAspectRatio(props);
+    const safeValue = Math.max(1, next);
+    if (axis === "width") {
+      onChangeProperties({
+        ...props,
+        widthMm: safeValue,
+        heightMm: Math.max(1, safeValue / Math.max(ratio, 0.001)),
+      });
+      return;
+    }
+    onChangeProperties({
+      ...props,
+      heightMm: safeValue,
+      widthMm: Math.max(1, safeValue * Math.max(ratio, 0.001)),
+    });
+  };
+
+  const handleSvgColorChange = (value: string) => {
+    if (element?.type !== PanelElementType.SvgArtwork) {
+      return;
+    }
+    setInputs((prev) => ({
+      ...prev,
+      color: value,
+    }));
+    onChangeProperties({
+      ...(properties as SvgArtworkElementProperties),
+      color: value,
     });
   };
 
@@ -376,6 +439,76 @@ export function ElementProperties({
                   inputs.fontSize ?? (properties as { fontSizePt: number }).fontSizePt.toString()
                 }
                 onChange={(event) => handlePropertyChange("fontSizePt", event.target.value)}
+              />
+            </label>
+          </>
+        ) : null}
+
+        {element.type === PanelElementType.SvgArtwork ? (
+          <>
+            <label className={styles.field}>
+              <span className={styles.label}>{t.properties.width}</span>
+              <input
+                className={styles.input}
+                type="number"
+                min={1}
+                step={0.5}
+                value={
+                  inputs.width ??
+                  (properties as SvgArtworkElementProperties).widthMm.toString()
+                }
+                onChange={(event) => handleSvgSizeChange("width", event.target.value)}
+              />
+            </label>
+            <label className={styles.field}>
+              <span className={styles.label}>{t.properties.height}</span>
+              <input
+                className={styles.input}
+                type="number"
+                min={1}
+                step={0.5}
+                value={
+                  inputs.height ??
+                  (properties as SvgArtworkElementProperties).heightMm.toString()
+                }
+                onChange={(event) => handleSvgSizeChange("height", event.target.value)}
+              />
+            </label>
+            <label className={styles.field}>
+              <span className={styles.label}>{t.properties.color}</span>
+              <input
+                className={styles.input}
+                type="color"
+                value={inputs.color ?? (properties as SvgArtworkElementProperties).color}
+                onChange={(event) => handleSvgColorChange(event.target.value)}
+              />
+            </label>
+            <label className={styles.field}>
+              <span className={styles.label}>{t.properties.stlThickness}</span>
+              <input
+                className={styles.input}
+                type="number"
+                min={0}
+                step={0.1}
+                value={
+                  inputs.stlThickness ??
+                  (properties as SvgArtworkElementProperties).stlThicknessMm.toString()
+                }
+                onChange={(event) => handlePropertyChange("stlThicknessMm", event.target.value)}
+              />
+            </label>
+            <label className={styles.field}>
+              <span className={styles.label}>{t.properties.stlPenetration}</span>
+              <input
+                className={styles.input}
+                type="number"
+                min={0}
+                step={0.1}
+                value={
+                  inputs.stlPenetration ??
+                  (properties as SvgArtworkElementProperties).stlPenetrationMm.toString()
+                }
+                onChange={(event) => handlePropertyChange("stlPenetrationMm", event.target.value)}
               />
             </label>
           </>

@@ -53,6 +53,34 @@ describe("serialization helpers", () => {
     expect(model.dimensions.widthHp).toBe(20);
   });
 
+  it("round-trips SVG artwork elements", () => {
+    const model: PanelModel = {
+      ...sampleModel,
+      elements: [
+        {
+          id: "svg-1",
+          type: PanelElementType.SvgArtwork,
+          positionMm: { x: 20, y: 30 },
+          rotationDeg: 12,
+          mountingHolesEnabled: false,
+          properties: {
+            svgText:
+              '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" /></svg>',
+            viewBox: { minX: 0, minY: 0, width: 10, height: 10 },
+            widthMm: 18,
+            heightMm: 18,
+            color: "#ffffff",
+            stlThicknessMm: 0.6,
+            stlPenetrationMm: 0.2,
+            sourceName: "square.svg",
+          },
+        },
+      ],
+    };
+
+    expect(deserializePanelModel(serializePanelModel(model))).toEqual(model);
+  });
+
   it("rejects malformed payloads", () => {
     expect(() => parseSerializedPanel("{}")).toThrow(SerializationError);
     expect(() =>

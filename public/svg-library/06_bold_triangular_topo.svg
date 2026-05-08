@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1400" viewBox="0 0 1400 1400">
+  <title>Bold Triangular Topography</title>
+  <desc>Seamless black and white nested triangle pattern with thick contour lines and wide spacing.</desc>
+  <defs>
+    <pattern id="tile" width="180" height="155.88" patternUnits="userSpaceOnUse">
+      <rect width="180" height="155.88" fill="#fff"/>
+      <g fill="none" stroke="#000" stroke-width="8" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M90 10 L170 145.88 H10 Z"/>
+        <path d="M90 38 L145 132 H35 Z"/>
+        <path d="M90 66 L120 118 H60 Z"/>
+        <path d="M0 0 L90 155.88 L180 0"/>
+      </g>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#tile)"/>
+</svg>

@@ -4,6 +4,8 @@ import {
   type PanelElement,
   type PanelModel,
 } from "@lib/panelTypes";
+import { buildPanelSurfacePathData } from "@lib/panelSurface";
+import { buildSvgArtworkNestedMarkup, isSvgArtworkElement } from "@lib/svgArtwork";
 
 interface SvgOptions {
   stroke?: string;
@@ -99,88 +101,6 @@ function escapeXml(value: string): string {
     .replace(/'/g, "&apos;");
 }
 
-function elementCutout(element: PanelElement): string | null {
-  switch (element.type) {
-    case PanelElementType.Jack:
-    case PanelElementType.Potentiometer:
-    case PanelElementType.Led: {
-      const props = element.properties as { diameterMm: number };
-      const r = props.diameterMm / 2;
-      const cx = element.positionMm.x;
-      const cy = element.positionMm.y;
-      return circlePath(cx, cy, r);
-    }
-    case PanelElementType.Switch: {
-      const props = element.properties as { widthMm: number; heightMm: number };
-      const x = element.positionMm.x - props.widthMm / 2;
-      const y = element.positionMm.y - props.heightMm / 2;
-      return rectPath(x, y, props.widthMm, props.heightMm);
-    }
-    case PanelElementType.Rectangle: {
-      const props = element.properties as { widthMm: number; heightMm: number };
-      const x = element.positionMm.x - props.widthMm / 2;
-      const y = element.positionMm.y - props.heightMm / 2;
-      return rectPath(x, y, props.widthMm, props.heightMm);
-    }
-    case PanelElementType.Oval: {
-      const props = element.properties as { widthMm: number; heightMm: number };
-      return ellipsePath(
-        element.positionMm.x,
-        element.positionMm.y,
-        props.widthMm / 2,
-        props.heightMm / 2,
-      );
-    }
-    case PanelElementType.Slot: {
-      const props = element.properties as { widthMm: number; heightMm: number };
-      return slotPath(element.positionMm.x, element.positionMm.y, props.widthMm, props.heightMm);
-    }
-    case PanelElementType.Triangle: {
-      const props = element.properties as { widthMm: number; heightMm: number };
-      return trianglePath(
-        element.positionMm.x,
-        element.positionMm.y,
-        props.widthMm,
-        props.heightMm,
-      );
-    }
-    case PanelElementType.Insert: {
-      const props = element.properties as {
-        innerDiameterMm: number;
-        outerDepthMm: number;
-        embedDepthMm: number;
-        innerDepthMm: number;
-      };
-      if (props.outerDepthMm <= 0 || props.embedDepthMm <= 0 || props.innerDepthMm <= 0) {
-        return null;
-      }
-      const r = props.innerDiameterMm / 2;
-      const cx = element.positionMm.x;
-      const cy = element.positionMm.y;
-      return circlePath(cx, cy, r);
-    }
-    case PanelElementType.Label:
-    default:
-      return null;
-  }
-}
-
-function rectPath(x: number, y: number, width: number, height: number): string {
-  return `M ${x} ${y} H ${x + width} V ${y + height} H ${x} Z`;
-}
-
-function circlePath(cx: number, cy: number, r: number): string {
-  const startX = cx - r;
-  const startY = cy;
-  return `M ${startX} ${startY} A ${r} ${r} 0 1 0 ${cx + r} ${cy} A ${r} ${r} 0 1 0 ${startX} ${startY} Z`;
-}
-
-function ellipsePath(cx: number, cy: number, rx: number, ry: number): string {
-  const startX = cx - rx;
-  const startY = cy;
-  return `M ${startX} ${startY} A ${rx} ${ry} 0 1 0 ${cx + rx} ${cy} A ${rx} ${ry} 0 1 0 ${startX} ${startY} Z`;
-}
-
 function slotPath(cx: number, cy: number, width: number, height: number): string {
   const radius = Math.min(height / 2, width / 2);
   const straightHalf = Math.max(width / 2 - radius, 0);
@@ -217,7 +137,14 @@ export function buildPanelSvg(
   const width = model.dimensions.widthMm;
   const height = model.dimensions.heightMm;
 
-  const elementsSvg = model.elements.map(elementToSvg).join("\n    ");
+  const elementsSvg = model.elements
+    .filter((element) => !isSvgArtworkElement(element))
+    .map(elementToSvg)
+    .join("\n    ");
+  const artworkSvg = model.elements
+    .filter(isSvgArtworkElement)
+    .map(buildSvgArtworkNestedMarkup)
+    .join("\n    ");
   const holeOutlines = mountingHoles
     .map((hole) => {
       if (hole.shape === "slot" && hole.slotLengthMm) {
@@ -233,15 +160,11 @@ export function buildPanelSvg(
     })
     .join("\n    ");
 
-  const cutoutPaths = [
-    rectPath(0, 0, width, height),
-    ...mountingHoles.map((hole) =>
-      hole.shape === "slot" && hole.slotLengthMm
-        ? slotPath(hole.center.x, hole.center.y, hole.slotLengthMm, hole.diameterMm)
-        : circlePath(hole.center.x, hole.center.y, hole.diameterMm / 2),
-    ),
-    ...model.elements.map(elementCutout).filter((p): p is string => Boolean(p)),
-  ].join(" ");
+  const cutoutPaths = buildPanelSurfacePathData({
+    panelSizeMm: { x: width, y: height },
+    mountingHoles,
+    elements: model.elements,
+  });
 
   const backgroundRect =
     background === null
@@ -250,7 +173,13 @@ export function buildPanelSvg(
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}mm" height="${height}mm">
 ${backgroundRect}
+  <defs>
+    <clipPath id="panel-surface-clip" clipPathUnits="userSpaceOnUse">
+      <path d="${cutoutPaths}" clip-rule="evenodd" />
+    </clipPath>
+  </defs>
   <path d="${cutoutPaths}" fill="${panelFill}" fill-rule="evenodd" stroke="${panelStroke}" stroke-width="${strokeWidth}" />
+  ${artworkSvg ? `    <g clip-path="url(#panel-surface-clip)">\n    ${artworkSvg}\n    </g>` : ""}
   ${holeOutlines ? `    ${holeOutlines}` : ""}
   ${elementsSvg ? `    ${elementsSvg}` : ""}
 </svg>`;

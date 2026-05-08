@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1400" viewBox="0 0 1400 1400">
+  <title>Rosette Cross Pattern</title>
+  <desc>Seamless black and white geometric rosette pattern based on a bold cross and circle structure.</desc>
+  <defs>
+    <pattern id="tile" width="180" height="180" patternUnits="userSpaceOnUse">
+      <rect width="180" height="180" fill="#fff"/>
+      <g fill="none" stroke="#000" stroke-width="9" stroke-linejoin="round" stroke-linecap="round">
+        <circle cx="90" cy="90" r="62"/>
+        <circle cx="90" cy="90" r="28"/>
+        <path d="M90 8 V52 M90 128 V172 M8 90 H52 M128 90 H172"/>
+        <path d="M45 45 L66 66 M135 45 L114 66 M45 135 L66 114 M135 135 L114 114"/>
+        <path d="M90 28 L112 90 L90 152 L68 90 Z"/>
+        <path d="M28 90 L90 68 L152 90 L90 112 Z"/>
+      </g>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#tile)"/>
+</svg>

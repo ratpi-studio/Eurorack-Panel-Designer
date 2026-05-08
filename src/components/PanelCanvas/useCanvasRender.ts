@@ -13,6 +13,7 @@ import {
 import type { ReferenceImage } from "@lib/referenceImage";
 import { themeValues } from "@styles/theme.css";
 import { type CanvasTransform } from "@lib/canvas/transform";
+import { buildSvgArtworkDataUrl, isSvgArtworkElement } from "@lib/svgArtwork";
 
 interface CanvasRenderOptions {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -53,6 +54,72 @@ export function useCanvasRender({
   referenceImageSelected,
   placementType,
 }: CanvasRenderOptions) {
+  const [svgArtworkImages, setSvgArtworkImages] = React.useState<
+    Record<string, { key: string; image: HTMLImageElement }>
+  >({});
+
+  React.useEffect(() => {
+    const artworkEntries = model.elements.filter(isSvgArtworkElement).map((element) => ({
+      id: element.id,
+      key: JSON.stringify({
+        svgText: element.properties.svgText,
+        color: element.properties.color,
+      }),
+      properties: element.properties,
+    }));
+    const activeIds = new Set(artworkEntries.map((entry) => entry.id));
+
+    setSvgArtworkImages((current) => {
+      const entries = Object.entries(current).filter(([id]) => activeIds.has(id));
+      if (entries.length === Object.keys(current).length) {
+        return current;
+      }
+      return Object.fromEntries(entries) as Record<
+        string,
+        { key: string; image: HTMLImageElement }
+      >;
+    });
+
+    const cleanups: Array<() => void> = [];
+    artworkEntries.forEach((entry) => {
+      const cached = svgArtworkImages[entry.id];
+      if (cached?.key === entry.key) {
+        return;
+      }
+
+      let cancelled = false;
+      const image = new Image();
+      image.onload = () => {
+        if (cancelled) {
+          return;
+        }
+        setSvgArtworkImages((current) => ({
+          ...current,
+          [entry.id]: {
+            key: entry.key,
+            image,
+          },
+        }));
+      };
+      image.src = buildSvgArtworkDataUrl(entry.properties);
+      cleanups.push(() => {
+        cancelled = true;
+      });
+    });
+
+    return () => {
+      cleanups.forEach((cleanup) => cleanup());
+    };
+  }, [model.elements, svgArtworkImages]);
+
+  const svgArtworkImageMap = React.useMemo(
+    () =>
+      new Map(
+        Object.entries(svgArtworkImages).map(([id, entry]) => [id, entry.image] as const),
+      ),
+    [svgArtworkImages],
+  );
+
   React.useLayoutEffect(() => {
     let frameId: number | null = null;
     const canvas = canvasRef.current;
@@ -125,6 +192,7 @@ export function useCanvasRender({
         fontFamily: themeValues.font.body,
         selectionAnimation,
         ghostElement,
+        svgArtworkImages: svgArtworkImageMap,
         clearanceLines,
         showGhostDistances: Boolean(ghostElement && placementType),
       });
@@ -164,5 +232,6 @@ export function useCanvasRender({
     model.dimensions.widthMm,
     model.dimensions.heightMm,
     placementType,
+    svgArtworkImageMap,
   ]);
 }

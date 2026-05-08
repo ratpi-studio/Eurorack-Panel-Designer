@@ -10,6 +10,7 @@ import {
   type PanelElement,
   type PanelModel,
   type PanelOptions,
+  type SvgArtworkElementProperties,
   type Vector2,
 } from "@lib/panelTypes";
 import {
@@ -25,6 +26,7 @@ import {
   type ReferenceImageControlHandle,
   type ReferenceImageResizeHandle,
 } from "@lib/referenceImage";
+import { isSvgArtworkElement } from "@lib/svgArtwork";
 
 import * as styles from "./PanelCanvas.css";
 
@@ -61,6 +63,24 @@ type ReferenceInteractionState =
       pointerAngleOffsetRad: number;
     };
 
+type SvgArtworkControlBox = Pick<ReferenceImage, "positionMm" | "rotationDeg" | "widthMm" | "heightMm">;
+
+type SvgArtworkInteractionState =
+  | {
+      type: "resize";
+      elementId: string;
+      handle: ReferenceImageResizeHandle;
+      startBox: SvgArtworkControlBox;
+      historyPushed: boolean;
+    }
+  | {
+      type: "rotate";
+      elementId: string;
+      startBox: SvgArtworkControlBox;
+      pointerAngleOffsetRad: number;
+      historyPushed: boolean;
+    };
+
 type PointerMode =
   | "idle"
   | "pan"
@@ -70,7 +90,9 @@ type PointerMode =
   | "clearance"
   | "reference-move"
   | "reference-resize"
-  | "reference-rotate";
+  | "reference-rotate"
+  | "svg-artwork-resize"
+  | "svg-artwork-rotate";
 
 interface SelectionOverlay {
   left: number;
@@ -117,6 +139,11 @@ interface CanvasPointerOptions {
   onMoveElements: (updates: { id: string; positionMm: Vector2 }[]) => void;
   onMoveStart?: (elementId: string) => void;
   onMoveEnd?: () => void;
+  onUpdateElement: (
+    elementId: string,
+    updater: (element: PanelElement) => PanelElement,
+    options?: { skipHistory?: boolean },
+  ) => void;
   onZoomChange: (zoom: number) => void;
   onPanChange: (pan: Vector2) => void;
   onSelectElement: (elementId: string | null) => void;
@@ -139,6 +166,18 @@ function cloneReferenceImage(image: ReferenceImage): ReferenceImage {
   return {
     ...image,
     positionMm: { ...image.positionMm },
+  };
+}
+
+function getSvgArtworkControlBox(element: PanelElement): SvgArtworkControlBox | null {
+  if (!isSvgArtworkElement(element)) {
+    return null;
+  }
+  return {
+    positionMm: { ...element.positionMm },
+    rotationDeg: element.rotationDeg ?? 0,
+    widthMm: element.properties.widthMm,
+    heightMm: element.properties.heightMm,
   };
 }
 
@@ -237,6 +276,7 @@ export function useCanvasPointer({
   onMoveElements,
   onMoveStart,
   onMoveEnd,
+  onUpdateElement,
   onZoomChange,
   onPanChange,
   onSelectElement,
@@ -258,6 +298,7 @@ export function useCanvasPointer({
   const pointerStartRef = React.useRef<Vector2 | null>(null);
   const pointerModeRef = React.useRef<PointerMode>("idle");
   const referenceInteractionRef = React.useRef<ReferenceInteractionState | null>(null);
+  const svgArtworkInteractionRef = React.useRef<SvgArtworkInteractionState | null>(null);
   const panStartRef = React.useRef<Vector2 | null>(null);
   const moveStateRef = React.useRef<MoveState | null>(null);
   const [isPanning, setIsPanning] = React.useState(false);
@@ -275,6 +316,13 @@ export function useCanvasPointer({
     () => new Map(model.elements.map((element) => [element.id, element])),
     [model.elements],
   );
+  const selectedSvgArtworkElement = React.useMemo(() => {
+    if (selectedElementIds.length !== 1) {
+      return null;
+    }
+    const element = elementMap.get(selectedElementIds[0]);
+    return element && isSvgArtworkElement(element) ? element : null;
+  }, [elementMap, selectedElementIds]);
   const [referenceImageElement, setReferenceImageElement] = React.useState<HTMLImageElement | null>(
     null,
   );
@@ -380,6 +428,38 @@ export function useCanvasPointer({
     [referenceImage, referenceImageSelected, transform],
   );
 
+  const findSvgArtworkControlAtPoint = React.useCallback(
+    (pointPx: Vector2): ReferenceImageControlHandle | null => {
+      const box = selectedSvgArtworkElement
+        ? getSvgArtworkControlBox(selectedSvgArtworkElement)
+        : null;
+      if (!box || transform.scale <= 0) {
+        return null;
+      }
+
+      const rotationOffsetMm =
+        REFERENCE_IMAGE_ROTATION_HANDLE_OFFSET_PX / Math.max(transform.scale, 1);
+      const controls = getReferenceImageControlPositions(box, rotationOffsetMm);
+      const maxDistanceSq = REFERENCE_IMAGE_HANDLE_HIT_RADIUS_PX ** 2;
+      let closestHandle: ReferenceImageControlHandle | null = null;
+      let closestDistanceSq = Infinity;
+
+      REFERENCE_IMAGE_CONTROL_HANDLES.forEach((handle) => {
+        const controlPointPx = projectPanelPoint(controls[handle], transform);
+        const dx = pointPx.x - controlPointPx.x;
+        const dy = pointPx.y - controlPointPx.y;
+        const distanceSq = dx * dx + dy * dy;
+        if (distanceSq <= maxDistanceSq && distanceSq < closestDistanceSq) {
+          closestHandle = handle;
+          closestDistanceSq = distanceSq;
+        }
+      });
+
+      return closestHandle;
+    },
+    [selectedSvgArtworkElement, transform],
+  );
+
   React.useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) {
@@ -463,6 +543,20 @@ export function useCanvasPointer({
         return;
       }
 
+      const selectedSvgArtworkHandle = findSvgArtworkControlAtPoint(pointPx);
+      if (selectedSvgArtworkHandle && selectedSvgArtworkElement) {
+        setIsHoveringInteractive(true);
+        setCanvasCursor(
+          selectedSvgArtworkHandle === "rotate"
+            ? "crosshair"
+            : getReferenceResizeCursor(
+                selectedSvgArtworkHandle,
+                selectedSvgArtworkElement.rotationDeg ?? 0,
+              ),
+        );
+        return;
+      }
+
       if (
         referenceImage &&
         referenceImageSelected &&
@@ -511,10 +605,12 @@ export function useCanvasPointer({
       clearanceLines,
       displayOptions.showMountingHoles,
       findReferenceControlAtPoint,
+      findSvgArtworkControlAtPoint,
       model.elements,
       mountingHoles,
       referenceImage,
       referenceImageSelected,
+      selectedSvgArtworkElement,
     ],
   );
 
@@ -598,6 +694,43 @@ export function useCanvasPointer({
       onClearMountingHoleSelection();
       onSelectReferenceImage();
       setCanvasCursor("grabbing");
+      return;
+    }
+
+    const selectedSvgArtworkHandle = findSvgArtworkControlAtPoint(pointPx);
+    const selectedSvgArtworkBox = selectedSvgArtworkElement
+      ? getSvgArtworkControlBox(selectedSvgArtworkElement)
+      : null;
+    if (selectedSvgArtworkElement && selectedSvgArtworkBox && selectedSvgArtworkHandle) {
+      onClearMountingHoleSelection();
+      onClearReferenceSelection();
+
+      if (selectedSvgArtworkHandle === "rotate") {
+        svgArtworkInteractionRef.current = {
+          type: "rotate",
+          elementId: selectedSvgArtworkElement.id,
+          startBox: selectedSvgArtworkBox,
+          pointerAngleOffsetRad:
+            getReferencePointerAngle(pointPanel, selectedSvgArtworkBox.positionMm) -
+            getReferenceImageRotationRad(selectedSvgArtworkBox),
+          historyPushed: false,
+        };
+        pointerModeRef.current = "svg-artwork-rotate";
+        setCanvasCursor("crosshair");
+        return;
+      }
+
+      svgArtworkInteractionRef.current = {
+        type: "resize",
+        elementId: selectedSvgArtworkElement.id,
+        handle: selectedSvgArtworkHandle,
+        startBox: selectedSvgArtworkBox,
+        historyPushed: false,
+      };
+      pointerModeRef.current = "svg-artwork-resize";
+      setCanvasCursor(
+        getReferenceResizeCursor(selectedSvgArtworkHandle, selectedSvgArtworkBox.rotationDeg),
+      );
       return;
     }
 
@@ -780,6 +913,69 @@ export function useCanvasPointer({
       return;
     }
 
+    if (pointerModeRef.current === "svg-artwork-resize") {
+      const interaction = svgArtworkInteractionRef.current;
+      if (!pointPanel || !interaction || interaction.type !== "resize") {
+        return;
+      }
+      const nextPoint = maybeSnap(pointPanel);
+      const resized = resizeReferenceImageFromHandle(
+        interaction.startBox,
+        interaction.handle,
+        nextPoint,
+      );
+      const skipHistory = interaction.historyPushed;
+      interaction.historyPushed = true;
+      onUpdateElement(
+        interaction.elementId,
+        (element) => {
+          if (!isSvgArtworkElement(element)) {
+            return element;
+          }
+          const properties: SvgArtworkElementProperties = {
+            ...element.properties,
+            widthMm: resized.widthMm,
+            heightMm: resized.heightMm,
+          };
+          return {
+            ...element,
+            positionMm: resized.positionMm,
+            properties,
+          };
+        },
+        { skipHistory },
+      );
+      setPointerPanelPos(pointPanel);
+      return;
+    }
+
+    if (pointerModeRef.current === "svg-artwork-rotate") {
+      const interaction = svgArtworkInteractionRef.current;
+      if (!pointPanel || !interaction || interaction.type !== "rotate") {
+        return;
+      }
+      const nextRotationDeg =
+        ((getReferencePointerAngle(pointPanel, interaction.startBox.positionMm) -
+          interaction.pointerAngleOffsetRad) *
+          180) /
+        Math.PI;
+      const skipHistory = interaction.historyPushed;
+      interaction.historyPushed = true;
+      onUpdateElement(
+        interaction.elementId,
+        (element) =>
+          isSvgArtworkElement(element)
+            ? {
+                ...element,
+                rotationDeg: nextRotationDeg,
+              }
+            : element,
+        { skipHistory },
+      );
+      setPointerPanelPos(pointPanel);
+      return;
+    }
+
     if (pointerModeRef.current === "move") {
       if (!pointPanel || !moveStateRef.current) {
         return;
@@ -907,6 +1103,7 @@ export function useCanvasPointer({
     panStartRef.current = null;
     moveStateRef.current = null;
     referenceInteractionRef.current = null;
+    svgArtworkInteractionRef.current = null;
     setSelectionRect(null);
     selectionModeRef.current = "replace";
     setPointerPanelPos(null);
@@ -936,6 +1133,7 @@ export function useCanvasPointer({
     panStartRef.current = null;
     moveStateRef.current = null;
     referenceInteractionRef.current = null;
+    svgArtworkInteractionRef.current = null;
     setSelectionRect(null);
     selectionModeRef.current = "replace";
     setIsPanning(false);

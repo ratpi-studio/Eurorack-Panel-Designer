@@ -8,11 +8,13 @@ import * as styles from "./ElementPalette.css";
 interface ElementPaletteProps {
   activeType: PanelElementType | null;
   onSelect: (type: PanelElementType | null) => void;
+  onOpenSvgArtwork: () => void;
 }
 
 const ICON_SIZE = 36;
+const SVG_TOOLBOX_ICON_URL = `${import.meta.env.BASE_URL}images/svg.png`;
 
-export function ElementPalette({ activeType, onSelect }: ElementPaletteProps) {
+export function ElementPalette({ activeType, onSelect, onOpenSvgArtwork }: ElementPaletteProps) {
   const t = useI18n();
 
   const paletteItems: Array<{
@@ -62,6 +64,10 @@ export function ElementPalette({ activeType, onSelect }: ElementPaletteProps) {
         type: PanelElementType.Insert,
         ...t.palette.items.insert,
       },
+      {
+        type: PanelElementType.SvgArtwork,
+        ...t.palette.items.svgArtwork,
+      },
     ],
     [t],
   );
@@ -80,12 +86,19 @@ export function ElementPalette({ activeType, onSelect }: ElementPaletteProps) {
       <div className={styles.list}>
         {paletteItems.map((item) => {
           const isActive = item.type === activeType;
+          const isSvgArtwork = item.type === PanelElementType.SvgArtwork;
           return (
             <button
               key={item.type}
               type="button"
               className={isActive ? styles.cardActive : styles.card}
-              onClick={() => onSelect(isActive ? null : item.type)}
+              onClick={() => {
+                if (isSvgArtwork) {
+                  onOpenSvgArtwork();
+                  return;
+                }
+                onSelect(isActive ? null : item.type);
+              }}
             >
               <div className={styles.cardContent}>
                 <div className={styles.icon} aria-hidden>
@@ -176,6 +189,17 @@ function renderIcon(type: PanelElementType, color: string): React.ReactNode {
           <circle cx="18" cy="18" r="11" stroke={color} strokeWidth="2" fill="none" />
           <circle cx="18" cy="18" r="5" stroke={color} strokeWidth="2" fill="none" />
         </svg>
+      );
+    case PanelElementType.SvgArtwork:
+      return (
+        <img
+          className={styles.svgToolIcon}
+          src={SVG_TOOLBOX_ICON_URL}
+          alt=""
+          width={ICON_SIZE}
+          height={ICON_SIZE}
+          draggable={false}
+        />
       );
     default:
       return (

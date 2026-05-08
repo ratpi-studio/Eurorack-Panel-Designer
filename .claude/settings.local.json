@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(vp add *)",
+      "Bash(vp test *)",
+      "Bash(node --input-type=module -e \"console.log\\(typeof DOMParser, typeof document\\)\")",
+      "Bash(vp dlx *)",
+      "Bash(find node_modules/@voidzero-dev/vite-plus-test/dist/jsdom* -maxdepth 1)",
+      "Bash(vp fmt *)",
+      "Bash(vp lint *)",
+      "Bash(vp exec *)",
+      "Bash(node --experimental-strip-types /tmp/debug_pattern.mjs)",
+      "Bash(vp remove *)"
+    ]
+  }
+}

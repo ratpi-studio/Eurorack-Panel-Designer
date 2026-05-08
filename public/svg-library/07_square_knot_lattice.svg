@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1400" viewBox="0 0 1400 1400">
+  <title>Square Knot Lattice</title>
+  <desc>Seamless black and white knot-inspired square lattice with robust thick bands.</desc>
+  <defs>
+    <pattern id="tile" width="200" height="200" patternUnits="userSpaceOnUse">
+      <rect width="200" height="200" fill="#fff"/>
+      <g fill="none" stroke="#000" stroke-width="12" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M0 60 H70 V0"/>
+        <path d="M200 60 H130 V0"/>
+        <path d="M0 140 H70 V200"/>
+        <path d="M200 140 H130 V200"/>
+        <path d="M60 0 V70 H0"/>
+        <path d="M140 0 V70 H200"/>
+        <path d="M60 200 V130 H0"/>
+        <path d="M140 200 V130 H200"/>
+        <path d="M70 70 H130 V130 H70 Z"/>
+      </g>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#tile)"/>
+</svg>

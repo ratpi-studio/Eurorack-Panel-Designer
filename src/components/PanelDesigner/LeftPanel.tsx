@@ -16,6 +16,7 @@ interface LeftPanelProps {
   onChangeWidthMm: (nextMm: number) => void;
   onChangeWidthHp: (nextHp: number) => void;
   onSelectPaletteType: (type: PanelElementType | null) => void;
+  onOpenSvgArtwork: () => void;
 }
 
 export function LeftPanel({
@@ -28,6 +29,7 @@ export function LeftPanel({
   onChangeWidthHp,
   onChangeWidthMm,
   onSelectPaletteType,
+  onOpenSvgArtwork,
 }: LeftPanelProps) {
   const containerClass = `${styles.leftColumn} ${
     isCompact ? `${styles.drawer} ${styles.drawerLeft} ${showPanel ? styles.drawerOpen : ""}` : ""
@@ -57,7 +59,11 @@ export function LeftPanel({
           />
         </div>
         <div className={styles.card}>
-          <ElementPalette activeType={placementType} onSelect={onSelectPaletteType} />
+          <ElementPalette
+            activeType={placementType}
+            onSelect={onSelectPaletteType}
+            onOpenSvgArtwork={onOpenSvgArtwork}
+          />
         </div>
       </div>
     </div>

@@ -145,6 +145,11 @@ function isPointInsideElement(pointMm: Vector2, element: PanelElement): boolean 
       const { widthMm, heightMm } = getLabelSizeMm(element.properties);
       return Math.abs(localPoint.x) <= widthMm / 2 && Math.abs(localPoint.y) <= heightMm / 2;
     }
+    case PanelElementType.SvgArtwork:
+      return (
+        Math.abs(localPoint.x) <= element.properties.widthMm / 2 &&
+        Math.abs(localPoint.y) <= element.properties.heightMm / 2
+      );
     default:
       return false;
   }
@@ -303,6 +308,13 @@ export function getElementBounds(element: PanelElement): ElementBounds {
       const { widthMm, heightMm } = getLabelSizeMm(element.properties);
       return getRectBounds(element.positionMm, widthMm, heightMm, rotation);
     }
+    case PanelElementType.SvgArtwork:
+      return getRectBounds(
+        element.positionMm,
+        element.properties.widthMm,
+        element.properties.heightMm,
+        rotation,
+      );
     default:
       return assertUnreachable(element);
   }

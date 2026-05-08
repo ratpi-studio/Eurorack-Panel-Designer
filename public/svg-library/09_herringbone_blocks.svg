@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1400" viewBox="0 0 1400 1400">
+  <title>Herringbone Blocks</title>
+  <desc>Seamless black and white herringbone-inspired block pattern with thick structural diagonals.</desc>
+  <defs>
+    <pattern id="tile" width="160" height="160" patternUnits="userSpaceOnUse">
+      <rect width="160" height="160" fill="#fff"/>
+      <g fill="none" stroke="#000" stroke-width="11" stroke-linejoin="round" stroke-linecap="square">
+        <path d="M20 0 L80 60 V100 L40 140 H0"/>
+        <path d="M140 0 L80 60"/>
+        <path d="M160 20 L100 80 H60 L20 40 V0"/>
+        <path d="M160 140 L100 80"/>
+        <path d="M20 160 L80 100"/>
+        <path d="M0 140 L60 80 H100 L140 120 V160"/>
+      </g>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#tile)"/>
+</svg>
