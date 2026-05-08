@@ -40,11 +40,7 @@ function isLibraryItem(value: unknown): value is SvgLibraryItem {
   );
 }
 
-export function SvgArtworkModal({
-  panelSizeMm,
-  onAddArtwork,
-  onClose,
-}: SvgArtworkModalProps) {
+export function SvgArtworkModal({ panelSizeMm, onAddArtwork, onClose }: SvgArtworkModalProps) {
   const t = useI18n();
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = React.useState(false);
@@ -170,7 +166,9 @@ export function SvgArtworkModal({
         }}
       />
       <div className={styles.message}>{t.svgArtwork.libraryTitle}</div>
-      {isLibraryLoading ? <div className={styles.message}>{t.svgArtwork.libraryLoading}</div> : null}
+      {isLibraryLoading ? (
+        <div className={styles.message}>{t.svgArtwork.libraryLoading}</div>
+      ) : null}
       {!isLibraryLoading && !libraryItems.length ? (
         <div className={styles.message}>{t.svgArtwork.libraryEmpty}</div>
       ) : null}
