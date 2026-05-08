@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { buildPanelStl, getCircularHoles } from "@lib/exportStl";
+import { buildPanelStl, buildPanelStlWithWarnings, getCircularHoles } from "@lib/exportStl";
 import { generateMountingHoles } from "@lib/mountingHoles";
 import {
   DEFAULT_CLEARANCE_CONFIG,
@@ -203,5 +203,86 @@ describe("buildPanelStl", () => {
       thicknessMm: 2,
     });
     expect(stl.startsWith("solid eurorack_panel")).toBe(true);
+  });
+
+  it("adds SVG artwork as a binary height map relief", () => {
+    const model = createEmptyPanel();
+    model.elements.push({
+      id: "svg-1",
+      type: PanelElementType.SvgArtwork,
+      positionMm: { x: 10, y: 20 },
+      properties: {
+        svgText:
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect x="0" y="0" width="10" height="10" /></svg>',
+        viewBox: { minX: 0, minY: 0, width: 10, height: 10 },
+        widthMm: 8,
+        heightMm: 8,
+        color: "#ffffff",
+        stlThicknessMm: 0.6,
+        stlPenetrationMm: 0.2,
+      },
+    });
+
+    const result = buildPanelStlWithWarnings(model, [], {
+      thicknessMm: 2,
+    });
+
+    expect(result.warnings).toEqual([]);
+    expect(result.stl).toContain("facet");
+    expect(result.stl).toMatch(/2\.4/);
+  });
+
+  it("ignores non-black SVG artwork in the height map", () => {
+    const model = createEmptyPanel();
+    model.elements.push({
+      id: "svg-white",
+      type: PanelElementType.SvgArtwork,
+      positionMm: { x: 10, y: 20 },
+      properties: {
+        svgText:
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect fill="white" x="0" y="0" width="10" height="10" /></svg>',
+        viewBox: { minX: 0, minY: 0, width: 10, height: 10 },
+        widthMm: 8,
+        heightMm: 8,
+        color: "#ffffff",
+        stlThicknessMm: 0.6,
+        stlPenetrationMm: 0.2,
+        sourceName: "white.svg",
+      },
+    });
+
+    const result = buildPanelStlWithWarnings(model, [], {
+      thicknessMm: 2,
+    });
+
+    expect(result.warnings).toEqual(["white.svg"]);
+    expect(result.stl).not.toMatch(/2\.4/);
+  });
+
+  it("warns when SVG artwork cannot produce a height map", () => {
+    const model = createEmptyPanel();
+    model.elements.push({
+      id: "svg-text",
+      type: PanelElementType.SvgArtwork,
+      positionMm: { x: 10, y: 20 },
+      properties: {
+        svgText:
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><text x="1" y="8">A</text></svg>',
+        viewBox: { minX: 0, minY: 0, width: 10, height: 10 },
+        widthMm: 8,
+        heightMm: 8,
+        color: "#ffffff",
+        stlThicknessMm: 0.6,
+        stlPenetrationMm: 0.2,
+        sourceName: "text.svg",
+      },
+    });
+
+    const result = buildPanelStlWithWarnings(model, [], {
+      thicknessMm: 2,
+    });
+
+    expect(result.warnings).toEqual(["text.svg"]);
+    expect(result.stl.startsWith("solid eurorack_panel")).toBe(true);
   });
 });

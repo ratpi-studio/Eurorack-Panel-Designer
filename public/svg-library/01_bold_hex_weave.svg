@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1400" viewBox="0 0 1400 1400">
+  <title>Bold Hex Weave</title>
+  <desc>Seamless black and white hexagonal weave pattern with thick strokes for 3D-friendly use.</desc>
+  <defs>
+    <pattern id="tile" width="160" height="138.56" patternUnits="userSpaceOnUse">
+      <rect width="160" height="138.56" fill="#fff"/>
+      <g fill="none" stroke="#000" stroke-width="8" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M80 8 L145 43.28 L145 95.28 L80 130.56 L15 95.28 L15 43.28 Z"/>
+        <path d="M80 38 L115 58.14 L115 80.42 L80 100.56 L45 80.42 L45 58.14 Z"/>
+        <path d="M15 43.28 H145"/>
+        <path d="M45 80.42 H115"/>
+      </g>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#tile)"/>
+</svg>

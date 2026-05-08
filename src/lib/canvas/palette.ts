@@ -18,6 +18,7 @@ export const elementFillColors: Record<PanelElementType, string> = {
   [PanelElementType.Slot]: "#fb923c",
   [PanelElementType.Triangle]: "#22d3ee",
   [PanelElementType.Insert]: "#f59e0b",
+  [PanelElementType.SvgArtwork]: "#f8fafc",
 };
 
 export const elementStrokeColor = "#0f172a";

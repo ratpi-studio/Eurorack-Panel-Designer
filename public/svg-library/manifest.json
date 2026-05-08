@@ -1,0 +1,52 @@
+[
+  {
+    "id": "01_bold_hex_weave",
+    "name": "01 bold hex weave",
+    "src": "svg-library/01_bold_hex_weave.svg"
+  },
+  {
+    "id": "02_interlocking_diamonds",
+    "name": "02 interlocking diamonds",
+    "src": "svg-library/02_interlocking_diamonds.svg"
+  },
+  {
+    "id": "03_stepped_maze",
+    "name": "03 stepped maze",
+    "src": "svg-library/03_stepped_maze.svg"
+  },
+  {
+    "id": "04_concentric_octagons",
+    "name": "04 concentric octagons",
+    "src": "svg-library/04_concentric_octagons.svg"
+  },
+  {
+    "id": "05_tribal_wave_grid",
+    "name": "05 tribal wave grid",
+    "src": "svg-library/05_tribal_wave_grid.svg"
+  },
+  {
+    "id": "06_bold_triangular_topo",
+    "name": "06 bold triangular topo",
+    "src": "svg-library/06_bold_triangular_topo.svg"
+  },
+  {
+    "id": "07_square_knot_lattice",
+    "name": "07 square knot lattice",
+    "src": "svg-library/07_square_knot_lattice.svg"
+  },
+  {
+    "id": "08_rosette_cross_pattern",
+    "name": "08 rosette cross pattern",
+    "src": "svg-library/08_rosette_cross_pattern.svg"
+  },
+  {
+    "id": "09_herringbone_blocks",
+    "name": "09 herringbone blocks",
+    "src": "svg-library/09_herringbone_blocks.svg"
+  },
+  {
+    "id": "10_bold_infinite_arcs",
+    "name": "10 bold infinite arcs",
+    "src": "svg-library/10_bold_infinite_arcs.svg"
+  }
+]

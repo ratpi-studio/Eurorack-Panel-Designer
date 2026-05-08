@@ -5,8 +5,14 @@ import {
   type LabelElementProperties,
   type PanelElement,
   type RectangularElementProperties,
+  type SvgArtworkElementProperties,
   type Vector2,
 } from "@lib/panelTypes";
+import {
+  DEFAULT_SVG_ARTWORK_COLOR,
+  DEFAULT_SVG_ARTWORK_STL_PENETRATION_MM,
+  DEFAULT_SVG_ARTWORK_STL_THICKNESS_MM,
+} from "@lib/svgArtwork";
 
 function generateElementId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -73,6 +79,17 @@ const DEFAULT_INSERT: InsertElementProperties = {
 const DEFAULT_LABEL: LabelElementProperties = {
   text: "Label",
   fontSizePt: 10,
+  label: "",
+};
+
+const DEFAULT_SVG_ARTWORK: SvgArtworkElementProperties = {
+  svgText: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M 50 8 L 92 92 L 8 92 Z" /></svg>`,
+  viewBox: { minX: 0, minY: 0, width: 100, height: 100 },
+  widthMm: 20,
+  heightMm: 20,
+  color: DEFAULT_SVG_ARTWORK_COLOR,
+  stlThicknessMm: DEFAULT_SVG_ARTWORK_STL_THICKNESS_MM,
+  stlPenetrationMm: DEFAULT_SVG_ARTWORK_STL_PENETRATION_MM,
   label: "",
 };
 
@@ -151,6 +168,22 @@ export function createPanelElement(type: PanelElementType, positionMm: Vector2):
         properties: { ...DEFAULT_LED },
       };
     case PanelElementType.Label:
+      return {
+        id: generateElementId(),
+        type: PanelElementType.Label,
+        positionMm,
+        mountingHolesEnabled: false,
+        properties: { ...DEFAULT_LABEL },
+      };
+    case PanelElementType.SvgArtwork:
+      return {
+        id: generateElementId(),
+        type: PanelElementType.SvgArtwork,
+        positionMm,
+        mountingHolesEnabled: false,
+        rotationDeg: 0,
+        properties: { ...DEFAULT_SVG_ARTWORK, viewBox: { ...DEFAULT_SVG_ARTWORK.viewBox } },
+      };
     default:
       return {
         id: generateElementId(),

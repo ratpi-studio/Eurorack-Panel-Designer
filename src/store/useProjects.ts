@@ -31,6 +31,7 @@ import { deserializePanelModel, serializePanelModel } from "@lib/serialization";
 import { createPanelDimensions } from "@lib/units";
 import { usePanelStore } from "@store/panelStore";
 import { elementFillColors, elementStrokeColor, exportPalette } from "@lib/canvas/palette";
+import { buildSvgArtworkDataUrl, isSvgArtworkElement } from "@lib/svgArtwork";
 
 interface UseProjectsArgs {
   mountingHoles: MountingHole[];
@@ -69,6 +70,15 @@ interface UseProjectsResult {
   exportFormat: ExportFormat;
   setExportFormat: (format: ExportFormat) => void;
   handleReset: () => void;
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Unable to load image."));
+    image.src = src;
+  });
 }
 
 export function useProjects({
@@ -124,7 +134,7 @@ export function useProjects({
     setStatusMessage({ message, variant });
   }, []);
 
-  const buildPanelPngDataUrl = React.useCallback(() => {
+  const buildPanelPngDataUrl = React.useCallback(async () => {
     const EXPORT_SCALE = 4; // px per mm
     const widthPx = Math.max(1, Math.round(panelModel.dimensions.widthMm * EXPORT_SCALE));
     const heightPx = Math.max(1, Math.round(panelModel.dimensions.heightMm * EXPORT_SCALE));
@@ -140,6 +150,18 @@ export function useProjects({
       panelModel.elements,
       panelModel.elementHoleConfig,
     );
+    const svgArtworkImages = new Map<string, HTMLImageElement>();
+    const artworkElements = panelModel.elements.filter(isSvgArtworkElement);
+    const loadedArtworkImages = await Promise.all(
+      artworkElements.map((element) =>
+        loadImage(buildSvgArtworkDataUrl(element.properties)).then(
+          (image) => [element.id, image] as const,
+        ),
+      ),
+    );
+    loadedArtworkImages.forEach(([id, image]) => {
+      svgArtworkImages.set(id, image);
+    });
 
     const transform = computeCanvasTransform({
       canvasSizePx: { x: widthPx, y: heightPx },
@@ -165,6 +187,7 @@ export function useProjects({
       elementFillColors,
       elementStrokeColor,
       fontFamily: themeValues.font.body,
+      svgArtworkImages,
     });
 
     return offscreen.toDataURL("image/png");
@@ -265,17 +288,22 @@ export function useProjects({
   );
 
   const handleExportPng = React.useCallback(() => {
-    const url = buildPanelPngDataUrl();
-    if (!url) {
-      setStatus(t.projects.messages.pngError, "error");
-      return;
-    }
-    const link = document.createElement("a");
-    const baseName = (projectName || "panel").trim().replace(/\s+/g, "-");
-    link.download = `${baseName || "panel"}.png`;
-    link.href = url;
-    link.click();
-    setStatus(t.projects.messages.pngSuccess, "success");
+    buildPanelPngDataUrl()
+      .then((url) => {
+        if (!url) {
+          setStatus(t.projects.messages.pngError, "error");
+          return;
+        }
+        const link = document.createElement("a");
+        const baseName = (projectName || "panel").trim().replace(/\s+/g, "-");
+        link.download = `${baseName || "panel"}.png`;
+        link.href = url;
+        link.click();
+        setStatus(t.projects.messages.pngSuccess, "success");
+      })
+      .catch(() => {
+        setStatus(t.projects.messages.pngError, "error");
+      });
   }, [buildPanelPngDataUrl, projectName, setStatus, t.projects.messages]);
 
   const handleExportSvg = React.useCallback(() => {
@@ -329,8 +357,8 @@ export function useProjects({
       }
 
       import("@lib/exportStl")
-        .then(({ buildPanelStl }) => {
-          const stl = buildPanelStl(panelModel, mountingHoles, {
+        .then(({ buildPanelStlWithWarnings }) => {
+          const { stl, warnings } = buildPanelStlWithWarnings(panelModel, mountingHoles, {
             thicknessMm,
           });
           const blob = new Blob([stl], { type: "model/stl" });
@@ -346,7 +374,12 @@ export function useProjects({
           link.href = url;
           link.click();
           URL.revokeObjectURL(url);
-          setStatus(t.projects.messages.stlExport, "success");
+          setStatus(
+            warnings.length
+              ? t.projects.messages.stlExportWithWarnings(warnings.length)
+              : t.projects.messages.stlExport,
+            "success",
+          );
         })
         .catch((error) => {
           console.error("Failed to export STL", error);

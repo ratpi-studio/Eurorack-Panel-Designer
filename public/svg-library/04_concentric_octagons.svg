@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1400" viewBox="0 0 1400 1400">
+  <title>Concentric Octagons</title>
+  <desc>Seamless black and white concentric octagonal pattern using thick outlines and broad spacing.</desc>
+  <defs>
+    <pattern id="tile" width="180" height="180" patternUnits="userSpaceOnUse">
+      <rect width="180" height="180" fill="#fff"/>
+      <g fill="none" stroke="#000" stroke-width="8" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M60 10 H120 L170 60 V120 L120 170 H60 L10 120 V60 Z"/>
+        <path d="M75 45 H105 L135 75 V105 L105 135 H75 L45 105 V75 Z"/>
+        <path d="M0 60 H10 M170 60 H180 M0 120 H10 M170 120 H180"/>
+        <path d="M60 0 V10 M120 0 V10 M60 170 V180 M120 170 V180"/>
+      </g>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#tile)"/>
+</svg>

@@ -72,6 +72,9 @@ interface Translations {
     height: string;
     text: string;
     fontSize: string;
+    color: string;
+    stlThickness: string;
+    stlPenetration: string;
     outerDiameter: string;
     outerDepth: string;
     innerDiameter: string;
@@ -88,6 +91,18 @@ interface Translations {
     opacity: string;
     replace: string;
     remove: string;
+  };
+  svgArtwork: {
+    title: string;
+    description: string;
+    dropLabel: string;
+    libraryTitle: string;
+    libraryLoading: string;
+    libraryEmpty: string;
+    invalidFile: string;
+    invalidSvg: string;
+    libraryError: string;
+    cancel: string;
   };
   projects: {
     title: string;
@@ -125,6 +140,7 @@ interface Translations {
       kicadSvgExport: string;
       kicadPcbExport: string;
       stlExport: string;
+      stlExportWithWarnings: (count: number) => string;
       stlError: string;
       reset: string;
       confirmSaveBeforeNew: string;
@@ -278,6 +294,11 @@ export const enUS: Translations = {
         description: "Press-fit insert with inner hole",
         color: "#f59e0b",
       },
+      svgArtwork: {
+        label: "SVG",
+        description: "Decorative vector artwork",
+        color: "#f8fafc",
+      },
     },
   },
   properties: {
@@ -297,11 +318,26 @@ export const enUS: Translations = {
     height: "Height (mm)",
     text: "Text",
     fontSize: "Size (pt)",
+    color: "Color",
+    stlThickness: "SVG thickness (mm)",
+    stlPenetration: "SVG penetration (mm)",
     outerDiameter: "Outer diameter (mm)",
     outerDepth: "Outer depth (mm)",
     innerDiameter: "Inner diameter (mm)",
     innerDepth: "Inner depth (mm)",
     embedDepth: "Embed depth (mm)",
+  },
+  svgArtwork: {
+    title: "Add SVG",
+    description: "Load a monochrome vector mark for the panel surface.",
+    dropLabel: "Drop SVG here or choose a file",
+    libraryTitle: "Library",
+    libraryLoading: "Loading library…",
+    libraryEmpty: "No SVG assets in the library yet.",
+    invalidFile: "Choose an SVG file.",
+    invalidSvg: "Unable to read this SVG.",
+    libraryError: "Unable to load this library SVG.",
+    cancel: "Cancel",
   },
   projects: {
     title: "Projects",
@@ -339,6 +375,8 @@ export const enUS: Translations = {
       kicadSvgExport: "KiCad Edge.Cuts SVG created.",
       kicadPcbExport: "KiCad PCB export created.",
       stlExport: "STL export created.",
+      stlExportWithWarnings: (count: number) =>
+        `STL export created. ${count} SVG artwork item${count === 1 ? " was" : "s were"} omitted.`,
       stlError: "Failed to generate STL export.",
       reset: "Design reset.",
       confirmSaveBeforeNew: "Save current project before creating a new one?",

@@ -22,9 +22,14 @@ interface PanelHistoryApi {
   beginMove: () => void;
   endMove: () => void;
   addElement: (type: PanelElementType, positionMm: Vector2) => string;
+  addPanelElement: (element: PanelElement) => string;
   moveElement: (elementId: string, positionMm: Vector2) => void;
   moveElements: (updates: { id: string; positionMm: Vector2 }[]) => void;
-  updateElement: (elementId: string, updater: (element: PanelElement) => PanelElement) => void;
+  updateElement: (
+    elementId: string,
+    updater: (element: PanelElement) => PanelElement,
+    options?: { skipHistory?: boolean },
+  ) => void;
   updateElementProperties: (elementId: string, properties: PanelElement["properties"]) => void;
   removeElement: (elementId: string) => void;
   removeElements: (elementIds: string[]) => void;
@@ -34,6 +39,7 @@ export function usePanelHistory(): PanelHistoryApi {
   const setModel = usePanelStore((state) => state.setModel);
   const clearSelection = usePanelStore((state) => state.clearSelection);
   const addElementAction = usePanelStore((state) => state.addElement);
+  const addPanelElementAction = usePanelStore((state) => state.addPanelElement);
   const moveElementAction = usePanelStore((state) => state.moveElement);
   const moveElementsAction = usePanelStore((state) => state.moveElements);
   const updateElementAction = usePanelStore((state) => state.updateElement);
@@ -111,6 +117,16 @@ export function usePanelHistory(): PanelHistoryApi {
     [addElementAction, pushHistory],
   );
 
+  const addPanelElement = React.useCallback<PanelHistoryApi["addPanelElement"]>(
+    (element) => {
+      const current = usePanelStore.getState().model;
+      pushHistory(current);
+      futureRef.current = [];
+      return addPanelElementAction(element);
+    },
+    [addPanelElementAction, pushHistory],
+  );
+
   const moveElement = React.useCallback<PanelHistoryApi["moveElement"]>(
     (elementId, positionMm) => {
       if (!moveHistoryPushedRef.current) {
@@ -141,10 +157,12 @@ export function usePanelHistory(): PanelHistoryApi {
   );
 
   const updateElement = React.useCallback<PanelHistoryApi["updateElement"]>(
-    (elementId, updater) => {
+    (elementId, updater, options) => {
       const current = usePanelStore.getState().model;
-      pushHistory(current);
-      futureRef.current = [];
+      if (!options?.skipHistory) {
+        pushHistory(current);
+        futureRef.current = [];
+      }
       updateElementAction(elementId, updater);
     },
     [pushHistory, updateElementAction],
@@ -191,6 +209,7 @@ export function usePanelHistory(): PanelHistoryApi {
     beginMove,
     endMove,
     addElement,
+    addPanelElement,
     moveElement,
     moveElements,
     updateElement,

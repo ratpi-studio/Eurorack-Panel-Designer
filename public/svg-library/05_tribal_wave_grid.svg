@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1400" viewBox="0 0 1400 1400">
+  <title>Tribal Wave Grid</title>
+  <desc>Seamless black and white wave pattern with thick curved lines arranged in a geometric grid.</desc>
+  <defs>
+    <pattern id="tile" width="180" height="180" patternUnits="userSpaceOnUse">
+      <rect width="180" height="180" fill="#fff"/>
+      <g fill="none" stroke="#000" stroke-width="10" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M0 45 C45 45 45 90 90 90 C135 90 135 45 180 45"/>
+        <path d="M0 135 C45 135 45 90 90 90 C135 90 135 135 180 135"/>
+        <path d="M45 0 C45 45 90 45 90 90 C90 135 45 135 45 180"/>
+        <path d="M135 0 C135 45 90 45 90 90 C90 135 135 135 135 180"/>
+        <circle cx="90" cy="90" r="16" fill="#000" stroke="none"/>
+      </g>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#tile)"/>
+</svg>

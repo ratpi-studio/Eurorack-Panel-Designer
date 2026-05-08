@@ -4,6 +4,7 @@ import { PanelCanvas } from "@components/PanelCanvas/PanelCanvas";
 import { LeftPanel } from "@components/PanelDesigner/LeftPanel";
 import { PanelHeader } from "@components/PanelDesigner/PanelHeader";
 import { RightPanel } from "@components/PanelDesigner/RightPanel";
+import { SvgArtworkModal } from "@components/SvgArtworkModal/SvgArtworkModal";
 import { useResponsivePanels } from "@components/PanelDesigner/useResponsivePanels";
 import { useI18n } from "@i18n/I18nContext";
 import { createPanelElement } from "@lib/elements";
@@ -75,6 +76,7 @@ export function PanelDesigner() {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const [isExportMenuOpen, setIsExportMenuOpen] = React.useState(false);
   const [isStlModalOpen, setIsStlModalOpen] = React.useState(false);
+  const [isSvgArtworkModalOpen, setIsSvgArtworkModalOpen] = React.useState(false);
   const [isChangelogOpen, setIsChangelogOpen] = React.useState(false);
   const [confirmDialog, setConfirmDialog] = React.useState<{
     message: string;
@@ -129,6 +131,7 @@ export function PanelDesigner() {
     beginMove,
     endMove,
     addElement,
+    addPanelElement,
     moveElement,
     moveElements,
     updateElement,
@@ -350,8 +353,12 @@ export function PanelDesigner() {
   );
 
   const handleUpdateElement = React.useCallback(
-    (elementId: string, updater: (element: PanelElement) => PanelElement) => {
-      updateElement(elementId, updater);
+    (
+      elementId: string,
+      updater: (element: PanelElement) => PanelElement,
+      options?: { skipHistory?: boolean },
+    ) => {
+      updateElement(elementId, updater, options);
     },
     [updateElement],
   );
@@ -480,6 +487,22 @@ export function PanelDesigner() {
       setPlacementType(type);
     },
     [clearSelection, setPlacementType],
+  );
+
+  const handleOpenSvgArtworkModal = React.useCallback(() => {
+    clearSelection();
+    setPlacementType(null);
+    setIsSvgArtworkModalOpen(true);
+  }, [clearSelection, setPlacementType]);
+
+  const handleAddSvgArtwork = React.useCallback(
+    (element: PanelElement) => {
+      setPlacementType(null);
+      setMountingHolesSelected(false);
+      selectReferenceImage(false);
+      addPanelElement(element);
+    },
+    [addPanelElement, selectReferenceImage, setPlacementType],
   );
 
   const handleImportReferenceImageClick = React.useCallback(() => {
@@ -894,6 +917,7 @@ export function PanelDesigner() {
                 resetView();
               }}
               onSelectPaletteType={handleSelectPaletteType}
+              onOpenSvgArtwork={handleOpenSvgArtworkModal}
             />
           ) : null}
           <div className={styles.canvasColumn}>
@@ -938,6 +962,7 @@ export function PanelDesigner() {
               onMoveElements={moveElements}
               onMoveStart={beginMove}
               onMoveEnd={endMove}
+              onUpdateElement={handleUpdateElement}
               onZoomChange={handleZoomChange}
               onPanChange={handlePanChange}
               onSelectElement={setSelectedElementId}
@@ -1055,6 +1080,47 @@ export function PanelDesigner() {
                 onClick={handleConfirmStlExport}
               >
                 {t.projects.stlDialog.confirm}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {isSvgArtworkModalOpen ? (
+        <div
+          className={styles.modalBackdrop}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="svg-artwork-title"
+          onPointerDown={() => setIsSvgArtworkModalOpen(false)}
+        >
+          <div
+            className={styles.modalWide}
+            onPointerDown={(event) => {
+              event.stopPropagation();
+            }}
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
+          >
+            <h2 id="svg-artwork-title" className={styles.modalTitle}>
+              {t.svgArtwork.title}
+            </h2>
+            <p className={styles.modalDescription}>{t.svgArtwork.description}</p>
+            <SvgArtworkModal
+              panelSizeMm={{
+                x: panelModel.dimensions.widthMm,
+                y: panelModel.dimensions.heightMm,
+              }}
+              onAddArtwork={handleAddSvgArtwork}
+              onClose={() => setIsSvgArtworkModalOpen(false)}
+            />
+            <div className={styles.modalActions}>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => setIsSvgArtworkModalOpen(false)}
+              >
+                {t.svgArtwork.cancel}
               </button>
             </div>
           </div>

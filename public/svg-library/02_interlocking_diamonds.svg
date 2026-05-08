@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1400" viewBox="0 0 1400 1400">
+  <title>Interlocking Diamonds</title>
+  <desc>Seamless black and white diamond grid with thick outlines and internal structural geometry.</desc>
+  <defs>
+    <pattern id="tile" width="180" height="180" patternUnits="userSpaceOnUse">
+      <rect width="180" height="180" fill="#fff"/>
+      <g fill="none" stroke="#000" stroke-width="9" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M90 10 L170 90 L90 170 L10 90 Z"/>
+        <path d="M90 50 L130 90 L90 130 L50 90 Z"/>
+        <path d="M90 10 V50 M170 90 H130 M90 170 V130 M10 90 H50"/>
+        <path d="M0 0 L180 180 M180 0 L0 180"/>
+      </g>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#tile)"/>
+</svg>

@@ -5,6 +5,8 @@ import {
   type Vector2,
 } from "@lib/panelTypes";
 import { type ClearanceLines } from "@lib/clearance";
+import { createPanelSurfacePath2D } from "@lib/panelSurface";
+import { isSvgArtworkElement } from "@lib/svgArtwork";
 import {
   getReferenceImageControlPositions,
   REFERENCE_IMAGE_HANDLE_SIZE_PX,
@@ -57,6 +59,7 @@ interface PanelSceneDrawingOptions {
   fontFamily: string;
   selectionAnimation?: SelectionAnimationState;
   ghostElement?: PanelElement | null;
+  svgArtworkImages?: Map<string, HTMLImageElement>;
   clearanceLines?: ClearanceLines | null;
   showGhostDistances?: boolean;
 }
@@ -78,6 +81,7 @@ export function drawPanelScene({
   fontFamily,
   selectionAnimation,
   ghostElement,
+  svgArtworkImages,
   referenceImage,
   clearanceLines,
   panelSizeMm,
@@ -112,10 +116,17 @@ export function drawPanelScene({
   }
 
   const selectionSet = new Set(selectedElementIds);
+  const panelSurfacePath = createPanelSurfacePath2D({
+    panelSizeMm,
+    mountingHoles,
+    elements,
+  });
   drawElements(
     context,
     elements,
     transform,
+    panelSurfacePath,
+    svgArtworkImages,
     selectionSet,
     elementFillColors,
     elementStrokeColor,
@@ -435,6 +446,8 @@ function drawElements(
   context: CanvasRenderingContext2D,
   elements: PanelElement[],
   transform: CanvasTransform,
+  panelSurfacePath: Path2D | null,
+  svgArtworkImages: Map<string, HTMLImageElement> | undefined,
   selectedElementIds: Set<string>,
   elementFillColors: Record<PanelElementType, string>,
   elementStrokeColor: string,
@@ -443,6 +456,20 @@ function drawElements(
   selectionAnimation?: SelectionAnimationState,
 ) {
   elements.forEach((element) => {
+    if (isSvgArtworkElement(element)) {
+      drawSvgArtworkElement(
+        context,
+        element,
+        transform,
+        panelSurfacePath,
+        svgArtworkImages?.get(element.id) ?? null,
+        selectedElementIds.has(element.id) && selectedElementIds.size === 1,
+        selectionColor,
+        selectionAnimation,
+      );
+      return;
+    }
+
     const center = projectPanelPoint(element.positionMm, transform);
     context.save();
     context.translate(center.x, center.y);
@@ -570,12 +597,120 @@ function drawGhostElement(
     context,
     [element],
     transform,
+    createPanelSurfacePath2D({
+      panelSizeMm: {
+        x: transform.panelSizePx.x / transform.scale,
+        y: transform.panelSizePx.y / transform.scale,
+      },
+      mountingHoles: [],
+      elements: [element],
+    }),
+    undefined,
     new Set(),
     elementFillColors,
     elementStrokeColor,
     selectionColor,
     fontFamily,
   );
+  context.restore();
+}
+
+function drawSvgArtworkElement(
+  context: CanvasRenderingContext2D,
+  element: PanelElement,
+  transform: CanvasTransform,
+  panelSurfacePath: Path2D | null,
+  image: HTMLImageElement | null,
+  isSelected: boolean,
+  selectionColor: string,
+  selectionAnimation?: SelectionAnimationState,
+) {
+  if (!isSvgArtworkElement(element)) {
+    return;
+  }
+
+  if (image?.complete && panelSurfacePath) {
+    context.save();
+    context.translate(transform.origin.x, transform.origin.y);
+    context.scale(transform.scale, transform.scale);
+    context.clip(panelSurfacePath, "evenodd");
+    context.translate(element.positionMm.x, element.positionMm.y);
+    const rotation = ((element.rotationDeg ?? 0) * Math.PI) / 180;
+    if (rotation !== 0) {
+      context.rotate(rotation);
+    }
+    context.drawImage(
+      image,
+      -element.properties.widthMm / 2,
+      -element.properties.heightMm / 2,
+      element.properties.widthMm,
+      element.properties.heightMm,
+    );
+    context.restore();
+  }
+
+  if (!isSelected) {
+    return;
+  }
+
+  const center = projectPanelPoint(element.positionMm, transform);
+  context.save();
+  context.translate(center.x, center.y);
+  const rotation = ((element.rotationDeg ?? 0) * Math.PI) / 180;
+  if (rotation !== 0) {
+    context.rotate(rotation);
+  }
+  drawSelectionRect(
+    context,
+    element.properties.widthMm * transform.scale + 12,
+    element.properties.heightMm * transform.scale + 12,
+    selectionColor,
+    selectionAnimation,
+  );
+  context.restore();
+
+  const rotationOffsetMm = REFERENCE_IMAGE_ROTATION_HANDLE_OFFSET_PX / Math.max(transform.scale, 1);
+  const controls = getReferenceImageControlPositions(
+    {
+      positionMm: element.positionMm,
+      rotationDeg: element.rotationDeg ?? 0,
+      widthMm: element.properties.widthMm,
+      heightMm: element.properties.heightMm,
+    },
+    rotationOffsetMm,
+  );
+  const topCenter = projectPanelPoint(controls.top, transform);
+  const rotationHandle = projectPanelPoint(controls.rotate, transform);
+  const halfHandleSizePx = REFERENCE_IMAGE_HANDLE_SIZE_PX / 2;
+
+  context.save();
+  context.strokeStyle = selectionColor;
+  context.fillStyle = "#f8fafc";
+  context.lineWidth = 1.5;
+  context.setLineDash([]);
+
+  context.beginPath();
+  context.moveTo(topCenter.x, topCenter.y);
+  context.lineTo(rotationHandle.x, rotationHandle.y);
+  context.stroke();
+
+  REFERENCE_IMAGE_RESIZE_HANDLES.forEach((handle) => {
+    const point = projectPanelPoint(controls[handle], transform);
+    context.beginPath();
+    context.rect(
+      point.x - halfHandleSizePx,
+      point.y - halfHandleSizePx,
+      REFERENCE_IMAGE_HANDLE_SIZE_PX,
+      REFERENCE_IMAGE_HANDLE_SIZE_PX,
+    );
+    context.fill();
+    context.stroke();
+  });
+
+  context.beginPath();
+  context.arc(rotationHandle.x, rotationHandle.y, halfHandleSizePx, 0, Math.PI * 2);
+  context.fill();
+  context.stroke();
   context.restore();
 }
 

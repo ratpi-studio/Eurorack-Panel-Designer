@@ -43,6 +43,11 @@ interface PanelCanvasProps {
   onMoveElement: (elementId: string, positionMm: Vector2) => void;
   onMoveStart?: (elementId: string) => void;
   onMoveEnd?: () => void;
+  onUpdateElement: (
+    elementId: string,
+    updater: (element: PanelElement) => PanelElement,
+    options?: { skipHistory?: boolean },
+  ) => void;
   onZoomChange: (zoom: number) => void;
   onPanChange: (pan: Vector2) => void;
   onSelectElement: (elementId: string | null) => void;
@@ -83,6 +88,7 @@ export function PanelCanvas({
   onMoveElements,
   onMoveStart,
   onMoveEnd,
+  onUpdateElement,
   onZoomChange,
   onPanChange,
   onSelectElement,
@@ -157,6 +163,7 @@ export function PanelCanvas({
     onMoveElements,
     onMoveStart,
     onMoveEnd,
+    onUpdateElement,
     onZoomChange,
     onPanChange,
     onSelectElement,

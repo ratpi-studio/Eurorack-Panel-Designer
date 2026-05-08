@@ -51,6 +51,7 @@ type PanelActions = {
   clearSelection: () => void;
   setDraftProperties: (type: PanelElementType, properties: PanelElement["properties"]) => void;
   addElement: (type: PanelElementType, positionMm: Vector2) => string;
+  addPanelElement: (element: PanelElement) => string;
   moveElement: (id: string, positionMm: Vector2) => void;
   moveElements: (updates: ElementsMoveInput[]) => void;
   updateElement: (id: string, updater: (el: PanelElement) => PanelElement) => void;
@@ -167,6 +168,18 @@ export const usePanelStore = create<PanelState & PanelActions>()(
         }));
         return element.id;
       },
+      addPanelElement: (element) => {
+        set((state) => ({
+          model: {
+            ...state.model,
+            elements: [...state.model.elements, element],
+          },
+          selectedElementId: element.id,
+          selectedElementIds: [element.id],
+          referenceImageSelected: false,
+        }));
+        return element.id;
+      },
       moveElement: (id, positionMm) =>
         set((state) => ({
           model: {
@@ -263,7 +276,7 @@ export const usePanelStore = create<PanelState & PanelActions>()(
     }),
     {
       name: "panel-designer-store",
-      version: 5,
+      version: 6,
       migrate: (state, version) => {
         const typedState = state as (PanelState & PanelActions) | undefined;
         if (!typedState) {
@@ -299,6 +312,14 @@ export const usePanelStore = create<PanelState & PanelActions>()(
             ...typedState,
             referenceImage: null,
             referenceImageSelected: false,
+            model: typedState.model
+              ? normalizePanelModel(typedState.model as PanelModelInput)
+              : createInitialModel(),
+          };
+        }
+        if (version && version < 6) {
+          return {
+            ...typedState,
             model: typedState.model
               ? normalizePanelModel(typedState.model as PanelModelInput)
               : createInitialModel(),

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0 - 2026-05-08
+
+- Added an "SVG artwork" element: drop your own SVG files onto the panel or pick from a built-in library of 10 seamless patterns, with adjustable size, color, and 3D relief depth.
+- SVG artwork now renders correctly in the 3D STL export, including `<pattern>` tilings and stroked paths.
+- STL export is dramatically faster (~100× on panels with SVG artwork) thanks to a new polygon-clipping pipeline that replaces the previous rasterized height-map.
+- Fixed bundled SVG patterns appearing transparent in the editor by preserving local `url(#…)` paint references through the masking step.
+
 ## 0.5.1 - 2026-01-24
 
 - STL export dialog now supports a custom file name.

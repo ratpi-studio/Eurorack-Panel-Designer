@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1400" viewBox="0 0 1400 1400">
+  <title>Stepped Maze</title>
+  <desc>Seamless black and white stepped maze pattern with bold orthogonal lines, well suited for embossed surfaces.</desc>
+  <defs>
+    <pattern id="tile" width="160" height="160" patternUnits="userSpaceOnUse">
+      <rect width="160" height="160" fill="#fff"/>
+      <g fill="none" stroke="#000" stroke-width="10" stroke-linejoin="miter" stroke-linecap="square">
+        <path d="M0 40 H60 V0"/>
+        <path d="M160 40 H100 V0"/>
+        <path d="M0 120 H60 V160"/>
+        <path d="M160 120 H100 V160"/>
+        <path d="M40 0 V60 H0"/>
+        <path d="M120 0 V60 H160"/>
+        <path d="M40 160 V100 H0"/>
+        <path d="M120 160 V100 H160"/>
+        <path d="M50 50 H110 V110 H50 Z"/>
+      </g>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#tile)"/>
+</svg>

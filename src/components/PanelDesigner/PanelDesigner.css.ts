@@ -455,6 +455,14 @@ export const modal = style({
   boxShadow: "0 24px 80px rgba(0, 0, 0, 0.7)",
 });
 
+export const modalWide = style([
+  modal,
+  {
+    maxWidth: "520px",
+    width: "min(520px, calc(100vw - 32px))",
+  },
+]);
+
 export const modalTitle = style({
   margin: 0,
   fontWeight: 600,
