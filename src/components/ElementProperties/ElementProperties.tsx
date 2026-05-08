@@ -454,8 +454,7 @@ export function ElementProperties({
                 min={1}
                 step={0.5}
                 value={
-                  inputs.width ??
-                  (properties as SvgArtworkElementProperties).widthMm.toString()
+                  inputs.width ?? (properties as SvgArtworkElementProperties).widthMm.toString()
                 }
                 onChange={(event) => handleSvgSizeChange("width", event.target.value)}
               />
@@ -468,8 +467,7 @@ export function ElementProperties({
                 min={1}
                 step={0.5}
                 value={
-                  inputs.height ??
-                  (properties as SvgArtworkElementProperties).heightMm.toString()
+                  inputs.height ?? (properties as SvgArtworkElementProperties).heightMm.toString()
                 }
                 onChange={(event) => handleSvgSizeChange("height", event.target.value)}
               />

@@ -163,15 +163,14 @@ export function normalizePanelModel(model: PanelModelInput): PanelModel {
   const clearanceOverrides = model.clearance ?? DEFAULT_CLEARANCE_CONFIG;
   const elementEnableDefault = elementOverrides.enabled ?? false;
   const normalizedElements =
-    model.elements
-      ?.map((element) => {
-        const properties = sanitizePropertiesForType(element.type, element.properties);
-        const base =
-          typeof element.mountingHolesEnabled === "boolean"
-            ? element
-            : { ...element, mountingHolesEnabled: elementEnableDefault };
-        return (properties ? { ...base, properties } : base) as PanelElement;
-      }) ?? [];
+    model.elements?.map((element) => {
+      const properties = sanitizePropertiesForType(element.type, element.properties);
+      const base =
+        typeof element.mountingHolesEnabled === "boolean"
+          ? element
+          : { ...element, mountingHolesEnabled: elementEnableDefault };
+      return (properties ? { ...base, properties } : base) as PanelElement;
+    }) ?? [];
   return {
     ...model,
     mountingHoleConfig: {
@@ -376,8 +375,7 @@ export function sanitizePropertiesForType<TType extends PanelElementType>(
           heightMm: Math.max(1, properties.heightMm),
           stlThicknessMm: Math.max(0, properties.stlThicknessMm),
           stlPenetrationMm: Math.max(0, properties.stlPenetrationMm),
-          sourceName:
-            typeof properties.sourceName === "string" ? properties.sourceName : undefined,
+          sourceName: typeof properties.sourceName === "string" ? properties.sourceName : undefined,
           sourceId: typeof properties.sourceId === "string" ? properties.sourceId : undefined,
         } as PanelElementPropertiesMap[TType];
       }

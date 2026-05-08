@@ -114,9 +114,7 @@ export function useCanvasRender({
 
   const svgArtworkImageMap = React.useMemo(
     () =>
-      new Map(
-        Object.entries(svgArtworkImages).map(([id, entry]) => [id, entry.image] as const),
-      ),
+      new Map(Object.entries(svgArtworkImages).map(([id, entry]) => [id, entry.image] as const)),
     [svgArtworkImages],
   );
 

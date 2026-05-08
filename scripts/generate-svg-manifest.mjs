@@ -8,7 +8,10 @@ const MANIFEST_PATH = path.join(SVG_LIBRARY_DIR, "manifest.json");
 
 function toPatternName(filename) {
   const parsed = path.parse(filename);
-  return parsed.name.replace(/[_.-]+/g, " ").replace(/\s+/g, " ").trim();
+  return parsed.name
+    .replace(/[_.-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function toManifestEntry(filename) {
@@ -29,4 +32,6 @@ const entries = readdirSync(SVG_LIBRARY_DIR, { withFileTypes: true })
 
 writeFileSync(MANIFEST_PATH, `${JSON.stringify(entries, null, 2)}\n`);
 
-console.log(`Generated ${path.relative(process.cwd(), MANIFEST_PATH)} with ${entries.length} SVGs.`);
+console.log(
+  `Generated ${path.relative(process.cwd(), MANIFEST_PATH)} with ${entries.length} SVGs.`,
+);

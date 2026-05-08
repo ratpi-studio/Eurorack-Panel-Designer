@@ -63,7 +63,10 @@ type ReferenceInteractionState =
       pointerAngleOffsetRad: number;
     };
 
-type SvgArtworkControlBox = Pick<ReferenceImage, "positionMm" | "rotationDeg" | "widthMm" | "heightMm">;
+type SvgArtworkControlBox = Pick<
+  ReferenceImage,
+  "positionMm" | "rotationDeg" | "widthMm" | "heightMm"
+>;
 
 type SvgArtworkInteractionState =
   | {

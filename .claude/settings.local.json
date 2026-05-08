@@ -10,7 +10,8 @@
       "Bash(vp lint *)",
       "Bash(vp exec *)",
       "Bash(node --experimental-strip-types /tmp/debug_pattern.mjs)",
-      "Bash(vp remove *)"
+      "Bash(vp remove *)",
+      "Bash(vp check *)"
     ]
   }
 }
