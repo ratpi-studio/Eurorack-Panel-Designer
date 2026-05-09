@@ -3,17 +3,16 @@ import React from "react";
 import { useI18n } from "@i18n/I18nContext";
 import { buildKicadEdgeCutsSvg, buildKicadPcbFile } from "@lib/exportKicad";
 import { buildPanelSvg } from "@lib/exportSvg";
-import { computeElementMountingHoles } from "@lib/elementMountingHoles";
 import {
   DEFAULT_CLEARANCE_CONFIG,
+  DEFAULT_DESIGN_COLOR,
   DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
+  DEFAULT_PANEL_COLOR,
   DEFAULT_PANEL_OPTIONS,
   type MountingHole,
 } from "@lib/panelTypes";
-import { drawPanelScene } from "@lib/canvas/renderScene";
-import { computeCanvasTransform } from "@lib/canvas/transform";
-import { themeValues } from "@styles/theme.css";
+import { buildPanelPngDataUrl } from "@lib/canvas/exportPng";
 import {
   DEFAULT_EXPORT_FORMAT,
   getPreferredExportFormat,
@@ -27,11 +26,10 @@ import {
   saveProject,
   type StoredProject,
 } from "@lib/storage";
+import { buildOrderPayload, submitOrder } from "@lib/orderEtsy";
 import { deserializePanelModel, serializePanelModel } from "@lib/serialization";
 import { createPanelDimensions } from "@lib/units";
 import { usePanelStore } from "@store/panelStore";
-import { elementFillColors, elementStrokeColor, exportPalette } from "@lib/canvas/palette";
-import { buildSvgArtworkDataUrl, isSvgArtworkElement } from "@lib/svgArtwork";
 
 interface UseProjectsArgs {
   mountingHoles: MountingHole[];
@@ -67,18 +65,10 @@ interface UseProjectsResult {
   handleExportKicadSvg: () => void;
   handleExportKicadPcb: () => void;
   handleExportStl: (thicknessMm: number, fileName?: string) => void;
+  handleOrderOnEtsy: () => void;
   exportFormat: ExportFormat;
   setExportFormat: (format: ExportFormat) => void;
   handleReset: () => void;
-}
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("Unable to load image."));
-    image.src = src;
-  });
 }
 
 export function useProjects({
@@ -134,64 +124,10 @@ export function useProjects({
     setStatusMessage({ message, variant });
   }, []);
 
-  const buildPanelPngDataUrl = React.useCallback(async () => {
-    const EXPORT_SCALE = 4; // px per mm
-    const widthPx = Math.max(1, Math.round(panelModel.dimensions.widthMm * EXPORT_SCALE));
-    const heightPx = Math.max(1, Math.round(panelModel.dimensions.heightMm * EXPORT_SCALE));
-    const offscreen = document.createElement("canvas");
-    offscreen.width = widthPx;
-    offscreen.height = heightPx;
-    const context = offscreen.getContext("2d");
-    if (!context) {
-      return null;
-    }
-
-    const elementMountingHoles = computeElementMountingHoles(
-      panelModel.elements,
-      panelModel.elementHoleConfig,
-    );
-    const svgArtworkImages = new Map<string, HTMLImageElement>();
-    const artworkElements = panelModel.elements.filter(isSvgArtworkElement);
-    const loadedArtworkImages = await Promise.all(
-      artworkElements.map((element) =>
-        loadImage(buildSvgArtworkDataUrl(element.properties)).then(
-          (image) => [element.id, image] as const,
-        ),
-      ),
-    );
-    loadedArtworkImages.forEach(([id, image]) => {
-      svgArtworkImages.set(id, image);
-    });
-
-    const transform = computeCanvasTransform({
-      canvasSizePx: { x: widthPx, y: heightPx },
-      panelSizeMm: { x: panelModel.dimensions.widthMm, y: panelModel.dimensions.heightMm },
-      zoom: 1,
-      pan: { x: 0, y: 0 },
-      paddingPx: 0,
-    });
-
-    drawPanelScene({
-      context,
-      transform,
-      panelSizeMm: { x: panelModel.dimensions.widthMm, y: panelModel.dimensions.heightMm },
-      elements: panelModel.elements,
-      mountingHoles,
-      elementMountingHoles,
-      mountingHolesSelected: false,
-      selectedElementIds: [],
-      showGrid: panelModel.options.showGrid,
-      showMountingHoles: panelModel.options.showMountingHoles,
-      gridSizeMm: panelModel.options.gridSizeMm,
-      palette: exportPalette,
-      elementFillColors,
-      elementStrokeColor,
-      fontFamily: themeValues.font.body,
-      svgArtworkImages,
-    });
-
-    return offscreen.toDataURL("image/png");
-  }, [mountingHoles, panelModel]);
+  const renderPanelPng = React.useCallback(
+    () => buildPanelPngDataUrl(panelModel, mountingHoles),
+    [mountingHoles, panelModel],
+  );
 
   const handleSaveProject = React.useCallback(() => {
     const trimmedName = projectName.trim() || t.projects.defaultName;
@@ -288,7 +224,7 @@ export function useProjects({
   );
 
   const handleExportPng = React.useCallback(() => {
-    buildPanelPngDataUrl()
+    renderPanelPng()
       .then((url) => {
         if (!url) {
           setStatus(t.projects.messages.pngError, "error");
@@ -304,7 +240,7 @@ export function useProjects({
       .catch(() => {
         setStatus(t.projects.messages.pngError, "error");
       });
-  }, [buildPanelPngDataUrl, projectName, setStatus, t.projects.messages]);
+  }, [renderPanelPng, projectName, setStatus, t.projects.messages]);
 
   const handleExportSvg = React.useCallback(() => {
     const svg = buildPanelSvg(panelModel, mountingHoles, {
@@ -434,6 +370,8 @@ export function useProjects({
       mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG },
       elementHoleConfig: { ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG },
       clearance: { ...DEFAULT_CLEARANCE_CONFIG },
+      panelColor: DEFAULT_PANEL_COLOR,
+      designColor: DEFAULT_DESIGN_COLOR,
     };
     setModel(resetModel);
     clearHistory();
@@ -456,6 +394,21 @@ export function useProjects({
     t.projects.messages.reset,
   ]);
 
+  const handleOrderOnEtsy = React.useCallback(() => {
+    setStatus(t.projects.messages.orderUploadInProgress, "info");
+    buildOrderPayload(panelModel)
+      .then((payload) => submitOrder(payload))
+      .then((response) => {
+        setStatus(t.projects.messages.orderUploadSuccess, "success");
+        if (typeof window !== "undefined") {
+          window.location.assign(`/order/${response.id}`);
+        }
+      })
+      .catch(() => {
+        setStatus(t.projects.messages.orderUploadError, "error");
+      });
+  }, [panelModel, setStatus, t.projects.messages]);
+
   return {
     projectName,
     setProjectName,
@@ -477,6 +430,7 @@ export function useProjects({
     handleExportKicadSvg,
     handleExportKicadPcb,
     handleExportStl,
+    handleOrderOnEtsy,
     exportFormat,
     setExportFormat,
     handleReset,

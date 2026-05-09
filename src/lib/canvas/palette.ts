@@ -1,4 +1,4 @@
-import { PanelElementType } from "@lib/panelTypes";
+import { PanelElementType, type PanelModel } from "@lib/panelTypes";
 import { type PanelCanvasPalette } from "./renderScene";
 import { themeValues } from "@styles/theme.css";
 
@@ -6,6 +6,12 @@ type ExtendedPalette = PanelCanvasPalette & {
   workspace?: string;
   text?: string;
 };
+
+export interface ModelDerivedPalette {
+  palette: ExtendedPalette;
+  elementFillColors: Record<PanelElementType, string>;
+  elementStrokeColor: string;
+}
 
 export const elementFillColors: Record<PanelElementType, string> = {
   [PanelElementType.Jack]: "#38bdf8",
@@ -48,3 +54,39 @@ export const exportPalette: PanelCanvasPalette = {
   clearanceLine: canvasPalette.clearanceLine,
   clearanceLabel: canvasPalette.clearanceLabel,
 };
+
+function buildElementFillColors(designColor: string): Record<PanelElementType, string> {
+  return {
+    [PanelElementType.Jack]: designColor,
+    [PanelElementType.Potentiometer]: designColor,
+    [PanelElementType.Switch]: designColor,
+    [PanelElementType.Led]: designColor,
+    [PanelElementType.Label]: designColor,
+    [PanelElementType.Rectangle]: designColor,
+    [PanelElementType.Oval]: designColor,
+    [PanelElementType.Slot]: designColor,
+    [PanelElementType.Triangle]: designColor,
+    [PanelElementType.Insert]: designColor,
+    [PanelElementType.SvgArtwork]: designColor,
+  };
+}
+
+export function derivePaletteFromModel(
+  model: Pick<PanelModel, "panelColor" | "designColor">,
+  base: ExtendedPalette = canvasPalette,
+): ModelDerivedPalette {
+  return {
+    palette: {
+      ...base,
+      panelFill: model.panelColor,
+    },
+    elementFillColors: buildElementFillColors(model.designColor),
+    elementStrokeColor: model.panelColor,
+  };
+}
+
+export function deriveExportPaletteFromModel(
+  model: Pick<PanelModel, "panelColor" | "designColor">,
+): ModelDerivedPalette {
+  return derivePaletteFromModel(model, exportPalette);
+}

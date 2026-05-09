@@ -223,6 +223,26 @@ export function PanelDesigner() {
     [updateModel],
   );
 
+  const handleColorsChange = React.useCallback(
+    (colors: { panelColor?: string; designColor?: string }) => {
+      updateModel((prev) => {
+        const nextPanelColor =
+          typeof colors.panelColor === "string" ? colors.panelColor : prev.panelColor;
+        const nextDesignColor =
+          typeof colors.designColor === "string" ? colors.designColor : prev.designColor;
+        if (nextPanelColor === prev.panelColor && nextDesignColor === prev.designColor) {
+          return prev;
+        }
+        return {
+          ...prev,
+          panelColor: nextPanelColor,
+          designColor: nextDesignColor,
+        };
+      });
+    },
+    [updateModel],
+  );
+
   const combinedMountingHoles = React.useMemo(
     () =>
       elementMountingHoles.length ? [...mountingHoles, ...elementMountingHoles] : mountingHoles,
@@ -249,6 +269,7 @@ export function PanelDesigner() {
     handleExportStl,
     handleExportKicadSvg,
     handleExportKicadPcb,
+    handleOrderOnEtsy,
     exportFormat,
     setExportFormat,
     handleReset,
@@ -860,6 +881,7 @@ export function PanelDesigner() {
     onExportClick: handleExportClick,
     onExportJson: handleExportJson,
     onSelectExportFormat: handleSelectExportFormat,
+    onOrderOnEtsy: handleOrderOnEtsy,
   };
 
   const propertiesPanelProps = {
@@ -875,6 +897,7 @@ export function PanelDesigner() {
     placementType,
     snapEnabled: panelModel.options.snapToGrid,
     onDisplayOptionsChange: handleDisplayOptionsChange,
+    onColorsChange: handleColorsChange,
     onResetView: resetView,
     onMountingHoleConfigChange: handleMountingHoleConfigChange,
     onClearMountingHoleSelection: handleClearMountingHoleSelection,

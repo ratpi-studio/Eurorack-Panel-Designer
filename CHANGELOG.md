@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0 - 2026-05-08
+
+- Added per-panel color selection: pick a panel substrate color and a separate design color from four presets (white, black, red, sky blue). The whole canvas, PNG export, and SVG export reflect the choices.
+- Added an "Order on Etsy" entry to the export menu: serializes the current design + a thumbnail PNG to Vercel Blob, redirects to a recap page at `/order/<id>`, and points to a configurable Etsy listing for checkout. Acheteurs paste the design ID in the Etsy personalization note.
+- New serverless functions under `api/order` (POST upload + GET resolver). Configure `VITE_ETSY_LISTING_URL`, `VITE_PRICE_BASE_EUR`, `VITE_PRICE_PER_HP_EUR`, and enable Vercel Blob to use them.
+
 ## 0.6.0 - 2026-05-08
 
 - Added an "SVG artwork" element: drop your own SVG files onto the panel or pick from a built-in library of 10 seamless patterns, with adjustable size, color, and 3D relief depth.

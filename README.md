@@ -62,6 +62,24 @@ Single-page web app to sketch Eurorack front panels. The canvas mirrors a real 3
 - Shift-click elements or drag a marquee on the canvas to build a multi-selection, then drag anywhere on the canvas to move the entire group or press Delete to remove it in one go.
 - Save named projects to the browser, export/import JSON for backups, render the canvas as PNG/SVG, export KiCad Edge.Cuts, or export a clean STL: choose STL in the export dropdown, set thickness in mm, and use the live 3D preview to inspect the mesh before downloading.
 
+## Etsy ordering (optional)
+
+The export menu includes an **"Order on Etsy"** entry that uploads the current design + a thumbnail PNG to Vercel Blob and redirects to a recap page at `/order/<id>`. The recap shows the panel preview, color choices, the computed price, and a button that points to a single Etsy listing where buyers paste the design ID in the personalization note.
+
+To enable on a Vercel deployment:
+
+1. **Enable Vercel Blob** on the project — this auto-injects `BLOB_READ_WRITE_TOKEN` for the serverless functions in `api/`.
+2. **Configure environment variables** (Vercel dashboard or `.env.local` for local `vercel dev`):
+   - `VITE_ETSY_LISTING_URL` — the Etsy listing buyers are sent to.
+   - `VITE_PRICE_BASE_EUR` — base price in euros (default `8`).
+   - `VITE_PRICE_PER_HP_EUR` — price per HP (default `1.5`). Final price = base + widthHp × perHp.
+   - Optionally set `PRICE_BASE_EUR` / `PRICE_PER_HP_EUR` for the server-side recompute in `api/order.ts`.
+3. The rewrite for `/order/:id` is already configured in `vercel.json`.
+
+When a customer places the Etsy order, you'll receive the design ID in the personalization note. Fetch the panel JSON / thumbnail from the Vercel Blob URLs (visible in the Vercel dashboard) to print it.
+
+See `.env.example` for the full list of variables.
+
 ## KiCad Edge.Cuts export
 
 - Open the export dropdown and pick either **KiCad Edge SVG** (minimal Edge.Cuts-only SVG) or **KiCad PCB** (minimal `.kicad_pcb` with Edge.Cuts lines).
