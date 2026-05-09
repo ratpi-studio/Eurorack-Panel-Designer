@@ -1,17 +1,33 @@
 import React from "react";
 
 import { useI18n } from "@i18n/I18nContext";
-import type { PanelOptions } from "@lib/panelTypes";
+import { DEFAULT_DESIGN_COLOR, DEFAULT_PANEL_COLOR, type PanelOptions } from "@lib/panelTypes";
 
 import * as styles from "./DisplayOptions.css";
 
 interface DisplayOptionsProps {
   options: PanelOptions;
+  panelColor: string;
+  designColor: string;
   onChange: (options: Partial<PanelOptions>) => void;
+  onColorsChange: (colors: { panelColor?: string; designColor?: string }) => void;
   onResetView: () => void;
 }
 
-export function DisplayOptions({ options, onChange, onResetView }: DisplayOptionsProps) {
+const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
+
+function toColorInputValue(color: string, fallback: string): string {
+  return HEX_COLOR_PATTERN.test(color) ? color : fallback;
+}
+
+export function DisplayOptions({
+  options,
+  panelColor,
+  designColor,
+  onChange,
+  onColorsChange,
+  onResetView,
+}: DisplayOptionsProps) {
   const t = useI18n();
   const [gridInput, setGridInput] = React.useState(() => options.gridSizeMm.toString());
 
@@ -71,9 +87,45 @@ export function DisplayOptions({ options, onChange, onResetView }: DisplayOption
           onChange={handleGridSize}
         />
       </label>
+      <ColorPickerField
+        label={t.display.panelColor}
+        value={toColorInputValue(panelColor, DEFAULT_PANEL_COLOR)}
+        onChange={(color) => onColorsChange({ panelColor: color })}
+      />
+      <ColorPickerField
+        label={t.display.designColor}
+        value={toColorInputValue(designColor, DEFAULT_DESIGN_COLOR)}
+        onChange={(color) => onColorsChange({ designColor: color })}
+      />
       <button type="button" className={styles.resetButton} onClick={onResetView}>
         {t.display.reset}
       </button>
     </div>
+  );
+}
+
+interface ColorPickerFieldProps {
+  label: string;
+  value: string;
+  onChange: (color: string) => void;
+}
+
+function ColorPickerField({ label, value, onChange }: ColorPickerFieldProps) {
+  const normalizedValue = value.toLowerCase();
+
+  return (
+    <label className={styles.colorField}>
+      <span className={styles.label}>{label}</span>
+      <span className={styles.colorPickerRow}>
+        <input
+          type="color"
+          value={normalizedValue}
+          className={styles.colorInput}
+          aria-label={label}
+          onChange={(event) => onChange(event.target.value)}
+        />
+        <span className={styles.colorValue}>{normalizedValue}</span>
+      </span>
+    </label>
   );
 }

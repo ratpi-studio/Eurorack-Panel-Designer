@@ -2,7 +2,7 @@ import React from "react";
 
 import { drawPanelScene } from "@lib/canvas/renderScene";
 import { type ClearanceLines } from "@lib/clearance";
-import { canvasPalette, elementFillColors, elementStrokeColor } from "@lib/canvas/palette";
+import { canvasPalette, derivePaletteFromModel } from "@lib/canvas/palette";
 import {
   type PanelElement,
   type PanelElementType,
@@ -63,7 +63,7 @@ export function useCanvasRender({
       id: element.id,
       key: JSON.stringify({
         svgText: element.properties.svgText,
-        color: element.properties.color,
+        color: model.designColor,
       }),
       properties: element.properties,
     }));
@@ -101,7 +101,10 @@ export function useCanvasRender({
           },
         }));
       };
-      image.src = buildSvgArtworkDataUrl(entry.properties);
+      image.src = buildSvgArtworkDataUrl({
+        ...entry.properties,
+        color: model.designColor,
+      });
       cleanups.push(() => {
         cancelled = true;
       });
@@ -110,7 +113,7 @@ export function useCanvasRender({
     return () => {
       cleanups.forEach((cleanup) => cleanup());
     };
-  }, [model.elements, svgArtworkImages]);
+  }, [model.elements, model.designColor, svgArtworkImages]);
 
   const svgArtworkImageMap = React.useMemo(
     () =>
@@ -161,6 +164,11 @@ export function useCanvasRender({
         selectionAnimation = { dashOffset, pulseScale };
       }
 
+      const derived = derivePaletteFromModel(
+        { panelColor: model.panelColor, designColor: model.designColor },
+        canvasPalette,
+      );
+
       drawPanelScene({
         context,
         transform,
@@ -184,9 +192,9 @@ export function useCanvasRender({
         showGrid: displayOptions.showGrid,
         showMountingHoles: displayOptions.showMountingHoles,
         gridSizeMm: displayOptions.gridSizeMm,
-        palette: canvasPalette,
-        elementFillColors,
-        elementStrokeColor,
+        palette: derived.palette,
+        elementFillColors: derived.elementFillColors,
+        elementStrokeColor: derived.elementStrokeColor,
         fontFamily: themeValues.font.body,
         selectionAnimation,
         ghostElement,
@@ -229,6 +237,8 @@ export function useCanvasRender({
     referenceImageSelected,
     model.dimensions.widthMm,
     model.dimensions.heightMm,
+    model.panelColor,
+    model.designColor,
     placementType,
     svgArtworkImageMap,
   ]);

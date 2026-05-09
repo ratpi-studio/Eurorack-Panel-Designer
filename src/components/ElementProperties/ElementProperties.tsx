@@ -228,20 +228,6 @@ export function ElementProperties({
     });
   };
 
-  const handleSvgColorChange = (value: string) => {
-    if (element?.type !== PanelElementType.SvgArtwork) {
-      return;
-    }
-    setInputs((prev) => ({
-      ...prev,
-      color: value,
-    }));
-    onChangeProperties({
-      ...(properties as SvgArtworkElementProperties),
-      color: value,
-    });
-  };
-
   return (
     <div className={styles.root}>
       <div className={styles.header}>
@@ -470,15 +456,6 @@ export function ElementProperties({
                   inputs.height ?? (properties as SvgArtworkElementProperties).heightMm.toString()
                 }
                 onChange={(event) => handleSvgSizeChange("height", event.target.value)}
-              />
-            </label>
-            <label className={styles.field}>
-              <span className={styles.label}>{t.properties.color}</span>
-              <input
-                className={styles.input}
-                type="color"
-                value={inputs.color ?? (properties as SvgArtworkElementProperties).color}
-                onChange={(event) => handleSvgColorChange(event.target.value)}
               />
             </label>
             <label className={styles.field}>

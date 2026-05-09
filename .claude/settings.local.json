@@ -11,7 +11,10 @@
       "Bash(vp exec *)",
       "Bash(node --experimental-strip-types /tmp/debug_pattern.mjs)",
       "Bash(vp remove *)",
-      "Bash(vp check *)"
+      "Bash(vp check *)",
+      "Bash(pnpm tsc *)",
+      "Bash(vp run *)",
+      "Bash(curl -sI http://localhost:5173)"
     ]
   }
 }

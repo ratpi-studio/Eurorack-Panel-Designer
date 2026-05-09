@@ -25,6 +25,8 @@ function createPanel(widthHp = 8): PanelModel {
     mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG },
     elementHoleConfig: { ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG },
     clearance: { ...DEFAULT_CLEARANCE_CONFIG },
+    panelColor: "#1a1a1a",
+    designColor: "#ffffff",
   };
 }
 

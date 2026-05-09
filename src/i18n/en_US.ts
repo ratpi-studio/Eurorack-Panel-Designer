@@ -19,6 +19,8 @@ interface Translations {
     holes: string;
     gridSpacing: string;
     reset: string;
+    panelColor: string;
+    designColor: string;
   };
   mountingHoles: {
     title: string;
@@ -119,6 +121,7 @@ interface Translations {
     exportKicadPcb: string;
     exportStl: string;
     exportMenuLabel: string;
+    orderOnEtsy: string;
     reset: string;
     savedLabel: string;
     load: string;
@@ -142,6 +145,9 @@ interface Translations {
       stlExport: string;
       stlExportWithWarnings: (count: number) => string;
       stlError: string;
+      orderUploadInProgress: string;
+      orderUploadSuccess: string;
+      orderUploadError: string;
       reset: string;
       confirmSaveBeforeNew: string;
       confirmDeleteSelected: (name: string) => string;
@@ -168,6 +174,21 @@ interface Translations {
     description: string;
     close: string;
     viewFull: string;
+  };
+  order: {
+    title: string;
+    widthLabel: string;
+    panelColorLabel: string;
+    designColorLabel: string;
+    priceLabel: string;
+    idLabel: string;
+    idHelp: string;
+    copyId: string;
+    copied: string;
+    buyCta: string;
+    editLink: string;
+    loading: string;
+    loadError: string;
   };
   shortcuts: {
     shift: string;
@@ -204,6 +225,8 @@ export const enUS: Translations = {
     holes: "Mounting holes",
     gridSpacing: "Grid spacing (mm)",
     reset: "Reset view",
+    panelColor: "Panel color",
+    designColor: "Design color",
   },
   mountingHoles: {
     title: "Mounting holes",
@@ -354,6 +377,7 @@ export const enUS: Translations = {
     exportKicadPcb: "Export KiCad PCB",
     exportStl: "Export STL",
     exportMenuLabel: "Choose export format",
+    orderOnEtsy: "Order on Etsy",
     reset: "Reset design",
     savedLabel: "Saved projects",
     load: "Load",
@@ -378,6 +402,9 @@ export const enUS: Translations = {
       stlExportWithWarnings: (count: number) =>
         `STL export created. ${count} SVG artwork item${count === 1 ? " was" : "s were"} omitted.`,
       stlError: "Failed to generate STL export.",
+      orderUploadInProgress: "Uploading your design…",
+      orderUploadSuccess: "Design uploaded — review your order.",
+      orderUploadError: "Could not upload your design. Try again.",
       reset: "Design reset.",
       confirmSaveBeforeNew: "Save current project before creating a new one?",
       confirmDeleteSelected: (name: string) => `Delete saved project "${name}"?`,
@@ -404,6 +431,21 @@ export const enUS: Translations = {
     description: "Here is what changed recently in Eurorack Panel Designer.",
     close: "Close",
     viewFull: "Open full changelog",
+  },
+  order: {
+    title: "Your custom panel",
+    widthLabel: "Width",
+    panelColorLabel: "Panel color",
+    designColorLabel: "Design color",
+    priceLabel: "Estimated price",
+    idLabel: "Design ID",
+    idHelp: "Paste this ID in the Etsy personalization note when ordering.",
+    copyId: "Copy",
+    copied: "Copied!",
+    buyCta: "Buy on Etsy",
+    editLink: "Back to designer",
+    loading: "Loading your design…",
+    loadError: "We couldn't find this design.",
   },
   shortcuts: {
     shift: "Shift",

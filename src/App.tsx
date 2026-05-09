@@ -1,9 +1,26 @@
 import { Toaster } from "react-hot-toast";
 
+import { OrderRecap } from "@components/OrderRecap/OrderRecap";
 import { PanelDesigner } from "@components/PanelDesigner/PanelDesigner";
 import { I18nProvider } from "@i18n/I18nContext";
 
+const ORDER_PATH_PREFIX = "/order/";
+
+function resolveOrderId(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  const path = window.location.pathname;
+  if (!path.startsWith(ORDER_PATH_PREFIX)) {
+    return null;
+  }
+  const id = path.slice(ORDER_PATH_PREFIX.length).split("/")[0];
+  return id || null;
+}
+
 export function App() {
+  const orderId = resolveOrderId();
+
   return (
     <I18nProvider>
       <Toaster
@@ -30,7 +47,7 @@ export function App() {
           },
         }}
       />
-      <PanelDesigner />
+      {orderId ? <OrderRecap id={orderId} /> : <PanelDesigner />}
     </I18nProvider>
   );
 }

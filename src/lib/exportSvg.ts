@@ -19,8 +19,7 @@ const DEFAULT_STROKE = "#e5e7eb";
 const DEFAULT_BACKGROUND: string | null = null;
 const DEFAULT_PANEL_FILL = "#0f172a";
 
-function elementToSvg(element: PanelElement): string {
-  const stroke = DEFAULT_STROKE;
+function elementToSvg(element: PanelElement, stroke: string): string {
   const strokeWidth = 0.6;
 
   switch (element.type) {
@@ -128,22 +127,30 @@ export function buildPanelSvg(
   mountingHoles: MountingHole[],
   options?: SvgOptions,
 ): string {
-  const stroke = options?.stroke ?? DEFAULT_STROKE;
+  const stroke = options?.stroke ?? model.designColor ?? DEFAULT_STROKE;
   const strokeWidth = options?.strokeWidth ?? 0.8;
   const panelStroke = options?.panelStroke ?? stroke;
   const background = options?.background ?? DEFAULT_BACKGROUND;
-  const panelFill = options?.panelFill ?? DEFAULT_PANEL_FILL;
+  const panelFill = options?.panelFill ?? model.panelColor ?? DEFAULT_PANEL_FILL;
 
   const width = model.dimensions.widthMm;
   const height = model.dimensions.heightMm;
 
   const elementsSvg = model.elements
     .filter((element) => !isSvgArtworkElement(element))
-    .map(elementToSvg)
+    .map((element) => elementToSvg(element, stroke))
     .join("\n    ");
   const artworkSvg = model.elements
     .filter(isSvgArtworkElement)
-    .map(buildSvgArtworkNestedMarkup)
+    .map((element) =>
+      buildSvgArtworkNestedMarkup({
+        ...element,
+        properties: {
+          ...element.properties,
+          color: stroke,
+        },
+      }),
+    )
     .join("\n    ");
   const holeOutlines = mountingHoles
     .map((hole) => {

@@ -146,15 +146,19 @@ export interface PanelModel {
   mountingHoleConfig: MountingHoleConfig;
   elementHoleConfig: ElementMountingHoleConfig;
   clearance: ClearanceConfig;
+  panelColor: string;
+  designColor: string;
 }
 
 export type PanelModelInput = Omit<
   PanelModel,
-  "mountingHoleConfig" | "elementHoleConfig" | "clearance"
+  "mountingHoleConfig" | "elementHoleConfig" | "clearance" | "panelColor" | "designColor"
 > & {
   mountingHoleConfig?: MountingHoleConfig;
   elementHoleConfig?: ElementMountingHoleConfig;
   clearance?: ClearanceConfig;
+  panelColor?: string;
+  designColor?: string;
 };
 
 export function normalizePanelModel(model: PanelModelInput): PanelModel {
@@ -189,6 +193,8 @@ export function normalizePanelModel(model: PanelModelInput): PanelModel {
       },
       model.dimensions.heightMm,
     ),
+    panelColor: typeof model.panelColor === "string" ? model.panelColor : DEFAULT_PANEL_COLOR,
+    designColor: typeof model.designColor === "string" ? model.designColor : DEFAULT_DESIGN_COLOR,
   };
 }
 
@@ -240,6 +246,9 @@ export const DEFAULT_CLEARANCE_CONFIG: ClearanceConfig = {
   minSpacingMm: 5,
 };
 
+export const DEFAULT_PANEL_COLOR = "#0f2742";
+export const DEFAULT_DESIGN_COLOR = "#ffffff";
+
 export function clampClearanceConfig(
   config: ClearanceConfig,
   panelHeightMm: number,
@@ -264,7 +273,7 @@ export interface SerializedPanel {
   model: PanelModel;
 }
 
-export const SERIALIZATION_VERSION = 5;
+export const SERIALIZATION_VERSION = 6;
 
 function isCircularElementProperties(
   properties: PanelElement["properties"],

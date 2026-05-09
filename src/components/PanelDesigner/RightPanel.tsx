@@ -49,6 +49,7 @@ interface ProjectPanelProps {
   onExportClick: () => void;
   onExportJson: () => void;
   onSelectExportFormat: (format: ExportFormat) => void;
+  onOrderOnEtsy: () => void;
 }
 
 interface PropertiesPanelProps {
@@ -64,6 +65,7 @@ interface PropertiesPanelProps {
   placementType: PanelElementType | null;
   snapEnabled: boolean;
   onDisplayOptionsChange: (options: Partial<PanelModel["options"]>) => void;
+  onColorsChange: (colors: { panelColor?: string; designColor?: string }) => void;
   onResetView: () => void;
   onMountingHoleConfigChange: (updates: Partial<MountingHoleConfig>) => void;
   onClearMountingHoleSelection: () => void;
@@ -118,6 +120,7 @@ function ProjectPanel({
   onExportClick,
   onExportJson,
   onSelectExportFormat,
+  onOrderOnEtsy,
 }: ProjectPanelProps) {
   return (
     <>
@@ -238,6 +241,16 @@ function ProjectPanel({
               >
                 {t.projects.exportStl}
               </button>
+              {/* <button
+                type="button"
+                className={styles.exportMenuItem}
+                onClick={() => {
+                  onToggleExportMenu();
+                  onOrderOnEtsy();
+                }}
+              >
+                {t.projects.orderOnEtsy}
+              </button> */}
             </div>
           ) : null}
         </div>
@@ -310,6 +323,7 @@ function PropertiesPanel({
   placementType,
   snapEnabled,
   onDisplayOptionsChange,
+  onColorsChange,
   onResetView,
   onMountingHoleConfigChange,
   onClearMountingHoleSelection,
@@ -330,7 +344,10 @@ function PropertiesPanel({
       <div className={styles.card}>
         <DisplayOptions
           options={displayOptions}
+          panelColor={panelModel.panelColor}
+          designColor={panelModel.designColor}
           onChange={onDisplayOptionsChange}
+          onColorsChange={onColorsChange}
           onResetView={onResetView}
         />
       </div>
