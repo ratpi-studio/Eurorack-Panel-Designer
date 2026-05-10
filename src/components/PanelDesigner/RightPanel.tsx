@@ -120,7 +120,7 @@ function ProjectPanel({
   onExportClick,
   onExportJson,
   onSelectExportFormat,
- // onOrderOnEtsy,
+  // onOrderOnEtsy,
 }: ProjectPanelProps) {
   return (
     <>
