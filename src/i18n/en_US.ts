@@ -3,6 +3,14 @@ interface Translations {
     title: string;
     subtitle: string;
   };
+  header: {
+    githubLabel: string;
+    githubAriaLabel: string;
+    supportAriaLabel: string;
+    supportImageAlt: string;
+    etsyLabel: string;
+    etsyAriaLabel: string;
+  };
   canvas: {
     hudSuffix: string;
   };
@@ -208,6 +216,14 @@ export const enUS: Translations = {
   app: {
     title: "Eurorack Panel Designer",
     subtitle: "Interactive canvas, zoom, pan, selection",
+  },
+  header: {
+    githubLabel: "GitHub",
+    githubAriaLabel: "Open GitHub repository",
+    supportAriaLabel: "Support the project on Ko-fi",
+    supportImageAlt: "Buy me a coffee on Ko-fi",
+    etsyLabel: "Etsy",
+    etsyAriaLabel: "Open the RatpiSynth Etsy shop",
   },
   canvas: {
     hudSuffix: "Static render",

@@ -3,16 +3,27 @@ import React from "react";
 import * as styles from "./PanelDesigner.css";
 
 const GITHUB_REPO_URL = "https://github.com/ratpi-studio/Eurorack-Panel-Designer";
+const ETSY_SHOP_URL = "https://www.etsy.com/fr/shop/RatpiSynth?ref=eurorack_panel_designer";
 const logoSrc = `${import.meta.env.BASE_URL}images/logo.svg`;
 const supportImageSrc = `${import.meta.env.BASE_URL}images/kofi5.png`;
+
+interface PanelHeaderCopy {
+  githubLabel: string;
+  githubAriaLabel: string;
+  supportAriaLabel: string;
+  supportImageAlt: string;
+  etsyLabel: string;
+  etsyAriaLabel: string;
+}
 
 interface PanelHeaderProps {
   title: string;
   changelogLabel: string;
+  copy: PanelHeaderCopy;
   onOpenChangelog: () => void;
 }
 
-export function PanelHeader({ title, changelogLabel, onOpenChangelog }: PanelHeaderProps) {
+export function PanelHeader({ title, changelogLabel, copy, onOpenChangelog }: PanelHeaderProps) {
   return (
     <section className={styles.header}>
       <div className={styles.headerTop}>
@@ -25,7 +36,7 @@ export function PanelHeader({ title, changelogLabel, onOpenChangelog }: PanelHea
             href={GITHUB_REPO_URL}
             target="_blank"
             rel="noreferrer"
-            aria-label="Open GitHub repository"
+            aria-label={copy.githubAriaLabel}
           >
             <svg className={styles.githubIcon} viewBox="0 0 16 16" role="img" aria-hidden="true">
               <path
@@ -33,20 +44,25 @@ export function PanelHeader({ title, changelogLabel, onOpenChangelog }: PanelHea
                 fill="currentColor"
               />
             </svg>
-            <span className={styles.githubLabel}>GitHub</span>
+            <span className={styles.githubLabel}>{copy.githubLabel}</span>
           </a>
           <a
             className={styles.supportLink}
             href="https://ko-fi.com/T6T01PMWCO"
             target="_blank"
             rel="noreferrer"
-            aria-label="Support the project on Ko-fi"
+            aria-label={copy.supportAriaLabel}
           >
-            <img
-              className={styles.supportImage}
-              src={supportImageSrc}
-              alt="Buy me a coffee on Ko-fi"
-            />
+            <img className={styles.supportImage} src={supportImageSrc} alt={copy.supportImageAlt} />
+          </a>
+          <a
+            className={styles.etsyLink}
+            href={ETSY_SHOP_URL}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={copy.etsyAriaLabel}
+          >
+            <span className={styles.etsyWordmark}>{copy.etsyLabel}</span>
           </a>
           <button type="button" className={styles.changelogButton} onClick={onOpenChangelog}>
             {changelogLabel}
