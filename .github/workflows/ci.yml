@@ -18,12 +18,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Vite+
         uses: voidzero-dev/setup-vp@v1
         with:
-          node-version: "22"
+          node-version: "24"
           cache: true
 
       - name: Install dependencies
