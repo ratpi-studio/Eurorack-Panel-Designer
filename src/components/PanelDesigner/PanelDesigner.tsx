@@ -919,6 +919,7 @@ export function PanelDesigner() {
       <main className={styles.page}>
         <PanelHeader
           title={t.app.title}
+          copy={t.header}
           changelogLabel={t.changelog.buttonLabel}
           onOpenChangelog={openChangelog}
         />

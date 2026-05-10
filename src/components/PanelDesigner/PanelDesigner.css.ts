@@ -2,6 +2,10 @@ import { style } from "@vanilla-extract/css";
 
 import { vars } from "@styles/theme.css";
 
+const headerActionHeight = "36px";
+const headerActionBorderRadius = "999px";
+const headerActionPadding = `0 ${vars.spacing.md}`;
+
 export const page = style({
   flex: 1,
   minHeight: 0,
@@ -24,23 +28,29 @@ export const headerTop = style({
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
+  flexWrap: "wrap",
   gap: vars.spacing.md,
 });
 
 export const logo = style({
   width: "280px",
+  maxWidth: "100%",
   height: "56px",
 });
 
 export const githubLink = style({
   display: "inline-flex",
   alignItems: "center",
+  justifyContent: "center",
+  height: headerActionHeight,
+  boxSizing: "border-box",
   gap: vars.spacing.xs,
-  padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
-  borderRadius: "999px",
+  padding: headerActionPadding,
+  borderRadius: headerActionBorderRadius,
   border: `1px solid ${vars.color.border}`,
   color: vars.color.textPrimary,
   textDecoration: "none",
+  fontSize: "14px",
   transition: "background-color 150ms ease",
   selectors: {
     "&:hover": {
@@ -61,16 +71,22 @@ export const githubLabel = style({
 export const headerActions = style({
   display: "inline-flex",
   alignItems: "center",
+  justifyContent: "flex-end",
+  flexWrap: "wrap",
   gap: vars.spacing.sm,
 });
 
 export const supportLink = style({
   display: "inline-flex",
   alignItems: "center",
-  padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
-  borderRadius: "999px",
+  justifyContent: "center",
+  height: headerActionHeight,
+  boxSizing: "border-box",
+  padding: `0 ${vars.spacing.sm}`,
+  borderRadius: headerActionBorderRadius,
   border: `1px solid ${vars.color.border}`,
   backgroundColor: vars.color.surface,
+  textDecoration: "none",
   transition: "background-color 150ms ease",
   selectors: {
     "&:hover": {
@@ -82,6 +98,37 @@ export const supportLink = style({
 export const supportImage = style({
   height: "36px",
   width: "auto",
+});
+
+export const etsyLink = style({
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  height: headerActionHeight,
+  boxSizing: "border-box",
+  padding: headerActionPadding,
+  borderRadius: headerActionBorderRadius,
+  border: "1px solid #f1641e",
+  backgroundColor: "#f1641e",
+  color: "#ffffff",
+  textDecoration: "none",
+  fontSize: "14px",
+  fontWeight: 700,
+  transition: "background-color 150ms ease, border-color 150ms ease",
+  selectors: {
+    "&:hover": {
+      backgroundColor: "#d9561d",
+      borderColor: "#d9561d",
+    },
+  },
+});
+
+export const etsyWordmark = style({
+  fontFamily: vars.font.body,
+  fontSize: "14px",
+  fontWeight: 700,
+  lineHeight: 1,
+  letterSpacing: "0",
 });
 
 export const card = style({
@@ -206,11 +253,17 @@ const baseButton = {
 
 export const changelogButton = style({
   ...baseButton,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  boxSizing: "border-box",
   backgroundColor: "#0b1426",
   color: vars.color.textPrimary,
   border: `1px solid ${vars.color.border}`,
-  borderRadius: "999px",
-  padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
+  borderRadius: headerActionBorderRadius,
+  height: headerActionHeight,
+  padding: headerActionPadding,
+  fontSize: "14px",
   selectors: {
     "&:hover": {
       backgroundColor: "#101c33",
