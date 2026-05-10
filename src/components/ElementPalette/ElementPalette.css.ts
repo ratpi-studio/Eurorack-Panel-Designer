@@ -52,35 +52,30 @@ export const clearButton = style({
 
 export const list = style({
   display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-  gap: vars.spacing.sm,
+  gridTemplateColumns: "repeat(auto-fit, minmax(58px, 1fr))",
+  gap: vars.spacing.xs,
   maxHeight: "520px",
   overflowY: "auto",
-  padding: "1em 0",
+  padding: 0,
   paddingRight: vars.spacing.xs,
-  "@media": {
-    "(max-width: 960px)": {
-      gridTemplateColumns: "1fr",
-    },
-  },
 });
 
 export const card = style({
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
-  padding: `${vars.spacing.sm} ${vars.spacing.md}`,
-  backgroundColor: "#0b1220",
-  borderRadius: "10px",
-  border: `1px solid ${vars.color.border}`,
+  minWidth: 0,
+  padding: `${vars.spacing.xs} 2px`,
+  backgroundColor: "transparent",
+  borderRadius: "8px",
+  border: "1px solid transparent",
   textAlign: "center",
   cursor: "pointer",
   color: vars.color.textPrimary,
-  transition: "border-color 120ms ease, transform 120ms ease",
+  transition: "color 120ms ease",
   selectors: {
     "&:hover": {
-      borderColor: vars.color.accent,
-      transform: "translateY(-1px)",
+      color: vars.color.accent,
     },
   },
 });
@@ -88,14 +83,13 @@ export const card = style({
 export const cardActive = style([
   card,
   {
-    borderColor: vars.color.accent,
-    boxShadow: `0 0 0 1px ${vars.color.accent}`,
+    color: vars.color.accent,
   },
 ]);
 
 export const icon = style({
-  width: "48px",
-  height: "48px",
+  width: "42px",
+  height: "42px",
   borderRadius: "12px",
   border: `1px solid ${vars.color.border}`,
   display: "flex",
@@ -117,7 +111,7 @@ export const cardContent = style({
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  gap: vars.spacing.xs,
+  gap: "2px",
   width: "100%",
 });
 
