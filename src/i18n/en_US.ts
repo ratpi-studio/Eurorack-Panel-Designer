@@ -3,6 +3,7 @@ interface Translations {
     title: string;
     subtitle: string;
     errorFallback: string;
+    storageFull: string;
   };
   header: {
     githubLabel: string;
@@ -103,6 +104,7 @@ interface Translations {
     opacity: string;
     replace: string;
     remove: string;
+    notKept: string;
   };
   svgArtwork: {
     title: string;
@@ -140,6 +142,7 @@ interface Translations {
     refresh: string;
     messages: {
       saveSuccess: (name: string) => string;
+      saveError: (name: string) => string;
       loadSuccess: (name: string) => string;
       loadError: (name: string) => string;
       deleteSuccess: (name: string) => string;
@@ -219,6 +222,8 @@ export const enUS: Translations = {
     title: "Eurorack Panel Designer",
     subtitle: "Interactive canvas, zoom, pan, selection",
     errorFallback: "An unexpected error occurred. Please reload the page.",
+    storageFull:
+      "Browser storage is full: recent changes will not survive a reload. Delete saved projects you no longer need or remove the reference image.",
   },
   header: {
     githubLabel: "GitHub",
@@ -278,6 +283,8 @@ export const enUS: Translations = {
     opacity: "Opacity",
     replace: "Replace",
     remove: "Remove",
+    notKept:
+      "This reference image is too large to be kept after a reload. The rest of your design is still saved.",
   },
   palette: {
     title: "Palette",
@@ -406,6 +413,8 @@ export const enUS: Translations = {
     refresh: "Refresh",
     messages: {
       saveSuccess: (name: string) => `Project "${name}" saved.`,
+      saveError: (name: string) =>
+        `Unable to save "${name}": browser storage is full. Delete projects you no longer need and try again.`,
       loadSuccess: (name: string) => `Project "${name}" loaded.`,
       loadError: (name: string) => `Unable to load "${name}".`,
       deleteSuccess: (name: string) => `Project "${name}" deleted.`,

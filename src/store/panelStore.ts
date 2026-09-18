@@ -1,6 +1,8 @@
+import toast from "react-hot-toast";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import { enUS } from "@i18n/en_US";
 import { createPanelElement } from "@lib/elements";
 import {
   DEFAULT_CLEARANCE_CONFIG,
@@ -19,6 +21,8 @@ import {
   type PanelModelInput,
   type Vector2,
 } from "@lib/panelTypes";
+import { reportDegradation } from "@lib/monitoring";
+import { createPanelStateStorage } from "@lib/panelStateStorage";
 import { createPanelDimensions } from "@lib/units";
 import type { ReferenceImage } from "@lib/referenceImage";
 
@@ -280,6 +284,16 @@ export const usePanelStore = create<PanelState & PanelActions>()(
     }),
     {
       name: "panel-designer-store",
+      storage: createPanelStateStorage<(PanelState & PanelActions) | undefined>({
+        onReferenceImageDropped: (error, imageChars) => {
+          toast(enUS.referenceImage.notKept, { id: "reference-image-not-kept" });
+          reportDegradation(error, "autosave", "reference-image-dropped", { imageChars });
+        },
+        onSaveFailed: (error) => {
+          toast.error(enUS.app.storageFull, { id: "autosave-failed" });
+          reportDegradation(error, "autosave", "save-failed");
+        },
+      }),
       // v8: panel options gained `showDimensions`; migrating re-normalizes the persisted model.
       version: 8,
       migrate: (state, version) => {

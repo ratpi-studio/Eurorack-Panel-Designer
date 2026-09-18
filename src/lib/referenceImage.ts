@@ -226,3 +226,62 @@ export function resizeReferenceImageFromHandle(
     heightMm,
   };
 }
+
+/** Longest side kept for imported reference images: enough detail to trace at any zoom. */
+export const MAX_REFERENCE_IMAGE_SIDE_PX = 2048;
+// Images within the size limit are still re-encoded above this (e.g. large PNG photos).
+const MAX_REFERENCE_IMAGE_DATA_URL_CHARS = 1_500_000;
+const REFERENCE_IMAGE_QUALITY = 0.85;
+
+export function getScaledImageSize(
+  width: number,
+  height: number,
+  maxSide = MAX_REFERENCE_IMAGE_SIDE_PX,
+): { width: number; height: number } {
+  const longestSide = Math.max(width, height);
+  if (longestSide <= maxSide) {
+    return { width, height };
+  }
+  const scale = maxSide / longestSide;
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale)),
+  };
+}
+
+/**
+ * Downscales and re-encodes an imported reference image so it fits in browser storage (usually a
+ * few hundred KB). Returns the original when it is already small enough.
+ */
+export function shrinkReferenceImage(
+  image: HTMLImageElement,
+  dataUrl: string,
+): { dataUrl: string; width: number; height: number } {
+  const original = { dataUrl, width: image.width, height: image.height };
+  const size = getScaledImageSize(image.width, image.height);
+  if (
+    size.width === image.width &&
+    size.height === image.height &&
+    dataUrl.length <= MAX_REFERENCE_IMAGE_DATA_URL_CHARS
+  ) {
+    return original;
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = size.width;
+  canvas.height = size.height;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return original;
+  }
+  context.drawImage(image, 0, 0, size.width, size.height);
+  // WebP keeps transparency. Browsers that cannot encode it return a PNG: use JPEG on white instead.
+  let encoded = canvas.toDataURL("image/webp", REFERENCE_IMAGE_QUALITY);
+  if (!encoded.startsWith("data:image/webp")) {
+    context.globalCompositeOperation = "destination-over";
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, size.width, size.height);
+    encoded = canvas.toDataURL("image/jpeg", REFERENCE_IMAGE_QUALITY);
+  }
+  return encoded.length < dataUrl.length ? { dataUrl: encoded, ...size } : original;
+}

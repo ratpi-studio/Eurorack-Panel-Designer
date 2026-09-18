@@ -1,7 +1,12 @@
 import * as Sentry from "@sentry/react";
 
 /** User-facing flows whose caught failures are reported, sent as the `flow` tag. */
-export type MonitoredFlow = "export-png" | "export-stl" | "stl-geometry";
+export type MonitoredFlow =
+  | "autosave"
+  | "export-png"
+  | "export-stl"
+  | "save-project"
+  | "stl-geometry";
 
 // Chrome and Firefox name the DOM method; WebKit only says "The object can not be found here."
 const DOM_MUTATION_MESSAGE = /removeChild|insertBefore|The object can not be found here/i;
@@ -71,11 +76,16 @@ const reportedDegradations = new Set<string>();
  * Reports a failure the flow recovered from with a degraded result. Each stage is reported once
  * per page load, since the STL preview reruns the same geometry on every change.
  */
-export function reportDegradation(error: unknown, flow: MonitoredFlow, stage: string): void {
+export function reportDegradation(
+  error: unknown,
+  flow: MonitoredFlow,
+  stage: string,
+  extra?: Record<string, unknown>,
+): void {
   const key = `${flow}:${stage}`;
   if (reportedDegradations.has(key)) {
     return;
   }
   reportedDegradations.add(key);
-  Sentry.captureException(error, { level: "warning", tags: { flow, stage } });
+  Sentry.captureException(error, { level: "warning", tags: { flow, stage }, extra });
 }
