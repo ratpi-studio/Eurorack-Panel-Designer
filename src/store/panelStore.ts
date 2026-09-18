@@ -280,7 +280,8 @@ export const usePanelStore = create<PanelState & PanelActions>()(
     }),
     {
       name: "panel-designer-store",
-      version: 7,
+      // v8: panel options gained `showDimensions`; migrating re-normalizes the persisted model.
+      version: 8,
       migrate: (state, version) => {
         const typedState = state as (PanelState & PanelActions) | undefined;
         if (!typedState) {

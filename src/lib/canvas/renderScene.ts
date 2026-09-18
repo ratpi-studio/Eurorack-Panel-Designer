@@ -16,11 +16,26 @@ import {
 } from "@lib/referenceImage";
 
 import {
+  formatBoxLabel,
+  formatDiameterLabel,
+  formatDimensionMm,
+  getElementDimensions,
+  getInlineLabelPlacement,
+  getReadableTextFlip,
+} from "./elementDimensions";
+import {
   computeNearestElementDistances,
-  getLabelSizeMm,
+  getElementSizeMm,
   PT_TO_MM,
   type NearestElementDistance,
 } from "./elementGeometry";
+import {
+  getElementFrameRotationDeg,
+  getElementHandleLayout,
+  getElementHandleLocalPositionPx,
+  getElementResizeMode,
+  type ElementHandleLayout,
+} from "./elementHandles";
 import { projectPanelPoint, type CanvasTransform } from "./transform";
 
 export interface PanelCanvasPalette {
@@ -33,6 +48,16 @@ export interface PanelCanvasPalette {
   selection: string;
   clearanceLine: string;
   clearanceLabel: string;
+  handleFill: string;
+  handleStroke: string;
+  dimensionText: string;
+  dimensionHalo: string;
+  dimensionLine: string;
+}
+
+export interface ElementStyle {
+  fill: string;
+  stroke: string;
 }
 
 interface SelectionAnimationState {
@@ -54,15 +79,23 @@ interface PanelSceneDrawingOptions {
   showMountingHoles: boolean;
   gridSizeMm: number;
   palette: PanelCanvasPalette;
-  elementFillColors: Record<PanelElementType, string>;
-  elementStrokeColor: string;
+  elementStyles: Record<PanelElementType, ElementStyle>;
   fontFamily: string;
   selectionAnimation?: SelectionAnimationState;
   ghostElement?: PanelElement | null;
   svgArtworkImages?: Map<string, HTMLImageElement>;
   clearanceLines?: ClearanceLines | null;
   showGhostDistances?: boolean;
+  /** Editor-only measurement annotations (diameters, side lengths). */
+  showDimensions?: boolean;
 }
+
+const DIMENSION_FONT_SIZE_PX = 10;
+const DIMENSION_TEXT_PADDING_PX = 2;
+// Far enough from the frame for dimension lines to clear the resize handles.
+const DIMENSION_LINE_OFFSET_PX = 16;
+const DIMENSION_TICK_PX = 4;
+const DIMENSION_TEXT_GAP_PX = 4;
 
 export function drawPanelScene({
   context,
@@ -76,8 +109,7 @@ export function drawPanelScene({
   showMountingHoles,
   gridSizeMm,
   palette,
-  elementFillColors,
-  elementStrokeColor,
+  elementStyles,
   fontFamily,
   selectionAnimation,
   ghostElement,
@@ -86,6 +118,7 @@ export function drawPanelScene({
   clearanceLines,
   panelSizeMm,
   showGhostDistances,
+  showDimensions = false,
 }: PanelSceneDrawingOptions) {
   drawPanelArea(context, transform, palette);
 
@@ -115,7 +148,6 @@ export function drawPanelScene({
     }
   }
 
-  const selectionSet = new Set(selectedElementIds);
   const panelSurfacePath = createPanelSurfacePath2D({
     panelSizeMm,
     mountingHoles,
@@ -127,24 +159,47 @@ export function drawPanelScene({
     transform,
     panelSurfacePath,
     svgArtworkImages,
-    selectionSet,
-    elementFillColors,
-    elementStrokeColor,
-    palette.selection,
+    elementStyles,
     fontFamily,
-    selectionAnimation,
   );
 
-  if (ghostElement) {
-    drawGhostElement(
+  const singleSelectedElement =
+    selectedElementIds.length === 1
+      ? (elements.find((element) => element.id === selectedElementIds[0]) ?? null)
+      : null;
+
+  if (showDimensions) {
+    drawInlineDimensionLabels(
       context,
-      ghostElement,
+      elements,
       transform,
-      elementFillColors,
-      elementStrokeColor,
-      palette.selection,
+      palette,
       fontFamily,
+      singleSelectedElement?.id ?? null,
     );
+  }
+
+  if (singleSelectedElement) {
+    drawSingleSelection(
+      context,
+      singleSelectedElement,
+      transform,
+      palette,
+      fontFamily,
+      selectionAnimation,
+      showDimensions,
+    );
+  } else if (selectedElementIds.length > 1) {
+    const selectionSet = new Set(selectedElementIds);
+    elements.forEach((element) => {
+      if (selectionSet.has(element.id)) {
+        drawSelectionOutline(context, element, transform, palette.selection, selectionAnimation);
+      }
+    });
+  }
+
+  if (ghostElement) {
+    drawGhostElement(context, ghostElement, transform, elementStyles, fontFamily);
 
     if (showGhostDistances) {
       const distances = computeNearestElementDistances(ghostElement.positionMm, elements);
@@ -448,12 +503,8 @@ function drawElements(
   transform: CanvasTransform,
   panelSurfacePath: Path2D | null,
   svgArtworkImages: Map<string, HTMLImageElement> | undefined,
-  selectedElementIds: Set<string>,
-  elementFillColors: Record<PanelElementType, string>,
-  elementStrokeColor: string,
-  selectionColor: string,
+  elementStyles: Record<PanelElementType, ElementStyle>,
   fontFamily: string,
-  selectionAnimation?: SelectionAnimationState,
 ) {
   elements.forEach((element) => {
     if (isSvgArtworkElement(element)) {
@@ -463,9 +514,6 @@ function drawElements(
         transform,
         panelSurfacePath,
         svgArtworkImages?.get(element.id) ?? null,
-        selectedElementIds.has(element.id) && selectedElementIds.size === 1,
-        selectionColor,
-        selectionAnimation,
       );
       return;
     }
@@ -479,99 +527,37 @@ function drawElements(
       context.rotate(rotation);
     }
 
+    const style = elementStyles[element.type];
     switch (element.type) {
       case PanelElementType.Jack:
       case PanelElementType.Potentiometer:
       case PanelElementType.Led: {
-        drawCircularElement(
-          context,
-          element,
-          transform.scale,
-          selectedElementIds.has(element.id),
-          elementFillColors[element.type],
-          elementStrokeColor,
-          selectionColor,
-          selectionAnimation,
-        );
+        drawCircularElement(context, element, transform.scale, style);
         break;
       }
       case PanelElementType.Switch:
       case PanelElementType.Rectangle: {
-        drawRectangularElement(
-          context,
-          element,
-          transform.scale,
-          selectedElementIds.has(element.id),
-          elementFillColors[element.type],
-          elementStrokeColor,
-          selectionColor,
-          selectionAnimation,
-        );
+        drawRectangularElement(context, element, transform.scale, style);
         break;
       }
       case PanelElementType.Oval: {
-        drawOvalElement(
-          context,
-          element,
-          transform.scale,
-          selectedElementIds.has(element.id),
-          elementFillColors[element.type],
-          elementStrokeColor,
-          selectionColor,
-          selectionAnimation,
-        );
+        drawOvalElement(context, element, transform.scale, style);
         break;
       }
       case PanelElementType.Slot: {
-        drawSlotElement(
-          context,
-          element,
-          transform.scale,
-          selectedElementIds.has(element.id),
-          elementFillColors[element.type],
-          elementStrokeColor,
-          selectionColor,
-          selectionAnimation,
-        );
+        drawSlotElement(context, element, transform.scale, style);
         break;
       }
       case PanelElementType.Triangle: {
-        drawTriangleElement(
-          context,
-          element,
-          transform.scale,
-          selectedElementIds.has(element.id),
-          elementFillColors[element.type],
-          elementStrokeColor,
-          selectionColor,
-          selectionAnimation,
-        );
+        drawTriangleElement(context, element, transform.scale, style);
         break;
       }
       case PanelElementType.Insert: {
-        drawInsertElement(
-          context,
-          element,
-          transform.scale,
-          selectedElementIds.has(element.id),
-          elementFillColors[element.type],
-          elementStrokeColor,
-          selectionColor,
-          selectionAnimation,
-        );
+        drawInsertElement(context, element, transform.scale, style);
         break;
       }
       case PanelElementType.Label: {
-        drawLabelElement(
-          context,
-          element,
-          transform.scale,
-          selectedElementIds.has(element.id),
-          elementFillColors[element.type],
-          selectionColor,
-          fontFamily,
-          selectionAnimation,
-        );
+        drawLabelElement(context, element, transform.scale, style, fontFamily);
         break;
       }
       default:
@@ -586,9 +572,7 @@ function drawGhostElement(
   context: CanvasRenderingContext2D,
   element: PanelElement,
   transform: CanvasTransform,
-  elementFillColors: Record<PanelElementType, string>,
-  elementStrokeColor: string,
-  selectionColor: string,
+  elementStyles: Record<PanelElementType, ElementStyle>,
   fontFamily: string,
 ) {
   context.save();
@@ -606,10 +590,7 @@ function drawGhostElement(
       elements: [element],
     }),
     undefined,
-    new Set(),
-    elementFillColors,
-    elementStrokeColor,
-    selectionColor,
+    elementStyles,
     fontFamily,
   );
   context.restore();
@@ -621,96 +602,27 @@ function drawSvgArtworkElement(
   transform: CanvasTransform,
   panelSurfacePath: Path2D | null,
   image: HTMLImageElement | null,
-  isSelected: boolean,
-  selectionColor: string,
-  selectionAnimation?: SelectionAnimationState,
 ) {
-  if (!isSvgArtworkElement(element)) {
+  if (!isSvgArtworkElement(element) || !image?.complete || !panelSurfacePath) {
     return;
   }
 
-  if (image?.complete && panelSurfacePath) {
-    context.save();
-    context.translate(transform.origin.x, transform.origin.y);
-    context.scale(transform.scale, transform.scale);
-    context.clip(panelSurfacePath, "evenodd");
-    context.translate(element.positionMm.x, element.positionMm.y);
-    const rotation = ((element.rotationDeg ?? 0) * Math.PI) / 180;
-    if (rotation !== 0) {
-      context.rotate(rotation);
-    }
-    context.drawImage(
-      image,
-      -element.properties.widthMm / 2,
-      -element.properties.heightMm / 2,
-      element.properties.widthMm,
-      element.properties.heightMm,
-    );
-    context.restore();
-  }
-
-  if (!isSelected) {
-    return;
-  }
-
-  const center = projectPanelPoint(element.positionMm, transform);
   context.save();
-  context.translate(center.x, center.y);
+  context.translate(transform.origin.x, transform.origin.y);
+  context.scale(transform.scale, transform.scale);
+  context.clip(panelSurfacePath, "evenodd");
+  context.translate(element.positionMm.x, element.positionMm.y);
   const rotation = ((element.rotationDeg ?? 0) * Math.PI) / 180;
   if (rotation !== 0) {
     context.rotate(rotation);
   }
-  drawSelectionRect(
-    context,
-    element.properties.widthMm * transform.scale + 12,
-    element.properties.heightMm * transform.scale + 12,
-    selectionColor,
-    selectionAnimation,
+  context.drawImage(
+    image,
+    -element.properties.widthMm / 2,
+    -element.properties.heightMm / 2,
+    element.properties.widthMm,
+    element.properties.heightMm,
   );
-  context.restore();
-
-  const rotationOffsetMm = REFERENCE_IMAGE_ROTATION_HANDLE_OFFSET_PX / Math.max(transform.scale, 1);
-  const controls = getReferenceImageControlPositions(
-    {
-      positionMm: element.positionMm,
-      rotationDeg: element.rotationDeg ?? 0,
-      widthMm: element.properties.widthMm,
-      heightMm: element.properties.heightMm,
-    },
-    rotationOffsetMm,
-  );
-  const topCenter = projectPanelPoint(controls.top, transform);
-  const rotationHandle = projectPanelPoint(controls.rotate, transform);
-  const halfHandleSizePx = REFERENCE_IMAGE_HANDLE_SIZE_PX / 2;
-
-  context.save();
-  context.strokeStyle = selectionColor;
-  context.fillStyle = "#f8fafc";
-  context.lineWidth = 1.5;
-  context.setLineDash([]);
-
-  context.beginPath();
-  context.moveTo(topCenter.x, topCenter.y);
-  context.lineTo(rotationHandle.x, rotationHandle.y);
-  context.stroke();
-
-  REFERENCE_IMAGE_RESIZE_HANDLES.forEach((handle) => {
-    const point = projectPanelPoint(controls[handle], transform);
-    context.beginPath();
-    context.rect(
-      point.x - halfHandleSizePx,
-      point.y - halfHandleSizePx,
-      REFERENCE_IMAGE_HANDLE_SIZE_PX,
-      REFERENCE_IMAGE_HANDLE_SIZE_PX,
-    );
-    context.fill();
-    context.stroke();
-  });
-
-  context.beginPath();
-  context.arc(rotationHandle.x, rotationHandle.y, halfHandleSizePx, 0, Math.PI * 2);
-  context.fill();
-  context.stroke();
   context.restore();
 }
 
@@ -718,11 +630,7 @@ function drawCircularElement(
   context: CanvasRenderingContext2D,
   element: PanelElement,
   scale: number,
-  isSelected: boolean,
-  fillColor: string,
-  strokeColor: string,
-  selectionColor: string,
-  selectionAnimation?: SelectionAnimationState,
+  style: ElementStyle,
 ) {
   if (
     element.type !== PanelElementType.Jack &&
@@ -733,28 +641,20 @@ function drawCircularElement(
   }
 
   const radius = (element.properties.diameterMm / 2) * scale;
-  context.fillStyle = fillColor;
-  context.strokeStyle = strokeColor;
+  context.fillStyle = style.fill;
+  context.strokeStyle = style.stroke;
   context.lineWidth = 2;
   context.beginPath();
   context.arc(0, 0, radius, 0, Math.PI * 2);
   context.fill();
   context.stroke();
-
-  if (isSelected) {
-    drawSelectionCircle(context, radius + 6, selectionColor, selectionAnimation);
-  }
 }
 
 function drawRectangularElement(
   context: CanvasRenderingContext2D,
   element: PanelElement,
   scale: number,
-  isSelected: boolean,
-  fillColor: string,
-  strokeColor: string,
-  selectionColor: string,
-  selectionAnimation?: SelectionAnimationState,
+  style: ElementStyle,
 ) {
   if (element.type !== PanelElementType.Switch && element.type !== PanelElementType.Rectangle) {
     return;
@@ -762,28 +662,20 @@ function drawRectangularElement(
 
   const width = element.properties.widthMm * scale;
   const height = element.properties.heightMm * scale;
-  context.fillStyle = fillColor;
-  context.strokeStyle = strokeColor;
+  context.fillStyle = style.fill;
+  context.strokeStyle = style.stroke;
   context.lineWidth = 2;
   context.beginPath();
   context.rect(-width / 2, -height / 2, width, height);
   context.fill();
   context.stroke();
-
-  if (isSelected) {
-    drawSelectionRect(context, width + 12, height + 12, selectionColor, selectionAnimation);
-  }
 }
 
 function drawOvalElement(
   context: CanvasRenderingContext2D,
   element: PanelElement,
   scale: number,
-  isSelected: boolean,
-  fillColor: string,
-  strokeColor: string,
-  selectionColor: string,
-  selectionAnimation?: SelectionAnimationState,
+  style: ElementStyle,
 ) {
   if (element.type !== PanelElementType.Oval) {
     return;
@@ -791,34 +683,20 @@ function drawOvalElement(
 
   const radiusX = (element.properties.widthMm / 2) * scale;
   const radiusY = (element.properties.heightMm / 2) * scale;
-  context.fillStyle = fillColor;
-  context.strokeStyle = strokeColor;
+  context.fillStyle = style.fill;
+  context.strokeStyle = style.stroke;
   context.lineWidth = 2;
   context.beginPath();
   context.ellipse(0, 0, radiusX, radiusY, 0, 0, Math.PI * 2);
   context.fill();
   context.stroke();
-
-  if (isSelected) {
-    drawSelectionRect(
-      context,
-      element.properties.widthMm * scale + 12,
-      element.properties.heightMm * scale + 12,
-      selectionColor,
-      selectionAnimation,
-    );
-  }
 }
 
 function drawSlotElement(
   context: CanvasRenderingContext2D,
   element: PanelElement,
   scale: number,
-  isSelected: boolean,
-  fillColor: string,
-  strokeColor: string,
-  selectionColor: string,
-  selectionAnimation?: SelectionAnimationState,
+  style: ElementStyle,
 ) {
   if (element.type !== PanelElementType.Slot) {
     return;
@@ -829,8 +707,8 @@ function drawSlotElement(
   const radius = Math.min(width / 2, height / 2);
   const rectHalfWidth = Math.max(width / 2 - radius, 0);
 
-  context.fillStyle = fillColor;
-  context.strokeStyle = strokeColor;
+  context.fillStyle = style.fill;
+  context.strokeStyle = style.stroke;
   context.lineWidth = 2;
   context.beginPath();
   context.moveTo(-rectHalfWidth, -radius);
@@ -841,27 +719,13 @@ function drawSlotElement(
   context.closePath();
   context.fill();
   context.stroke();
-
-  if (isSelected) {
-    drawSelectionRect(
-      context,
-      element.properties.widthMm * scale + 12,
-      element.properties.heightMm * scale + 12,
-      selectionColor,
-      selectionAnimation,
-    );
-  }
 }
 
 function drawTriangleElement(
   context: CanvasRenderingContext2D,
   element: PanelElement,
   scale: number,
-  isSelected: boolean,
-  fillColor: string,
-  strokeColor: string,
-  selectionColor: string,
-  selectionAnimation?: SelectionAnimationState,
+  style: ElementStyle,
 ) {
   if (element.type !== PanelElementType.Triangle) {
     return;
@@ -869,8 +733,8 @@ function drawTriangleElement(
 
   const width = element.properties.widthMm * scale;
   const height = element.properties.heightMm * scale;
-  context.fillStyle = fillColor;
-  context.strokeStyle = strokeColor;
+  context.fillStyle = style.fill;
+  context.strokeStyle = style.stroke;
   context.lineWidth = 2;
   context.beginPath();
   context.moveTo(0, -height / 2);
@@ -879,27 +743,13 @@ function drawTriangleElement(
   context.closePath();
   context.fill();
   context.stroke();
-
-  if (isSelected) {
-    drawSelectionRect(
-      context,
-      element.properties.widthMm * scale + 12,
-      element.properties.heightMm * scale + 12,
-      selectionColor,
-      selectionAnimation,
-    );
-  }
 }
 
 function drawInsertElement(
   context: CanvasRenderingContext2D,
   element: PanelElement,
   scale: number,
-  isSelected: boolean,
-  fillColor: string,
-  strokeColor: string,
-  selectionColor: string,
-  selectionAnimation?: SelectionAnimationState,
+  style: ElementStyle,
 ) {
   if (element.type !== PanelElementType.Insert) {
     return;
@@ -908,8 +758,8 @@ function drawInsertElement(
   const outerRadius = (element.properties.outerDiameterMm / 2) * scale;
   const hasHole = element.properties.embedDepthMm > 0 && element.properties.innerDepthMm > 0;
   const innerRadius = hasHole ? Math.max((element.properties.innerDiameterMm / 2) * scale, 0) : 0;
-  context.fillStyle = fillColor;
-  context.strokeStyle = strokeColor;
+  context.fillStyle = style.fill;
+  context.strokeStyle = style.stroke;
   context.lineWidth = 2;
   context.beginPath();
   context.arc(0, 0, outerRadius, 0, Math.PI * 2);
@@ -921,21 +771,14 @@ function drawInsertElement(
     context.arc(0, 0, innerRadius, 0, Math.PI * 2);
     context.stroke();
   }
-
-  if (isSelected) {
-    drawSelectionCircle(context, outerRadius + 6, selectionColor, selectionAnimation);
-  }
 }
 
 function drawLabelElement(
   context: CanvasRenderingContext2D,
   element: PanelElement,
   scale: number,
-  isSelected: boolean,
-  fillColor: string,
-  selectionColor: string,
+  style: ElementStyle,
   fontFamily: string,
-  selectionAnimation?: SelectionAnimationState,
 ) {
   if (element.type !== PanelElementType.Label) {
     return;
@@ -943,22 +786,345 @@ function drawLabelElement(
 
   const text = element.properties.text ?? "";
   const fontSizePx = Math.max(6, element.properties.fontSizePt * PT_TO_MM * scale);
-  context.fillStyle = fillColor;
+  context.fillStyle = style.fill;
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.font = `${fontSizePx}px ${fontFamily}`;
   context.fillText(text, 0, 0);
+}
 
-  if (isSelected) {
-    const size = getLabelSizeMm(element.properties);
+function drawSingleSelection(
+  context: CanvasRenderingContext2D,
+  element: PanelElement,
+  transform: CanvasTransform,
+  palette: PanelCanvasPalette,
+  fontFamily: string,
+  selectionAnimation: SelectionAnimationState | undefined,
+  showDimensions: boolean,
+) {
+  if (transform.scale <= 0) {
+    return;
+  }
+
+  const layout = getElementHandleLayout(element, transform.scale);
+  const frameRotationRad = (getElementFrameRotationDeg(element) * Math.PI) / 180;
+  const center = projectPanelPoint(element.positionMm, transform);
+
+  context.save();
+  context.translate(center.x, center.y);
+  if (frameRotationRad !== 0) {
+    context.rotate(frameRotationRad);
+  }
+  drawTransformFrame(context, layout.halfSizePx, palette.selection, selectionAnimation);
+  if (showDimensions) {
+    drawSelectedElementDimensions(
+      context,
+      element,
+      layout,
+      transform.scale,
+      frameRotationRad,
+      palette,
+      fontFamily,
+    );
+  }
+  drawTransformHandles(context, layout, palette);
+  context.restore();
+}
+
+function drawTransformFrame(
+  context: CanvasRenderingContext2D,
+  halfSizePx: Vector2,
+  selectionColor: string,
+  selectionAnimation?: SelectionAnimationState,
+) {
+  context.save();
+  context.strokeStyle = selectionColor;
+  context.lineWidth = 1.5;
+  context.setLineDash([6, 6]);
+  context.lineDashOffset = selectionAnimation?.dashOffset ?? 0;
+  context.strokeRect(-halfSizePx.x, -halfSizePx.y, halfSizePx.x * 2, halfSizePx.y * 2);
+  context.restore();
+}
+
+function drawTransformHandles(
+  context: CanvasRenderingContext2D,
+  layout: ElementHandleLayout,
+  palette: PanelCanvasPalette,
+) {
+  const halfHandleSizePx = REFERENCE_IMAGE_HANDLE_SIZE_PX / 2;
+
+  context.save();
+  context.setLineDash([]);
+  context.lineWidth = 1.5;
+  context.fillStyle = palette.handleFill;
+  context.strokeStyle = palette.handleStroke;
+
+  if (layout.hasRotationHandle) {
+    const rotationHandle = getElementHandleLocalPositionPx(layout, "rotate");
+    context.save();
+    context.strokeStyle = palette.selection;
+    context.beginPath();
+    context.moveTo(0, -layout.halfSizePx.y);
+    context.lineTo(rotationHandle.x, rotationHandle.y);
+    context.stroke();
+    context.restore();
+
+    context.beginPath();
+    context.arc(rotationHandle.x, rotationHandle.y, halfHandleSizePx, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
+  }
+
+  layout.handles.forEach((handle) => {
+    const point = getElementHandleLocalPositionPx(layout, handle);
+    context.beginPath();
+    context.rect(
+      point.x - halfHandleSizePx,
+      point.y - halfHandleSizePx,
+      REFERENCE_IMAGE_HANDLE_SIZE_PX,
+      REFERENCE_IMAGE_HANDLE_SIZE_PX,
+    );
+    context.fill();
+    context.stroke();
+  });
+
+  context.restore();
+}
+
+function drawSelectionOutline(
+  context: CanvasRenderingContext2D,
+  element: PanelElement,
+  transform: CanvasTransform,
+  selectionColor: string,
+  selectionAnimation?: SelectionAnimationState,
+) {
+  const { widthMm, heightMm } = getElementSizeMm(element);
+  const center = projectPanelPoint(element.positionMm, transform);
+
+  context.save();
+  context.translate(center.x, center.y);
+  const rotation = ((element.rotationDeg ?? 0) * Math.PI) / 180;
+  if (rotation !== 0) {
+    context.rotate(rotation);
+  }
+  if (getElementResizeMode(element) === "diameter") {
+    drawSelectionCircle(
+      context,
+      (widthMm / 2) * transform.scale + 6,
+      selectionColor,
+      selectionAnimation,
+    );
+  } else {
     drawSelectionRect(
       context,
-      size.widthMm * scale + 12,
-      size.heightMm * scale + 12,
+      widthMm * transform.scale + 12,
+      heightMm * transform.scale + 12,
       selectionColor,
       selectionAnimation,
     );
   }
+  context.restore();
+}
+
+function drawInlineDimensionLabels(
+  context: CanvasRenderingContext2D,
+  elements: PanelElement[],
+  transform: CanvasTransform,
+  palette: PanelCanvasPalette,
+  fontFamily: string,
+  skippedElementId: string | null,
+) {
+  if (transform.scale <= 0) {
+    return;
+  }
+
+  context.save();
+  context.font = getDimensionFont(fontFamily);
+  elements.forEach((element) => {
+    if (element.id === skippedElementId) {
+      return;
+    }
+    const dimensions = getElementDimensions(element);
+    if (!dimensions) {
+      return;
+    }
+    const text =
+      dimensions.kind === "diameter"
+        ? formatDiameterLabel(dimensions.diameterMm)
+        : formatBoxLabel(dimensions.widthMm, dimensions.heightMm);
+    const placement = getInlineLabelPlacement(
+      element,
+      getHalfTextSizeMm(context, text, transform.scale),
+    );
+    if (!placement) {
+      return;
+    }
+
+    const frameRotationRad = (getElementFrameRotationDeg(element) * Math.PI) / 180;
+    const center = projectPanelPoint(element.positionMm, transform);
+    context.save();
+    context.translate(center.x, center.y);
+    if (frameRotationRad !== 0) {
+      context.rotate(frameRotationRad);
+    }
+    drawDimensionText(
+      context,
+      text,
+      {
+        x: placement.offsetMm.x * transform.scale,
+        y: placement.offsetMm.y * transform.scale,
+      },
+      placement.vertical ? -Math.PI / 2 : 0,
+      frameRotationRad,
+      palette,
+    );
+    context.restore();
+  });
+  context.restore();
+}
+
+/** Draws in the element frame: the context is already translated and rotated. */
+function drawSelectedElementDimensions(
+  context: CanvasRenderingContext2D,
+  element: PanelElement,
+  layout: ElementHandleLayout,
+  scale: number,
+  frameRotationRad: number,
+  palette: PanelCanvasPalette,
+  fontFamily: string,
+) {
+  const dimensions = getElementDimensions(element);
+  if (!dimensions) {
+    return;
+  }
+
+  context.save();
+  context.font = getDimensionFont(fontFamily);
+
+  if (dimensions.kind === "diameter") {
+    const text = formatDiameterLabel(dimensions.diameterMm);
+    const placement = getInlineLabelPlacement(element, getHalfTextSizeMm(context, text, scale));
+    const textCenter = placement
+      ? { x: placement.offsetMm.x * scale, y: placement.offsetMm.y * scale }
+      : { x: 0, y: layout.halfSizePx.y + DIMENSION_LINE_OFFSET_PX };
+    drawDimensionText(context, text, textCenter, 0, frameRotationRad, palette);
+    context.restore();
+    return;
+  }
+
+  const halfWidthPx = (dimensions.widthMm * scale) / 2;
+  const halfHeightPx = (dimensions.heightMm * scale) / 2;
+  const widthLineY = layout.halfSizePx.y + DIMENSION_LINE_OFFSET_PX;
+  const heightLineX = layout.halfSizePx.x + DIMENSION_LINE_OFFSET_PX;
+  drawDimensionLine(
+    context,
+    { x: -halfWidthPx, y: widthLineY },
+    { x: halfWidthPx, y: widthLineY },
+    formatDimensionMm(dimensions.widthMm),
+    frameRotationRad,
+    palette,
+  );
+  drawDimensionLine(
+    context,
+    { x: heightLineX, y: halfHeightPx },
+    { x: heightLineX, y: -halfHeightPx },
+    formatDimensionMm(dimensions.heightMm),
+    frameRotationRad,
+    palette,
+  );
+  context.restore();
+}
+
+/** Dimension line with end ticks; the value sits in a gap of the line, or beside it if too short. */
+function drawDimensionLine(
+  context: CanvasRenderingContext2D,
+  from: Vector2,
+  to: Vector2,
+  text: string,
+  frameRotationRad: number,
+  palette: PanelCanvasPalette,
+) {
+  const length = Math.hypot(to.x - from.x, to.y - from.y);
+  if (length < 1) {
+    return;
+  }
+
+  const unit = { x: (to.x - from.x) / length, y: (to.y - from.y) / length };
+  // Both dimension lines run so that this normal points away from the element.
+  const normal = { x: -unit.y, y: unit.x };
+  const middle = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
+  const gapPx = context.measureText(text).width + DIMENSION_TEXT_GAP_PX * 2;
+  const textOnLine = length >= gapPx + DIMENSION_TICK_PX * 2;
+
+  context.save();
+  context.setLineDash([]);
+  context.strokeStyle = palette.dimensionLine;
+  context.lineWidth = 1;
+  context.beginPath();
+  if (textOnLine) {
+    context.moveTo(from.x, from.y);
+    context.lineTo(middle.x - (unit.x * gapPx) / 2, middle.y - (unit.y * gapPx) / 2);
+    context.moveTo(middle.x + (unit.x * gapPx) / 2, middle.y + (unit.y * gapPx) / 2);
+    context.lineTo(to.x, to.y);
+  } else {
+    context.moveTo(from.x, from.y);
+    context.lineTo(to.x, to.y);
+  }
+  [from, to].forEach((end) => {
+    context.moveTo(end.x - normal.x * DIMENSION_TICK_PX, end.y - normal.y * DIMENSION_TICK_PX);
+    context.lineTo(end.x + normal.x * DIMENSION_TICK_PX, end.y + normal.y * DIMENSION_TICK_PX);
+  });
+  context.stroke();
+  context.restore();
+
+  const textOffsetPx = textOnLine ? 0 : DIMENSION_FONT_SIZE_PX / 2 + DIMENSION_TEXT_GAP_PX;
+  drawDimensionText(
+    context,
+    text,
+    { x: middle.x + normal.x * textOffsetPx, y: middle.y + normal.y * textOffsetPx },
+    Math.atan2(unit.y, unit.x),
+    frameRotationRad,
+    palette,
+  );
+}
+
+/** Haloed text, flipped when needed so it never reads upside down on rotated elements. */
+function drawDimensionText(
+  context: CanvasRenderingContext2D,
+  text: string,
+  center: Vector2,
+  localAngleRad: number,
+  frameRotationRad: number,
+  palette: PanelCanvasPalette,
+) {
+  context.save();
+  context.translate(center.x, center.y);
+  context.rotate(localAngleRad + getReadableTextFlip(frameRotationRad + localAngleRad));
+  context.setLineDash([]);
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.lineJoin = "round";
+  context.lineWidth = 3;
+  context.strokeStyle = palette.dimensionHalo;
+  context.strokeText(text, 0, 0);
+  context.fillStyle = palette.dimensionText;
+  context.fillText(text, 0, 0);
+  context.restore();
+}
+
+function getDimensionFont(fontFamily: string): string {
+  return `600 ${DIMENSION_FONT_SIZE_PX}px ${fontFamily}`;
+}
+
+function getHalfTextSizeMm(
+  context: CanvasRenderingContext2D,
+  text: string,
+  scale: number,
+): Vector2 {
+  return {
+    x: (context.measureText(text).width / 2 + DIMENSION_TEXT_PADDING_PX) / scale,
+    y: (DIMENSION_FONT_SIZE_PX / 2 + DIMENSION_TEXT_PADDING_PX) / scale,
+  };
 }
 
 function drawSelectionCircle(

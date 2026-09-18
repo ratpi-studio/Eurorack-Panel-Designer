@@ -2,6 +2,7 @@ interface Translations {
   app: {
     title: string;
     subtitle: string;
+    errorFallback: string;
   };
   header: {
     githubLabel: string;
@@ -25,6 +26,7 @@ interface Translations {
     grid: string;
     snap: string;
     holes: string;
+    dimensions: string;
     gridSpacing: string;
     reset: string;
     panelColor: string;
@@ -216,6 +218,7 @@ export const enUS: Translations = {
   app: {
     title: "Eurorack Panel Designer",
     subtitle: "Interactive canvas, zoom, pan, selection",
+    errorFallback: "An unexpected error occurred. Please reload the page.",
   },
   header: {
     githubLabel: "GitHub",
@@ -239,6 +242,7 @@ export const enUS: Translations = {
     grid: "Grid",
     snap: "Snap to grid",
     holes: "Mounting holes",
+    dimensions: "Dimensions",
     gridSpacing: "Grid spacing (mm)",
     reset: "Reset view",
     panelColor: "Panel color",

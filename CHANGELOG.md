@@ -1,9 +1,17 @@
 # Changelog
 
+## 0.8.0 - 2026-09-18
+
+- Placed elements are now tinted with their palette color (translucent fill, solid outline), so cut-outs are easy to tell apart. Text and SVG artwork keep the design color, and exports still use the panel and design colors.
+- Added measurements on the canvas: diameters inside round holes, width × height inside other shapes, and dimension lines along the sides of the selected element. Toggle them with the new "Dimensions" display option.
+- Added resize handles on the selected element: round holes grow around their center, other shapes keep the opposite side in place (even when rotated), and text scales its font size. Sizes snap to 0.5 mm steps; hold Shift to resize freely.
+- Fixed SVG artwork getting deselected after dragging one of its handles.
+- Fixed a crash on the canvas when the browser automatically translated the page. The page is now declared as English, and the error screen is in English too.
+
 ## 0.7.0 - 2026-05-08
 
 - Added per-panel color selection: pick a panel substrate color and a separate design color from four presets (white, black, red, sky blue). The whole canvas, PNG export, and SVG export reflect the choices.
-- Added an "Order on Etsy" entry to the export menu: serializes the current design + a thumbnail PNG to Vercel Blob, redirects to a recap page at `/order/<id>`, and points to a configurable Etsy listing for checkout. Acheteurs paste the design ID in the Etsy personalization note.
+- Added an "Order on Etsy" entry to the export menu: serializes the current design + a thumbnail PNG to Vercel Blob, redirects to a recap page at `/order/<id>`, and points to a configurable Etsy listing for checkout. Buyers paste the design ID in the Etsy personalization note.
 - New serverless functions under `api/order` (POST upload + GET resolver). Configure `VITE_ETSY_LISTING_URL`, `VITE_PRICE_BASE_EUR`, `VITE_PRICE_PER_HP_EUR`, and enable Vercel Blob to use them.
 
 ## 0.6.0 - 2026-05-08

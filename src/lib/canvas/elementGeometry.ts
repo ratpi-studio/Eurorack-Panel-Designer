@@ -28,6 +28,11 @@ export interface NearestElementDistance {
   distanceMm: number;
 }
 
+interface ElementSizeMm {
+  widthMm: number;
+  heightMm: number;
+}
+
 export function getLabelSizeMm(properties: LabelElementProperties): LabelSizeMm {
   const fontSizeMm = Math.max(2, properties.fontSizePt * PT_TO_MM);
   const textLength = properties.text?.length ?? 0;
@@ -315,6 +320,32 @@ export function getElementBounds(element: PanelElement): ElementBounds {
         element.properties.heightMm,
         rotation,
       );
+    default:
+      return assertUnreachable(element);
+  }
+}
+
+/** Size of the element's unrotated bounding box. */
+export function getElementSizeMm(element: PanelElement): ElementSizeMm {
+  switch (element.type) {
+    case PanelElementType.Jack:
+    case PanelElementType.Potentiometer:
+    case PanelElementType.Led:
+      return { widthMm: element.properties.diameterMm, heightMm: element.properties.diameterMm };
+    case PanelElementType.Insert:
+      return {
+        widthMm: element.properties.outerDiameterMm,
+        heightMm: element.properties.outerDiameterMm,
+      };
+    case PanelElementType.Label:
+      return getLabelSizeMm(element.properties);
+    case PanelElementType.Switch:
+    case PanelElementType.Rectangle:
+    case PanelElementType.Oval:
+    case PanelElementType.Slot:
+    case PanelElementType.Triangle:
+    case PanelElementType.SvgArtwork:
+      return { widthMm: element.properties.widthMm, heightMm: element.properties.heightMm };
     default:
       return assertUnreachable(element);
   }
