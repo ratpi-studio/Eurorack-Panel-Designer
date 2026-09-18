@@ -3,8 +3,12 @@ import type { RootOptions } from "react-dom/client";
 
 import { getAnonymousUserId, getErrorFingerprint } from "@lib/monitoring";
 
-const SENTRY_DSN =
-  "https://05489173dd52acef4232f82e99d559a2@o4509397199486976.ingest.de.sentry.io/4510476688359504";
+declare global {
+  interface Window {
+    /** Set once Sentry runs: the boot error reporter in index.html then leaves errors to it. */
+    __sentryStarted?: boolean;
+  }
+}
 
 // Only official deployments get an environment at build time (see vite.config.ts), so local dev
 // servers, local builds and forks never report to this project.
@@ -14,7 +18,7 @@ export const sentryEnabled = Boolean(environment) && import.meta.env.PROD;
 
 if (sentryEnabled) {
   Sentry.init({
-    dsn: SENTRY_DSN,
+    dsn: import.meta.env.VITE_SENTRY_DSN,
     environment,
     release: import.meta.env.VITE_SENTRY_RELEASE || undefined,
     tunnel: import.meta.env.VITE_SENTRY_TUNNEL || undefined,
@@ -37,6 +41,7 @@ if (sentryEnabled) {
     },
   });
   Sentry.setUser({ id: getAnonymousUserId() });
+  window.__sentryStarted = true;
 }
 
 const logError = (error: unknown) => console.error(error);

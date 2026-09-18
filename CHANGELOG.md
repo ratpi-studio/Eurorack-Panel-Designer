@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.1 - 2026-09-18
+
+- Fixed the app not starting since 0.10.0: the page stayed blank, with the error "t is not a function" in the console.
+- Errors that stop the app from starting are now reported, so such a failure no longer goes unnoticed.
+
 ## 0.10.0 - 2026-09-18
 
 - Text now prints: it is part of the STL export and of the 3D view, raised like the SVG patterns, at the same height and in the design color. Where text lies over a cut-out, it is cut away like the patterns.
