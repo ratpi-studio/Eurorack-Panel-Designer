@@ -5,6 +5,151 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="images/favicon.png" />
     <title>Eurorack Panel Designer</title>
+    <script data-boot-error-reporter>
+      // Reports the first error thrown before Sentry has started, such as a bundle that fails to
+      // load or evaluate: Sentry cannot report those, since it never starts. It sends a minimal
+      // event through the Sentry tunnel. Only official deployments get the environment and the
+      // tunnel at build time (see vite.config.ts); src/instrument.ts sets __sentryStarted.
+      (function () {
+        var dsn = "%VITE_SENTRY_DSN%";
+        var environment = "%VITE_SENTRY_ENVIRONMENT%";
+        var release = "%VITE_SENTRY_RELEASE%";
+        var tunnel = "%VITE_SENTRY_TUNNEL%";
+        if (!environment || !tunnel || environment.charAt(0) === "%") {
+          return;
+        }
+        var reported = false;
+
+        function randomId() {
+          var bytes = crypto.getRandomValues(new Uint8Array(16));
+          return Array.prototype.map
+            .call(bytes, function (byte) {
+              return (byte < 16 ? "0" : "") + byte.toString(16);
+            })
+            .join("");
+        }
+
+        function isOwnCode(text) {
+          return String(text || "").indexOf(location.origin) !== -1;
+        }
+
+        // Stack lines look like "at fn (url:line:col)", "at url:line:col" or "fn@url:line:col".
+        function parseFrames(stack) {
+          var frames = [];
+          String(stack || "")
+            .split("\n")
+            .forEach(function (line) {
+              var match =
+                /^\s*(?:at\s+)?(?:(.*?)\s*\(|(.*?)@)?(\w+:\/\/[^\s()]+?):(\d+):(\d+)\)?\s*$/.exec(
+                  line,
+                );
+              if (match) {
+                // Sentry lists frames from the outermost call to the one that threw.
+                frames.unshift({
+                  function: match[1] || match[2] || "?",
+                  filename: match[3],
+                  lineno: Number(match[4]),
+                  colno: Number(match[5]),
+                  in_app: true,
+                });
+              }
+            });
+          return frames;
+        }
+
+        function report(type, value, frames) {
+          if (reported || window.__sentryStarted) {
+            return;
+          }
+          reported = true;
+          var userId = null;
+          try {
+            userId = localStorage.getItem("sentry-anonymous-id");
+          } catch (error) {
+            // Storage unavailable: send the event without a user.
+          }
+          var eventId = randomId();
+          var event = {
+            event_id: eventId,
+            timestamp: Date.now() / 1000,
+            platform: "javascript",
+            level: "fatal",
+            environment: environment,
+            release: release || undefined,
+            tags: { flow: "boot" },
+            user: userId ? { id: userId } : undefined,
+            request: { url: location.href, headers: { "User-Agent": navigator.userAgent } },
+            exception: {
+              values: [
+                {
+                  type: type,
+                  value: value,
+                  mechanism: { type: "onerror", handled: false },
+                  stacktrace: frames.length ? { frames: frames } : undefined,
+                },
+              ],
+            },
+          };
+          var envelope = [
+            JSON.stringify({ event_id: eventId, sent_at: new Date().toISOString(), dsn: dsn }),
+            JSON.stringify({ type: "event" }),
+            JSON.stringify(event),
+          ].join("\n");
+          fetch(tunnel, { method: "POST", body: envelope, keepalive: true }).catch(function () {
+            // Nothing else to try.
+          });
+        }
+
+        window.addEventListener(
+          "error",
+          function (event) {
+            var target = event.target;
+            if (target && (target.tagName === "SCRIPT" || target.tagName === "LINK")) {
+              var url = target.src || target.href;
+              if (isOwnCode(url)) {
+                report("LoadError", "Failed to load " + url, []);
+              }
+              return;
+            }
+            var error = event.error;
+            var stack = error && error.stack;
+            if (!isOwnCode(event.filename) && !isOwnCode(stack)) {
+              // Browser extensions and injected scripts.
+              return;
+            }
+            var frames = parseFrames(stack);
+            if (!frames.length && event.filename) {
+              frames.push({
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno,
+                in_app: true,
+              });
+            }
+            report(
+              (error && error.name) || "Error",
+              (error && error.message) || event.message || "Unknown error",
+              frames,
+            );
+          },
+          true,
+        );
+
+        window.addEventListener("unhandledrejection", function (event) {
+          var reason = event.reason;
+          var stack = reason && reason.stack;
+          // A chunk that fails to load names its URL in the message rather than in the stack.
+          if (!isOwnCode(stack) && !isOwnCode(reason && reason.message)) {
+            return;
+          }
+          report(
+            (reason && reason.name) || "UnhandledRejection",
+            (reason && reason.message) || String(reason),
+            parseFrames(stack),
+          );
+        });
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

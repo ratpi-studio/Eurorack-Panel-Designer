@@ -100,6 +100,55 @@ function changelogPlugin(): Plugin {
   };
 }
 
+/**
+ * Fails the build when chunks import each other in a cycle. The chunk evaluated first then uses
+ * bindings of a chunk that has not run yet: in 0.10.0, manual vendor chunks and Rolldown's runtime
+ * helpers formed such a cycle, and every page load crashed with "t is not a function".
+ */
+function chunkCycleGuardPlugin(): Plugin {
+  return {
+    name: "eurorack-chunk-cycle-guard",
+    apply: "build",
+    generateBundle(_options, bundle) {
+      const importsByChunk = new Map<string, string[]>();
+      for (const output of Object.values(bundle)) {
+        if (output.type === "chunk") {
+          importsByChunk.set(output.fileName, output.imports);
+        }
+      }
+
+      const checked = new Set<string>();
+      const path: string[] = [];
+      const findCycle = (fileName: string): string[] | null => {
+        const start = path.indexOf(fileName);
+        if (start !== -1) {
+          return [...path.slice(start), fileName];
+        }
+        if (checked.has(fileName)) {
+          return null;
+        }
+        path.push(fileName);
+        for (const imported of importsByChunk.get(fileName) ?? []) {
+          const cycle = findCycle(imported);
+          if (cycle) {
+            return cycle;
+          }
+        }
+        path.pop();
+        checked.add(fileName);
+        return null;
+      };
+
+      for (const fileName of importsByChunk.keys()) {
+        const cycle = findCycle(fileName);
+        if (cycle) {
+          this.error(`Chunks import each other in a cycle: ${cycle.join(" -> ")}`);
+        }
+      }
+    },
+  };
+}
+
 const activeMode = process.env.MODE ?? process.env.NODE_ENV ?? "development";
 const env = loadEnv(activeMode, process.cwd(), "");
 const basePath = env.VITE_BASE_PATH || "/";
@@ -116,6 +165,9 @@ const sentryEnvironment =
 const sentryRelease =
   env.SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA || "";
 
+// Read by src/instrument.ts and by the boot error reporter in index.html.
+process.env.VITE_SENTRY_DSN =
+  "https://05489173dd52acef4232f82e99d559a2@o4509397199486976.ingest.de.sentry.io/4510476688359504";
 process.env.VITE_SENTRY_ENVIRONMENT = sentryEnvironment;
 process.env.VITE_SENTRY_RELEASE = sentryRelease;
 // The tunnel is a Vercel Function (api/sentry-tunnel.ts), so only Vercel builds can use it.
@@ -145,6 +197,7 @@ export default defineConfig({
   plugins: [
     vanillaExtractPlugin(),
     changelogPlugin(),
+    chunkCycleGuardPlugin(),
     react(),
     ...(useSentry
       ? [
@@ -167,40 +220,6 @@ export default defineConfig({
   build: {
     sourcemap: true,
     chunkSizeWarningLimit: 1200,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (!id.includes("node_modules")) {
-            return undefined;
-          }
-          if (/node_modules\/react/i.test(id)) {
-            return "react-vendor";
-          }
-          if (id.includes("node_modules/three/examples/jsm/libs/opentype")) {
-            // Font parsing, loaded once a text needs its font: keep it out of the 3D view chunk.
-            return "opentype";
-          }
-          if (id.includes("node_modules/three")) {
-            return "three";
-          }
-          if (id.includes("node_modules/@sentry")) {
-            return "sentry";
-          }
-          if (id.includes("node_modules/zustand")) {
-            return "zustand";
-          }
-          if (id.includes("node_modules/react-hot-toast")) {
-            return "react-hot-toast";
-          }
-          if (/node_modules\/(polygon-clipping|splaytree|robust-predicates)\//.test(id)) {
-            // Only code loaded on demand uses it (exports, merged cut-outs): keep it out of the
-            // vendor chunk, which loads at startup.
-            return "polygon-clipping";
-          }
-          return "vendor";
-        },
-      },
-    },
   },
   resolve: {
     alias: {
