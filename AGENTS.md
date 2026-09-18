@@ -52,12 +52,17 @@ Prefer Vite+ commands when working in the repository:
   - Non-React model logic, geometry, unit conversion, serialization, storage helpers, export builders, and canvas drawing helpers.
   - `src/lib/canvas/` contains drawing and transform logic used by the canvas and PNG export path.
   - `src/lib/view3d/` contains the live 3D view: a `three` scene that renders the STL geometry from `exportStl.ts`, and camera framing math.
+  - `src/lib/text/` contains the text pipeline: the curated fonts (`textFonts.ts`, files and licenses in `public/fonts/`), on-demand font loading (`textFontLoader.ts`), the layout every output draws from (`textLayout.ts`), and the polygons the STL extrudes (`textPolygons.ts`).
 - `src/i18n/`
   - User-facing copy lives here. The app currently ships with `en_US.ts`.
 - `src/styles/`
   - Shared theme tokens and global styles via `vanilla-extract`.
 - `scripts/`
   - Small maintenance scripts, such as the SVG library manifest generator.
+- `api/`
+  - Vercel Functions: `sentry-tunnel.ts` relays error reports, and `order.ts` stores and serves the designs ordered on Etsy.
+  - Ordering is behind the `VITE_ORDERING_ENABLED` flag, read at build time by the app (`isOrderingEnabled` in `src/lib/order.ts`) and at runtime by `api/order.ts`, which only gates new designs.
+  - `order.ts` repeats the widths and filament ids of `src/lib/orderCatalog.ts` instead of importing app code; its tests check that both agree. Change them together, and mirror price or width changes on the Etsy listing.
 - `github-pages/`
   - The page published on GitHub Pages. It redirects to the Vercel deployment and hands over the data saved in that origin's localStorage, which `src/lib/githubPagesMigration.ts` imports. Keep its storage keys in sync with the app.
 
@@ -99,7 +104,10 @@ Prefer Vite+ commands when working in the repository:
 - Export logic belongs in `src/lib/` and supporting store hooks, not inline in presentation components.
 - `three` is already part of the project for STL generation / preview. Reuse that stack for 3D-related work instead of adding another rendering solution.
 - Cut-outs that overlap each other or cross the panel edge are merged into single openings in every output (STL, SVG, KiCad, canvas, PNG). `splitOverlappingCutouts` (`src/lib/panelSurface.ts`) finds them; `mergePanelSurface` (`src/lib/mergedPanelSurface.ts`) merges them with `polygon-clipping`. Designs without overlaps keep their exact previous output.
-- `polygon-clipping` stays out of the startup bundle: only modules loaded on demand import it (`exportStl`, `exportSvg`, `exportKicad`, `mergedPanelSurface`), and `vite.config.ts` gives it its own chunk. Load these modules with `import()`, like the export handlers in `useProjects.ts` and `loadPanelSurfaceMerge` for the canvas.
+- `polygon-clipping` stays out of the startup bundle: only modules loaded on demand import it (`exportStl`, `exportSvg`, `exportKicad`, `mergedPanelSurface`, `text/textPolygons`), and `vite.config.ts` gives it its own chunk. Load these modules with `import()`, like the export handlers in `useProjects.ts` and `loadPanelSurfaceMerge` for the canvas.
+- Panels print in two colors: the panel body, and the design layer (SVG patterns and texts) raised on the front in `designColor`. The design layer shares one relief, `PanelModel.designRelief`: never give a pattern or a text a height of its own. `designLayer.ts` holds the helpers every output shares; the STL merges the layer into one extrusion (`buildDesignLayerPolygons`).
+- Every output draws text from the same outlines: `getLabelTextLayout` (canvas and PNG through `Path2D`, SVG as paths, STL through `textPolygons`), so they match. Text over an SVG pattern either clears it (the knockout zone is the text's ink bounds grown by the padding, see `getLabelKnockoutRing`) or merges with it. Fonts load on demand with `loadTextFonts`: await it before a synchronous export builder, and re-render on `subscribeTextFonts` in live views. opentype.js (from `three/examples/jsm/libs`) stays in its own `opentype` chunk.
+- New fonts must print well at small sizes and carry an SIL OFL or Apache 2.0 license: add the file and its license under `public/fonts/<folder>/`, an entry in `TEXT_FONTS` (with its measured stem width), and a label in `properties.fontOptions`.
 - If you add a new element type, wire it through the full pipeline:
   - element type definitions
   - element factory / defaults

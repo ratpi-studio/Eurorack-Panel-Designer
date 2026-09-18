@@ -1,3 +1,5 @@
+import type { TextFontId } from "@lib/text/textFonts";
+
 interface Translations {
   app: {
     title: string;
@@ -102,8 +104,21 @@ interface Translations {
     text: string;
     fontSize: string;
     color: string;
-    stlThickness: string;
-    stlPenetration: string;
+    font: string;
+    fontOptions: Record<TextFontId, string>;
+    textColorHint: string;
+    patternOverlap: string;
+    patternOverlapKnockout: string;
+    patternOverlapMerge: string;
+    patternOverlapHint: string;
+    knockoutPadding: string;
+    reliefTitle: string;
+    reliefHint: string;
+    reliefThickness: string;
+    reliefPenetration: string;
+    textTooSmall: (minSizePt: number) => string;
+    textThinStrokes: (strokeMm: number, minStrokeMm: number) => string;
+    textMissingCharacters: (characters: string) => string;
     outerDiameter: string;
     outerDepth: string;
     innerDiameter: string;
@@ -149,7 +164,7 @@ interface Translations {
     exportKicadPcb: string;
     exportStl: string;
     exportMenuLabel: string;
-    orderOnEtsy: string;
+    orderPrint: string;
     reset: string;
     savedLabel: string;
     load: string;
@@ -176,9 +191,6 @@ interface Translations {
       stlExport: string;
       stlExportWithWarnings: (count: number) => string;
       stlError: string;
-      orderUploadInProgress: string;
-      orderUploadSuccess: string;
-      orderUploadError: string;
       reset: string;
       confirmSaveBeforeNew: string;
       confirmDeleteSelected: (name: string) => string;
@@ -207,19 +219,55 @@ interface Translations {
     viewFull: string;
   };
   order: {
-    title: string;
+    dialogTitle: string;
+    dialogDescription: string;
+    previewLabel: string;
+    previewLoading: string;
+    panelFilamentLabel: string;
+    detailsFilamentLabel: string;
+    detailsFilamentHint: string;
+    filamentNames: { white: string; black: string; skyBlue: string };
     widthLabel: string;
-    panelColorLabel: string;
-    designColorLabel: string;
+    widthValue: (widthHp: number) => string;
     priceLabel: string;
-    idLabel: string;
-    idHelp: string;
-    copyId: string;
+    price: (priceEur: number) => string;
+    priceHint: string;
+    stepsTitle: string;
+    steps: (widthHp: number) => string[];
+    issueTooWide: (widthHp: number, maxWidthHp: number) => string;
+    issueSameFilament: string;
+    issueTextPrint: (count: number) => string;
+    cancel: string;
+    submit: string;
+    submitting: string;
+    errors: {
+      unavailable: string;
+      tooLarge: string;
+      invalid: string;
+      server: string;
+      network: string;
+    };
+    pageTitle: string;
+    designTitle: string;
+    codeLabel: string;
+    codeHint: string;
+    copyCode: string;
     copied: string;
+    howToTitle: string;
+    howToSteps: (widthHp: number) => string[];
     buyCta: string;
-    editLink: string;
+    buyUnavailable: string;
+    filesTitle: string;
+    filesHint: (thicknessMm: number) => string;
+    downloadStl: string;
+    downloadJson: string;
+    downloadError: string;
+    versionNote: (version: string, commit: string) => string;
+    versionChanged: string;
+    backToDesigner: string;
     loading: string;
     loadError: string;
+    notFound: string;
   };
   shortcuts: {
     shift: string;
@@ -351,7 +399,7 @@ export const enUS: Translations = {
       },
       label: {
         label: "Text",
-        description: "Add a label",
+        description: "Raised text in the design color",
         color: "#f8fafc",
       },
       rectangle: {
@@ -404,8 +452,30 @@ export const enUS: Translations = {
     text: "Text",
     fontSize: "Size (pt)",
     color: "Color",
-    stlThickness: "SVG thickness (mm)",
-    stlPenetration: "SVG penetration (mm)",
+    font: "Font",
+    fontOptions: {
+      roboto: "Roboto Bold · clean sans",
+      barlowCondensed: "Barlow Condensed Bold · condensed",
+      jetbrainsMono: "JetBrains Mono Bold · monospace",
+      michroma: "Michroma · wide, technical",
+      orbitron: "Orbitron Bold · geometric display",
+    },
+    textColorHint:
+      "The design color, the panel's second print color: it also applies to every SVG pattern.",
+    patternOverlap: "Over SVG patterns",
+    patternOverlapKnockout: "Clear the pattern around the text",
+    patternOverlapMerge: "Merge into the pattern",
+    patternOverlapHint:
+      "Clearing keeps the text readable. Merged text joins the pattern at the same height, even where that makes it harder to read.",
+    knockoutPadding: "Clearance (mm)",
+    reliefTitle: "Relief",
+    reliefHint: "Shared by every text and SVG pattern, which print at the same height.",
+    reliefThickness: "Thickness (mm)",
+    reliefPenetration: "Sunk into panel (mm)",
+    textTooSmall: (minSizePt: number) => `Text under ${minSizePt} pt is hard to print.`,
+    textThinStrokes: (strokeMm: number, minStrokeMm: number) =>
+      `Strokes are about ${strokeMm.toFixed(2)} mm wide and may not print under ${minStrokeMm} mm: use a larger size or a bolder font.`,
+    textMissingCharacters: (characters: string) => `Not in this font, so left out: ${characters}`,
     outerDiameter: "Outer diameter (mm)",
     outerDepth: "Outer depth (mm)",
     innerDiameter: "Inner diameter (mm)",
@@ -439,7 +509,7 @@ export const enUS: Translations = {
     exportKicadPcb: "Export KiCad PCB",
     exportStl: "Export STL",
     exportMenuLabel: "Choose export format",
-    orderOnEtsy: "Order on Etsy",
+    orderPrint: "Order this panel",
     reset: "Reset design",
     savedLabel: "Saved projects",
     load: "Load",
@@ -466,11 +536,8 @@ export const enUS: Translations = {
       kicadError: "Failed to generate KiCad export.",
       stlExport: "STL export created.",
       stlExportWithWarnings: (count: number) =>
-        `STL export created. ${count} SVG artwork item${count === 1 ? " is" : "s are"} missing or incomplete in the model.`,
+        `STL export created. ${count} SVG pattern${count === 1 ? " or text is" : "s or texts are"} missing or incomplete in the model.`,
       stlError: "Failed to generate STL export.",
-      orderUploadInProgress: "Uploading your design…",
-      orderUploadSuccess: "Design uploaded — review your order.",
-      orderUploadError: "Could not upload your design. Try again.",
       reset: "Design reset.",
       confirmSaveBeforeNew: "Save current project before creating a new one?",
       confirmDeleteSelected: (name: string) => `Delete saved project "${name}"?`,
@@ -499,19 +566,77 @@ export const enUS: Translations = {
     viewFull: "Open full changelog",
   },
   order: {
-    title: "Your custom panel",
+    dialogTitle: "Order this panel",
+    dialogDescription:
+      "We 3D print your panel in two colors and ship it to you. Pick the colors, get a design code, then buy the panel on Etsy with that code.",
+    previewLabel: "Print preview",
+    previewLoading: "Loading the 3D preview…",
+    panelFilamentLabel: "Panel color",
+    detailsFilamentLabel: "Text and pattern color",
+    detailsFilamentHint: "Text and SVG patterns are printed in relief, in this color.",
+    filamentNames: { white: "White", black: "Black", skyBlue: "Sky blue" },
     widthLabel: "Width",
-    panelColorLabel: "Panel color",
-    designColorLabel: "Design color",
-    priceLabel: "Estimated price",
-    idLabel: "Design ID",
-    idHelp: "Paste this ID in the Etsy personalization note when ordering.",
-    copyId: "Copy",
-    copied: "Copied!",
+    widthValue: (widthHp) => `${widthHp} HP`,
+    priceLabel: "Price on Etsy",
+    price: (priceEur) =>
+      new Intl.NumberFormat("en", {
+        style: "currency",
+        currency: "EUR",
+        trailingZeroDisplay: "stripIfInteger",
+      }).format(priceEur),
+    priceHint: "Shipping is added on Etsy.",
+    stepsTitle: "How ordering works",
+    steps: (widthHp) => [
+      "Get your design code here.",
+      `On Etsy, choose the width ${widthHp} HP.`,
+      "Paste the code in the personalization field and complete the purchase.",
+    ],
+    issueTooWide: (widthHp, maxWidthHp) =>
+      `Panels up to ${maxWidthHp} HP can be ordered. This one is ${widthHp} HP.`,
+    issueSameFilament:
+      "The panel, text and patterns share one color: text and patterns will not stand out.",
+    issueTextPrint: (count) =>
+      count === 1
+        ? "A text may not print well: see the warning in its properties."
+        : `${count} texts may not print well: see the warnings in their properties.`,
+    cancel: "Cancel",
+    submit: "Get my design code",
+    submitting: "Saving your design…",
+    errors: {
+      unavailable: "Ordering is not available on this site right now.",
+      tooLarge: "This design is too large to send. Try smaller SVG artwork.",
+      invalid: "This design could not be sent. Reload the page and try again.",
+      server: "Your design could not be saved. Try again in a moment.",
+      network: "Could not reach the server. Check your connection and try again.",
+    },
+    pageTitle: "Your panel is ready to order",
+    designTitle: "Your panel design",
+    codeLabel: "Design code",
+    codeHint:
+      "This code links your Etsy order to this design. You can come back to this page later.",
+    copyCode: "Copy",
+    copied: "Copied",
+    howToTitle: "Order on Etsy",
+    howToSteps: (widthHp) => [
+      "Open the Etsy listing with the button below: it copies the code for you.",
+      `Choose the width ${widthHp} HP.`,
+      "Paste the code in the personalization field, then complete the purchase.",
+    ],
     buyCta: "Buy on Etsy",
-    editLink: "Back to designer",
-    loading: "Loading your design…",
-    loadError: "We couldn't find this design.",
+    buyUnavailable: "Ordering is not available on this site right now.",
+    filesTitle: "Print files",
+    filesHint: (thicknessMm) =>
+      `The STL is built at ${thicknessMm} mm, as the panel is printed. The JSON opens in the designer with "Import JSON".`,
+    downloadStl: "Download STL",
+    downloadJson: "Download design (JSON)",
+    downloadError: "The file could not be built.",
+    versionNote: (version, commit) =>
+      `Designed with version ${version || "unknown"}${commit ? ` (${commit.slice(0, 7)})` : ""}.`,
+    versionChanged: "The designer has changed since: the STL is built with the current version.",
+    backToDesigner: "Back to the designer",
+    loading: "Loading the design…",
+    loadError: "This design could not be loaded. Try again in a moment.",
+    notFound: "No design matches this code. Check the code and try again.",
   },
   shortcuts: {
     shift: "Shift",

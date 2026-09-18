@@ -1,12 +1,17 @@
 import {
   PanelElementType,
+  isLabelElement,
+  type LabelElement,
   type MountingHole,
   type PanelElement,
   type Vector2,
 } from "@lib/panelTypes";
 import { type ClearanceLines } from "@lib/clearance";
+import { collectKnockoutRings } from "@lib/designLayer";
 import { createPanelSurfacePath2D } from "@lib/panelSurface";
 import { isSvgArtworkElement } from "@lib/svgArtwork";
+import { getLabelTextLayout, type LabelTextLayout } from "@lib/text/textLayout";
+import { PT_TO_MM } from "@lib/units";
 import {
   getReferenceImageControlPositions,
   REFERENCE_IMAGE_HANDLE_SIZE_PX,
@@ -26,7 +31,6 @@ import {
 import {
   computeNearestElementDistances,
   getElementSizeMm,
-  PT_TO_MM,
   type NearestElementDistance,
 } from "./elementGeometry";
 import {
@@ -85,8 +89,8 @@ interface PanelSceneDrawingOptions {
   ghostElement?: PanelElement | null;
   svgArtworkImages?: Map<string, HTMLImageElement>;
   /**
-   * Clips SVG artwork to the panel minus its cut-outs, with the even-odd rule. Built once per
-   * design change (see `buildPanelSurfaceClipPathData`), not on every frame.
+   * Clips SVG artwork and text to the panel minus its cut-outs, with the even-odd rule. Built once
+   * per design change (see `buildPanelSurfaceClipPathData`), not on every frame.
    */
   panelSurfacePath: Path2D | null;
   clearanceLines?: ClearanceLines | null;
@@ -159,6 +163,7 @@ export function drawPanelScene({
     elements,
     transform,
     panelSurfacePath,
+    buildKnockoutClipPaths(elements, panelSizeMm),
     svgArtworkImages,
     elementStyles,
     fontFamily,
@@ -498,11 +503,29 @@ function drawMountingHoles(
   context.restore();
 }
 
+/**
+ * Clip paths that each keep everything but the zone a knocked-out text clears, in panel mm.
+ * Applied one after the other, they clear every zone, overlapping ones included.
+ */
+function buildKnockoutClipPaths(elements: PanelElement[], panelSizeMm: Vector2): Path2D[] {
+  if (typeof Path2D === "undefined") {
+    return [];
+  }
+  return collectKnockoutRings(elements).map((ring) => {
+    const path = new Path2D();
+    path.rect(-1, -1, panelSizeMm.x + 2, panelSizeMm.y + 2);
+    ring.forEach(([x, y], index) => (index === 0 ? path.moveTo(x, y) : path.lineTo(x, y)));
+    path.closePath();
+    return path;
+  });
+}
+
 function drawElements(
   context: CanvasRenderingContext2D,
   elements: PanelElement[],
   transform: CanvasTransform,
   panelSurfacePath: Path2D | null,
+  knockoutClipPaths: Path2D[],
   svgArtworkImages: Map<string, HTMLImageElement> | undefined,
   elementStyles: Record<PanelElementType, ElementStyle>,
   fontFamily: string,
@@ -514,7 +537,20 @@ function drawElements(
         element,
         transform,
         panelSurfacePath,
+        knockoutClipPaths,
         svgArtworkImages?.get(element.id) ?? null,
+      );
+      return;
+    }
+
+    if (isLabelElement(element)) {
+      drawLabelElement(
+        context,
+        element,
+        transform,
+        panelSurfacePath,
+        elementStyles[element.type],
+        fontFamily,
       );
       return;
     }
@@ -557,10 +593,6 @@ function drawElements(
         drawInsertElement(context, element, transform.scale, style);
         break;
       }
-      case PanelElementType.Label: {
-        drawLabelElement(context, element, transform.scale, style, fontFamily);
-        break;
-      }
       default:
         break;
     }
@@ -590,6 +622,7 @@ function drawGhostElement(
       mountingHoles: [],
       elements: [element],
     }),
+    [],
     undefined,
     elementStyles,
     fontFamily,
@@ -602,6 +635,7 @@ function drawSvgArtworkElement(
   element: PanelElement,
   transform: CanvasTransform,
   panelSurfacePath: Path2D | null,
+  knockoutClipPaths: Path2D[],
   image: HTMLImageElement | null,
 ) {
   if (!isSvgArtworkElement(element) || !image?.complete || !panelSurfacePath) {
@@ -612,6 +646,7 @@ function drawSvgArtworkElement(
   context.translate(transform.origin.x, transform.origin.y);
   context.scale(transform.scale, transform.scale);
   context.clip(panelSurfacePath, "evenodd");
+  knockoutClipPaths.forEach((clipPath) => context.clip(clipPath, "evenodd"));
   context.translate(element.positionMm.x, element.positionMm.y);
   const rotation = ((element.rotationDeg ?? 0) * Math.PI) / 180;
   if (rotation !== 0) {
@@ -774,24 +809,64 @@ function drawInsertElement(
   }
 }
 
+const labelPathCache = new WeakMap<LabelTextLayout, Path2D>();
+
+function getLabelPath2D(layout: LabelTextLayout): Path2D | null {
+  if (typeof Path2D === "undefined") {
+    return null;
+  }
+  let path = labelPathCache.get(layout);
+  if (!path) {
+    path = new Path2D(layout.pathData);
+    labelPathCache.set(layout, path);
+  }
+  return path;
+}
+
+/**
+ * Draws the outlines the STL extrudes, clipped to the panel surface like the relief. Until the
+ * font has loaded, an approximation in the interface font stands in.
+ */
 function drawLabelElement(
   context: CanvasRenderingContext2D,
-  element: PanelElement,
-  scale: number,
+  element: LabelElement,
+  transform: CanvasTransform,
+  panelSurfacePath: Path2D | null,
   style: ElementStyle,
   fontFamily: string,
 ) {
-  if (element.type !== PanelElementType.Label) {
+  const layout = getLabelTextLayout(element.properties);
+  const path = layout ? getLabelPath2D(layout) : null;
+  const rotation = ((element.rotationDeg ?? 0) * Math.PI) / 180;
+
+  context.save();
+  context.fillStyle = style.fill;
+  if (path) {
+    context.translate(transform.origin.x, transform.origin.y);
+    context.scale(transform.scale, transform.scale);
+    if (panelSurfacePath) {
+      context.clip(panelSurfacePath, "evenodd");
+    }
+    context.translate(element.positionMm.x, element.positionMm.y);
+    if (rotation !== 0) {
+      context.rotate(rotation);
+    }
+    context.fill(path, "nonzero");
+    context.restore();
     return;
   }
 
-  const text = element.properties.text ?? "";
-  const fontSizePx = Math.max(6, element.properties.fontSizePt * PT_TO_MM * scale);
-  context.fillStyle = style.fill;
+  const center = projectPanelPoint(element.positionMm, transform);
+  context.translate(center.x, center.y);
+  if (rotation !== 0) {
+    context.rotate(rotation);
+  }
+  context.globalAlpha *= 0.5;
   context.textAlign = "center";
   context.textBaseline = "middle";
-  context.font = `${fontSizePx}px ${fontFamily}`;
-  context.fillText(text, 0, 0);
+  context.font = `bold ${element.properties.fontSizePt * PT_TO_MM * transform.scale}px ${fontFamily}`;
+  context.fillText(element.properties.text ?? "", 0, 0);
+  context.restore();
 }
 
 function drawSingleSelection(

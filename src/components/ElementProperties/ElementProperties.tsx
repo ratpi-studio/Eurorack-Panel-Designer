@@ -1,22 +1,41 @@
 import React from "react";
 
+import { ColorPickerField, toColorInputValue } from "@components/DisplayOptions/DisplayOptions";
 import { useI18n } from "@i18n/I18nContext";
 import {
+  DEFAULT_DESIGN_COLOR,
   PanelElementType,
+  type DesignReliefConfig,
+  type LabelElementProperties,
   type PanelElement,
   type SvgArtworkElementProperties,
+  type TextPatternOverlap,
   type Vector2,
 } from "@lib/panelTypes";
 import { getSvgArtworkAspectRatio } from "@lib/svgArtwork";
+import { getTextFontsVersion, loadTextFonts, subscribeTextFonts } from "@lib/text/textFontLoader";
+import { TEXT_FONTS, isTextFontId } from "@lib/text/textFonts";
+import {
+  assessTextPrintability,
+  MIN_PRINTABLE_STROKE_MM,
+  MIN_PRINTABLE_TEXT_SIZE_PT,
+} from "@lib/text/textLayout";
 
+import { DesignReliefFields } from "./DesignReliefFields";
 import * as styles from "./ElementProperties.css";
 
 interface ElementPropertiesProps {
   element: PanelElement | null;
   selectionCount: number;
+  /** Color of every text and SVG pattern, shared by the whole panel. */
+  designColor: string;
+  /** Relief of every text and SVG pattern, shared by the whole panel. */
+  designRelief: DesignReliefConfig;
   onChangePosition: (position: Vector2) => void;
   onChangeRotation: (rotationDeg: number) => void;
   onChangeProperties: (properties: PanelElement["properties"]) => void;
+  onChangeDesignColor: (color: string) => void;
+  onChangeDesignRelief: (relief: Partial<DesignReliefConfig>) => void;
   onRemove: () => void;
 }
 
@@ -28,13 +47,26 @@ function sanitizeNumber(value: string): number | null {
 export function ElementProperties({
   element,
   selectionCount,
+  designColor,
+  designRelief,
   onChangePosition,
   onChangeRotation,
   onChangeProperties,
+  onChangeDesignColor,
+  onChangeDesignRelief,
   onRemove,
 }: ElementPropertiesProps) {
   const t = useI18n();
   const [inputs, setInputs] = React.useState<Record<string, string>>({});
+
+  // A text's font loads on demand; its warnings (missing characters) follow once it has.
+  const labelFontId = element?.type === PanelElementType.Label ? element.properties.fontId : null;
+  React.useSyncExternalStore(subscribeTextFonts, getTextFontsVersion);
+  React.useEffect(() => {
+    if (labelFontId) {
+      void loadTextFonts([labelFontId]);
+    }
+  }, [labelFontId]);
 
   React.useEffect(() => {
     if (!element) {
@@ -79,7 +111,8 @@ export function ElementProperties({
     if (element.type === PanelElementType.Label) {
       setInputs({
         ...base,
-        fontSize: (element.properties as { fontSizePt: number }).fontSizePt.toString(),
+        fontSize: element.properties.fontSizePt.toString(),
+        knockoutPadding: element.properties.knockoutPaddingMm.toString(),
       });
       return;
     }
@@ -109,9 +142,6 @@ export function ElementProperties({
         ...base,
         width: props.widthMm.toString(),
         height: props.heightMm.toString(),
-        color: props.color,
-        stlThickness: props.stlThicknessMm.toString(),
-        stlPenetration: props.stlPenetrationMm.toString(),
       });
       return;
     }
@@ -188,15 +218,29 @@ export function ElementProperties({
     });
   };
 
-  const handleTextChange = (value: string) => {
+  const handleLabelChange = (changes: Partial<LabelElementProperties>) => {
     if (element.type !== PanelElementType.Label) {
       return;
     }
     onChangeProperties({
-      ...properties,
-      text: value,
+      ...element.properties,
+      ...changes,
     });
   };
+
+  const labelProperties = element.type === PanelElementType.Label ? element.properties : null;
+  const printability = labelProperties ? assessTextPrintability(labelProperties) : null;
+  const textWarnings = printability
+    ? [
+        printability.tooSmall ? t.properties.textTooSmall(MIN_PRINTABLE_TEXT_SIZE_PT) : null,
+        printability.thinStrokes
+          ? t.properties.textThinStrokes(printability.strokeMm, MIN_PRINTABLE_STROKE_MM)
+          : null,
+        printability.missingCharacters.length
+          ? t.properties.textMissingCharacters(printability.missingCharacters.join(" "))
+          : null,
+      ].filter((warning): warning is string => warning !== null)
+    : [];
 
   const handleSvgSizeChange = (axis: "width" | "height", value: string) => {
     if (element?.type !== PanelElementType.SvgArtwork) {
@@ -403,16 +447,34 @@ export function ElementProperties({
           </>
         ) : null}
 
-        {element.type === PanelElementType.Label ? (
+        {labelProperties ? (
           <>
             <label className={styles.fieldWide}>
               <span className={styles.label}>{t.properties.text}</span>
               <input
                 className={styles.input}
                 type="text"
-                value={(properties as { text: string }).text}
-                onChange={(event) => handleTextChange(event.target.value)}
+                value={labelProperties.text}
+                onChange={(event) => handleLabelChange({ text: event.target.value })}
               />
+            </label>
+            <label className={styles.fieldWide}>
+              <span className={styles.label}>{t.properties.font}</span>
+              <select
+                className={styles.select}
+                value={labelProperties.fontId}
+                onChange={(event) => {
+                  if (isTextFontId(event.target.value)) {
+                    handleLabelChange({ fontId: event.target.value });
+                  }
+                }}
+              >
+                {TEXT_FONTS.map((font) => (
+                  <option key={font.id} value={font.id}>
+                    {t.properties.fontOptions[font.id]}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className={styles.field}>
               <span className={styles.label}>{t.properties.fontSize}</span>
@@ -421,12 +483,57 @@ export function ElementProperties({
                 type="number"
                 min={0}
                 step={1}
-                value={
-                  inputs.fontSize ?? (properties as { fontSizePt: number }).fontSizePt.toString()
-                }
+                value={inputs.fontSize ?? labelProperties.fontSizePt.toString()}
                 onChange={(event) => handlePropertyChange("fontSizePt", event.target.value)}
               />
             </label>
+            <div className={styles.field}>
+              <ColorPickerField
+                label={t.properties.color}
+                value={toColorInputValue(designColor, DEFAULT_DESIGN_COLOR)}
+                onChange={onChangeDesignColor}
+              />
+            </div>
+            <span className={`${styles.hint} ${styles.fieldWide}`}>
+              {t.properties.textColorHint}
+            </span>
+            {textWarnings.length ? (
+              <ul className={styles.warnings} role="status">
+                {textWarnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+            ) : null}
+            <label className={styles.fieldWide}>
+              <span className={styles.label}>{t.properties.patternOverlap}</span>
+              <select
+                className={styles.select}
+                value={labelProperties.patternOverlap}
+                onChange={(event) =>
+                  handleLabelChange({ patternOverlap: event.target.value as TextPatternOverlap })
+                }
+              >
+                <option value="knockout">{t.properties.patternOverlapKnockout}</option>
+                <option value="merge">{t.properties.patternOverlapMerge}</option>
+              </select>
+              <span className={styles.hint}>{t.properties.patternOverlapHint}</span>
+            </label>
+            {labelProperties.patternOverlap === "knockout" ? (
+              <label className={styles.field}>
+                <span className={styles.label}>{t.properties.knockoutPadding}</span>
+                <input
+                  className={styles.input}
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={inputs.knockoutPadding ?? labelProperties.knockoutPaddingMm.toString()}
+                  onChange={(event) =>
+                    handlePropertyChange("knockoutPaddingMm", event.target.value)
+                  }
+                />
+              </label>
+            ) : null}
+            <DesignReliefFields relief={designRelief} onChange={onChangeDesignRelief} />
           </>
         ) : null}
 
@@ -458,34 +565,7 @@ export function ElementProperties({
                 onChange={(event) => handleSvgSizeChange("height", event.target.value)}
               />
             </label>
-            <label className={styles.field}>
-              <span className={styles.label}>{t.properties.stlThickness}</span>
-              <input
-                className={styles.input}
-                type="number"
-                min={0}
-                step={0.1}
-                value={
-                  inputs.stlThickness ??
-                  (properties as SvgArtworkElementProperties).stlThicknessMm.toString()
-                }
-                onChange={(event) => handlePropertyChange("stlThicknessMm", event.target.value)}
-              />
-            </label>
-            <label className={styles.field}>
-              <span className={styles.label}>{t.properties.stlPenetration}</span>
-              <input
-                className={styles.input}
-                type="number"
-                min={0}
-                step={0.1}
-                value={
-                  inputs.stlPenetration ??
-                  (properties as SvgArtworkElementProperties).stlPenetrationMm.toString()
-                }
-                onChange={(event) => handlePropertyChange("stlPenetrationMm", event.target.value)}
-              />
-            </label>
+            <DesignReliefFields relief={designRelief} onChange={onChangeDesignRelief} />
           </>
         ) : null}
       </div>

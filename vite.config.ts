@@ -176,6 +176,10 @@ export default defineConfig({
           if (/node_modules\/react/i.test(id)) {
             return "react-vendor";
           }
+          if (id.includes("node_modules/three/examples/jsm/libs/opentype")) {
+            // Font parsing, loaded once a text needs its font: keep it out of the 3D view chunk.
+            return "opentype";
+          }
           if (id.includes("node_modules/three")) {
             return "three";
           }

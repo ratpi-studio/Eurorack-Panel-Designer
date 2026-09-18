@@ -13,6 +13,7 @@ import {
 } from "@lib/exportStl";
 import {
   DEFAULT_CLEARANCE_CONFIG,
+  DEFAULT_DESIGN_RELIEF,
   DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   PanelElementType,
@@ -40,6 +41,7 @@ function createPanel(widthHp = 8): PanelModel {
     clearance: { ...DEFAULT_CLEARANCE_CONFIG },
     panelColor: "#1a1a1a",
     designColor: "#ffffff",
+    designRelief: { ...DEFAULT_DESIGN_RELIEF },
   };
 }
 
@@ -63,8 +65,6 @@ describe("buildPanelStl with SVG artwork", () => {
         widthMm: 40,
         heightMm: 40,
         color: "#ffffff",
-        stlThicknessMm: 0.6,
-        stlPenetrationMm: 0.2,
         sourceName: "dots.svg",
       },
     });
@@ -91,8 +91,6 @@ describe("buildPanelStl with SVG artwork", () => {
         widthMm: 30,
         heightMm: 30,
         color: "#ffffff",
-        stlThicknessMm: 0.6,
-        stlPenetrationMm: 0.2,
         sourceName: "stroke.svg",
       },
     });
@@ -127,8 +125,6 @@ describe("buildPanelStl with SVG artwork", () => {
           widthMm: 30,
           heightMm: 30,
           color: "#ffffff",
-          stlThicknessMm: 0.6,
-          stlPenetrationMm: 0.2,
         },
       },
     );
@@ -161,8 +157,6 @@ describe("buildPanelStl with SVG artwork", () => {
         widthMm: 20,
         heightMm: 20,
         color: "#ffffff",
-        stlThicknessMm: 0.6,
-        stlPenetrationMm: 0.2,
       },
     });
 
@@ -195,8 +189,6 @@ describe("buildPanelStl with SVG artwork", () => {
         widthMm: 10,
         heightMm: 2,
         color: "#ffffff",
-        stlThicknessMm: 0.6,
-        stlPenetrationMm: 0.2,
       },
     };
     const measureRelief = (element: PanelElement) => {
@@ -244,8 +236,6 @@ describe("buildPanelStl with SVG artwork", () => {
           widthMm: 10,
           heightMm: 10,
           color: "#ffffff",
-          stlThicknessMm: 0.6,
-          stlPenetrationMm: 0.2,
           sourceName: "square.svg",
         },
       });

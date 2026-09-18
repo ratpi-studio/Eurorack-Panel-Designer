@@ -1,3 +1,5 @@
+import { DEFAULT_TEXT_FONT_ID, isTextFontId, type TextFontId } from "./text/textFonts";
+
 export interface Vector2 {
   x: number;
   y: number;
@@ -47,10 +49,23 @@ export interface RectangularElementProperties extends PanelElementPropertiesBase
   heightMm: number;
 }
 
+/**
+ * Where a text lies over an SVG pattern: `knockout` clears the pattern around the text (its
+ * bounding box grown by the padding), `merge` joins the text and the pattern into one relief.
+ */
+export type TextPatternOverlap = "knockout" | "merge";
+
 export interface LabelElementProperties extends PanelElementPropertiesBase {
   text: string;
   fontSizePt: number;
+  fontId: TextFontId;
+  patternOverlap: TextPatternOverlap;
+  /** Clearance around the text where the pattern is removed, with `knockout`. */
+  knockoutPaddingMm: number;
 }
+
+export const DEFAULT_LABEL_FONT_SIZE_PT = 10;
+export const DEFAULT_LABEL_KNOCKOUT_PADDING_MM = 1;
 
 export interface InsertElementProperties extends PanelElementPropertiesBase {
   outerDiameterMm: number;
@@ -73,10 +88,14 @@ export interface SvgArtworkElementProperties extends PanelElementPropertiesBase 
   widthMm: number;
   heightMm: number;
   color: string;
-  stlThicknessMm: number;
-  stlPenetrationMm: number;
   sourceName?: string;
   sourceId?: string;
+}
+
+/** Relief settings saved on each SVG artwork before the panel-wide `designRelief` existed. */
+interface LegacyArtworkRelief {
+  stlThicknessMm?: unknown;
+  stlPenetrationMm?: unknown;
 }
 
 export type PanelElementPropertiesMap = {
@@ -111,6 +130,13 @@ export type PanelElement =
   | PanelElementForType<PanelElementType.Insert>
   | PanelElementForType<PanelElementType.SvgArtwork>;
 
+/** A text element. */
+export type LabelElement = PanelElementForType<PanelElementType.Label>;
+
+export function isLabelElement(element: PanelElement): element is LabelElement {
+  return element.type === PanelElementType.Label;
+}
+
 export interface PanelDimensions {
   widthCm: number;
   widthMm: number;
@@ -140,6 +166,17 @@ export interface ClearanceConfig {
   minSpacingMm: number;
 }
 
+/**
+ * Relief of the design: every SVG pattern and text, printed in the design color on the front of
+ * the panel. They share one level, so they print as a single layer.
+ */
+export interface DesignReliefConfig {
+  /** Height of the relief, from its base inside the panel to its top. */
+  thicknessMm: number;
+  /** How deep the relief sinks into the panel front, so both colors bond. */
+  penetrationMm: number;
+}
+
 export interface PanelModel {
   dimensions: PanelDimensions;
   elements: PanelElement[];
@@ -149,6 +186,7 @@ export interface PanelModel {
   clearance: ClearanceConfig;
   panelColor: string;
   designColor: string;
+  designRelief: DesignReliefConfig;
 }
 
 export type PanelModelInput = Omit<
@@ -159,6 +197,7 @@ export type PanelModelInput = Omit<
   | "clearance"
   | "panelColor"
   | "designColor"
+  | "designRelief"
 > & {
   // Saves made before the dimensions overlay existed have no `showDimensions`.
   options: Omit<PanelOptions, "showDimensions"> & Partial<Pick<PanelOptions, "showDimensions">>;
@@ -167,6 +206,8 @@ export type PanelModelInput = Omit<
   clearance?: ClearanceConfig;
   panelColor?: string;
   designColor?: string;
+  // Saves made before 0.10 kept the relief on each SVG artwork instead.
+  designRelief?: DesignReliefConfig;
 };
 
 export function normalizePanelModel(model: PanelModelInput): PanelModel {
@@ -207,7 +248,58 @@ export function normalizePanelModel(model: PanelModelInput): PanelModel {
     ),
     panelColor: typeof model.panelColor === "string" ? model.panelColor : DEFAULT_PANEL_COLOR,
     designColor: typeof model.designColor === "string" ? model.designColor : DEFAULT_DESIGN_COLOR,
+    designRelief: normalizeDesignRelief(model.designRelief) ??
+      readLegacyDesignRelief(model.elements) ?? { ...DEFAULT_DESIGN_RELIEF },
   };
+}
+
+function readFiniteNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function normalizeDesignRelief(value: unknown): DesignReliefConfig | null {
+  if (typeof value !== "object" || value === null) {
+    return null;
+  }
+  const { thicknessMm, penetrationMm } = value as Partial<
+    Record<keyof DesignReliefConfig, unknown>
+  >;
+  const thickness = readFiniteNumber(thicknessMm);
+  const penetration = readFiniteNumber(penetrationMm);
+  if (thickness === null && penetration === null) {
+    return null;
+  }
+  return {
+    thicknessMm: Math.max(0, thickness ?? DEFAULT_DESIGN_RELIEF.thicknessMm),
+    penetrationMm: Math.max(0, penetration ?? DEFAULT_DESIGN_RELIEF.penetrationMm),
+  };
+}
+
+/**
+ * Saves made before 0.10 set the relief of each SVG artwork. All details now share one relief:
+ * keep the tallest one and the deepest penetration, so no artwork loses height.
+ */
+function readLegacyDesignRelief(elements: PanelModelInput["elements"]): DesignReliefConfig | null {
+  let thicknessMm: number | null = null;
+  let penetrationMm: number | null = null;
+  for (const element of elements ?? []) {
+    if (element.type !== PanelElementType.SvgArtwork || !element.properties) {
+      continue;
+    }
+    const legacy = element.properties as LegacyArtworkRelief;
+    const thickness = readFiniteNumber(legacy.stlThicknessMm);
+    const penetration = readFiniteNumber(legacy.stlPenetrationMm);
+    if (thickness !== null) {
+      thicknessMm = Math.max(thicknessMm ?? -Infinity, thickness);
+    }
+    if (penetration !== null) {
+      penetrationMm = Math.max(penetrationMm ?? -Infinity, penetration);
+    }
+  }
+  if (thicknessMm === null && penetrationMm === null) {
+    return null;
+  }
+  return normalizeDesignRelief({ thicknessMm, penetrationMm });
 }
 
 export type MountingHoleShape = "circle" | "slot";
@@ -262,6 +354,11 @@ export const DEFAULT_CLEARANCE_CONFIG: ClearanceConfig = {
 export const DEFAULT_PANEL_COLOR = "#226bbf";
 export const DEFAULT_DESIGN_COLOR = "#ffffff";
 
+export const DEFAULT_DESIGN_RELIEF: DesignReliefConfig = {
+  thicknessMm: 0.6,
+  penetrationMm: 0.2,
+};
+
 export function clampClearanceConfig(
   config: ClearanceConfig,
   panelHeightMm: number,
@@ -286,7 +383,9 @@ export interface SerializedPanel {
   model: PanelModel;
 }
 
-export const SERIALIZATION_VERSION = 6;
+// v7: the relief moved from each SVG artwork to the panel (`designRelief`), and text elements
+// gained a font and a pattern overlap mode.
+export const SERIALIZATION_VERSION = 7;
 
 function isCircularElementProperties(
   properties: PanelElement["properties"],
@@ -342,16 +441,45 @@ function isSvgArtworkElementProperties(
     "widthMm" in properties &&
     "heightMm" in properties &&
     "color" in properties &&
-    "stlThicknessMm" in properties &&
-    "stlPenetrationMm" in properties &&
     typeof properties.svgText === "string" &&
     isSvgViewBox(properties.viewBox) &&
     typeof properties.widthMm === "number" &&
     typeof properties.heightMm === "number" &&
-    typeof properties.color === "string" &&
-    typeof properties.stlThicknessMm === "number" &&
-    typeof properties.stlPenetrationMm === "number"
+    typeof properties.color === "string"
   );
+}
+
+/** Fills in the font and overlap settings that labels saved before 0.10 do not have. */
+function normalizeLabelProperties(properties: LabelElementProperties): LabelElementProperties {
+  const { fontId, patternOverlap, knockoutPaddingMm } = properties as Partial<
+    Record<keyof LabelElementProperties, unknown>
+  >;
+  const padding = readFiniteNumber(knockoutPaddingMm);
+  const fontSizePt = readFiniteNumber(properties.fontSizePt);
+  return {
+    ...properties,
+    text: typeof properties.text === "string" ? properties.text : "",
+    fontSizePt: fontSizePt === null ? DEFAULT_LABEL_FONT_SIZE_PT : Math.max(0, fontSizePt),
+    fontId: isTextFontId(fontId) ? fontId : DEFAULT_TEXT_FONT_ID,
+    patternOverlap: patternOverlap === "merge" ? "merge" : "knockout",
+    knockoutPaddingMm: padding === null ? DEFAULT_LABEL_KNOCKOUT_PADDING_MM : Math.max(0, padding),
+  };
+}
+
+function normalizeSvgArtworkProperties(
+  properties: SvgArtworkElementProperties,
+): SvgArtworkElementProperties {
+  const next: SvgArtworkElementProperties & LegacyArtworkRelief = {
+    ...properties,
+    widthMm: Math.max(1, properties.widthMm),
+    heightMm: Math.max(1, properties.heightMm),
+    sourceName: typeof properties.sourceName === "string" ? properties.sourceName : undefined,
+    sourceId: typeof properties.sourceId === "string" ? properties.sourceId : undefined,
+  };
+  // The panel's `designRelief` replaced them (see `readLegacyDesignRelief`).
+  delete next.stlThicknessMm;
+  delete next.stlPenetrationMm;
+  return next;
 }
 
 export function sanitizePropertiesForType<TType extends PanelElementType>(
@@ -386,20 +514,12 @@ export function sanitizePropertiesForType<TType extends PanelElementType>(
       return null;
     case PanelElementType.Label:
       if (isLabelElementProperties(properties)) {
-        return { ...properties } as PanelElementPropertiesMap[TType];
+        return normalizeLabelProperties(properties) as PanelElementPropertiesMap[TType];
       }
       return null;
     case PanelElementType.SvgArtwork:
       if (isSvgArtworkElementProperties(properties)) {
-        return {
-          ...properties,
-          widthMm: Math.max(1, properties.widthMm),
-          heightMm: Math.max(1, properties.heightMm),
-          stlThicknessMm: Math.max(0, properties.stlThicknessMm),
-          stlPenetrationMm: Math.max(0, properties.stlPenetrationMm),
-          sourceName: typeof properties.sourceName === "string" ? properties.sourceName : undefined,
-          sourceId: typeof properties.sourceId === "string" ? properties.sourceId : undefined,
-        } as PanelElementPropertiesMap[TType];
+        return normalizeSvgArtworkProperties(properties) as PanelElementPropertiesMap[TType];
       }
       return null;
     default:

@@ -1,14 +1,15 @@
 import React from "react";
 
 import { getLoadedPanelSurfaceMerge, loadPanelSurfaceMerge } from "@lib/canvas/panelSurfaceClip";
+import { hasDesignElements } from "@lib/designLayer";
 import { reportDegradation } from "@lib/monitoring";
 import { buildPanelSurfacePathData, hasOverlappingCutouts } from "@lib/panelSurface";
 import type { MountingHole, PanelElement } from "@lib/panelTypes";
-import { isSvgArtworkElement } from "@lib/svgArtwork";
 
 /**
- * Clip path of the SVG artwork: the panel minus its cut-outs, with overlapping ones merged. The
- * canvas redraws on every frame, so the path is only rebuilt when the panel or its cut-outs change.
+ * Clip path of the SVG artwork and text: the panel minus its cut-outs, with overlapping ones
+ * merged. The canvas redraws on every frame, so the path is only rebuilt when the panel or its
+ * cut-outs change.
  */
 export function usePanelSurfacePath(
   widthMm: number,
@@ -19,8 +20,8 @@ export function usePanelSurfacePath(
   const [merge, setMerge] = React.useState(getLoadedPanelSurfaceMerge);
 
   const surface = React.useMemo(() => {
-    // Only SVG artwork is clipped.
-    if (!elements.some(isSvgArtworkElement)) {
+    // Only SVG artwork and text are clipped.
+    if (!hasDesignElements(elements)) {
       return null;
     }
     const input = { panelSizeMm: { x: widthMm, y: heightMm }, mountingHoles, elements };

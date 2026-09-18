@@ -112,6 +112,52 @@ export const input = style({
   },
 });
 
+export const select = style([
+  input,
+  {
+    cursor: "pointer",
+  },
+]);
+
+export const hint = style({
+  fontSize: "12px",
+  lineHeight: 1.4,
+  color: vars.color.textSecondary,
+});
+
+export const sectionHeader = style({
+  gridColumn: "span 2",
+  display: "flex",
+  flexDirection: "column",
+  gap: vars.spacing.xs,
+  paddingTop: vars.spacing.sm,
+  borderTop: `1px solid ${vars.color.border}`,
+});
+
+export const sectionTitle = style({
+  fontSize: "12px",
+  fontWeight: 600,
+  color: vars.color.textPrimary,
+  letterSpacing: "0.04em",
+  textTransform: "uppercase",
+});
+
+export const warnings = style({
+  gridColumn: "span 2",
+  display: "flex",
+  flexDirection: "column",
+  gap: vars.spacing.xs,
+  margin: 0,
+  padding: vars.spacing.sm,
+  listStyle: "none",
+  borderRadius: "8px",
+  border: "1px solid rgba(250, 204, 21, 0.45)",
+  backgroundColor: "rgba(250, 204, 21, 0.08)",
+  color: "#fde68a",
+  fontSize: "12px",
+  lineHeight: 1.4,
+});
+
 export const empty = style({
   padding: vars.spacing.md,
   borderRadius: "12px",

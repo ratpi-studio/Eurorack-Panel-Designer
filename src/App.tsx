@@ -14,8 +14,12 @@ function resolveOrderId(): string | null {
   if (!path.startsWith(ORDER_PATH_PREFIX)) {
     return null;
   }
-  const id = path.slice(ORDER_PATH_PREFIX.length).split("/")[0];
-  return id || null;
+  const segment = path.slice(ORDER_PATH_PREFIX.length).split("/")[0];
+  try {
+    return decodeURIComponent(segment) || null;
+  } catch {
+    return segment || null;
+  }
 }
 
 export function App() {

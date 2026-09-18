@@ -5,6 +5,7 @@ import { LeftPanel } from "@components/PanelDesigner/LeftPanel";
 import { PanelHeader } from "@components/PanelDesigner/PanelHeader";
 import { RightPanel } from "@components/PanelDesigner/RightPanel";
 import { ViewModeSwitch } from "@components/PanelDesigner/ViewModeSwitch";
+import { OrderDialog } from "@components/OrderDialog/OrderDialog";
 import { SvgArtworkModal } from "@components/SvgArtworkModal/SvgArtworkModal";
 import { useResponsivePanels } from "@components/PanelDesigner/useResponsivePanels";
 import { useViewMode } from "@components/PanelDesigner/useViewMode";
@@ -14,6 +15,7 @@ import { generateMountingHoles } from "@lib/mountingHoles";
 import {
   PanelElementType,
   withElementProperties,
+  type DesignReliefConfig,
   type ElementMountingHoleConfig,
   type PanelElement,
   type MountingHole,
@@ -21,6 +23,7 @@ import {
   type PanelDimensions,
   type Vector2,
 } from "@lib/panelTypes";
+import { isOrderingEnabled } from "@lib/order";
 import { createPanelDimensions, hpToMm, mmToCm } from "@lib/units";
 import { changelogEntries } from "@lib/changelog";
 import { computeElementMountingHoles } from "@lib/elementMountingHoles";
@@ -86,6 +89,7 @@ export function PanelDesigner() {
   const [isStlModalOpen, setIsStlModalOpen] = React.useState(false);
   const [isSvgArtworkModalOpen, setIsSvgArtworkModalOpen] = React.useState(false);
   const [isChangelogOpen, setIsChangelogOpen] = React.useState(false);
+  const [isOrderDialogOpen, setIsOrderDialogOpen] = React.useState(false);
   const [confirmDialog, setConfirmDialog] = React.useState<{
     message: string;
     onConfirm: () => void;
@@ -255,6 +259,22 @@ export function PanelDesigner() {
     [updateModel],
   );
 
+  const handleDesignReliefChange = React.useCallback(
+    (relief: Partial<DesignReliefConfig>) => {
+      updateModel((prev) => {
+        const next = { ...prev.designRelief, ...relief };
+        if (
+          next.thicknessMm === prev.designRelief.thicknessMm &&
+          next.penetrationMm === prev.designRelief.penetrationMm
+        ) {
+          return prev;
+        }
+        return { ...prev, designRelief: next };
+      });
+    },
+    [updateModel],
+  );
+
   const combinedMountingHoles = React.useMemo(
     () =>
       elementMountingHoles.length ? [...mountingHoles, ...elementMountingHoles] : mountingHoles,
@@ -281,7 +301,6 @@ export function PanelDesigner() {
     handleExportStl,
     handleExportKicadSvg,
     handleExportKicadPcb,
-    handleOrderOnEtsy,
     exportFormat,
     setExportFormat,
     handleReset,
@@ -903,7 +922,7 @@ export function PanelDesigner() {
     onExportClick: handleExportClick,
     onExportJson: handleExportJson,
     onSelectExportFormat: handleSelectExportFormat,
-    onOrderOnEtsy: handleOrderOnEtsy,
+    onOrderPrint: isOrderingEnabled() ? () => setIsOrderDialogOpen(true) : undefined,
   };
 
   const propertiesPanelProps = {
@@ -920,6 +939,7 @@ export function PanelDesigner() {
     snapEnabled: panelModel.options.snapToGrid,
     onDisplayOptionsChange: handleDisplayOptionsChange,
     onColorsChange: handleColorsChange,
+    onDesignReliefChange: handleDesignReliefChange,
     onResetView: resetView,
     onMountingHoleConfigChange: handleMountingHoleConfigChange,
     onClearMountingHoleSelection: handleClearMountingHoleSelection,
@@ -1156,6 +1176,9 @@ export function PanelDesigner() {
             </div>
           </div>
         </div>
+      ) : null}
+      {isOrderDialogOpen ? (
+        <OrderDialog model={panelModel} onClose={() => setIsOrderDialogOpen(false)} />
       ) : null}
       {isSvgArtworkModalOpen ? (
         <div

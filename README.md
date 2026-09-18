@@ -16,6 +16,7 @@ Single-page web app to sketch Eurorack front panels. The canvas mirrors a real 3
 
 - Canvas-driven editor with zoom, pan, snapping, and optional grid.
 - Live 3D view of the panel as exported to STL: show the 2D editor, the 3D view, or both side by side. The 3D model follows every edit and uses the panel and design colors.
+- Printable text and SVG patterns, raised in the design color: five bundled fonts, and text that clears the pattern around it or merges into it.
 - Automatic conversion between centimeters, millimeters, and HP.
 - Library of panel elements with editable geometry, rotation, and labels.
 - Generated mounting holes that update with the panel width.
@@ -61,28 +62,38 @@ Single-page web app to sketch Eurorack front panels. The canvas mirrors a real 3
 - Pick an element in the palette, click on the canvas to place it, then drag to reposition. Use the right-hand panel to fine-tune coordinates, rotation, or dimensions.
 - Placed cut-outs are tinted with their palette color and show their measurements (diameter inside round holes, width × height inside other shapes); the selected element gets dimension lines along its sides. Toggle them with **Dimensions** in the Display panel. Exports keep using the panel and design colors.
 - Drag the handles around the selected element to resize it: round holes grow around their center, other shapes keep the opposite side in place, and text scales its font size. Sizes snap to 0.5 mm steps unless `Shift` is held.
-- Switch the render area between **2D**, **3D**, and **2D + 3D** with the buttons above it; the choice is remembered. In 3D, drag to rotate, right-drag to pan, and scroll to zoom. **Reset view** reframes both views. The 3D view shows the STL geometry at the thickness set in the STL export dialog (2 mm by default): cut-outs, mounting holes, SVG relief on the front, and inserts on the back, but not text labels. Complex SVG artwork refreshes the 3D view once edits pause, so dragging in 2D stays smooth.
+- Switch the render area between **2D**, **3D**, and **2D + 3D** with the buttons above it; the choice is remembered. In 3D, drag to rotate, right-drag to pan, and scroll to zoom. **Reset view** reframes both views. The 3D view shows the STL geometry at the thickness set in the STL export dialog (2 mm by default): cut-outs, mounting holes, text and SVG relief on the front, and inserts on the back. Complex SVG artwork refreshes the 3D view once edits pause, so dragging in 2D stays smooth.
+- Panels print in two colors: the panel color for the body, and the design color for every text and SVG pattern, raised on the front. Text and patterns share one relief, set from the properties of either (**Relief**: thickness, and how deep it sinks into the panel so both colors bond); they are cut away over cut-outs.
+- Place **Text** from the palette, then set its content, **Font**, size, and **Color** (the design color, which also applies to every SVG pattern) in the properties. The five fonts are bold or technical faces that print well at small sizes; a warning appears when text is likely too small to print (under 6 pt, or strokes under about 0.4 mm) or uses characters its font lacks. The canvas, PNG, SVG, and STL draw the same outlines, and the SVG export turns text into paths.
+- Over an SVG pattern, text either clears the pattern around it (**Clear the pattern around the text**, with a **Clearance** in mm, 1 mm by default) or merges into it at the same height (**Merge into the pattern**), even where that makes it harder to read.
 - Keep `Shift` pressed to temporarily disable snapping, `Esc` to cancel placement, `⌘/Ctrl + Z` and `⌘/Ctrl + Shift + Z` for undo/redo.
 - Shift-click elements or drag a marquee on the canvas to build a multi-selection, then drag anywhere on the canvas to move the entire group or press Delete to remove it in one go.
 - Save named projects to the browser, export/import JSON for backups, render the canvas as PNG/SVG, export KiCad Edge.Cuts, or export a clean STL: choose STL in the export dropdown, set thickness in mm, and use the live 3D preview to inspect the mesh before downloading.
 
-## Etsy ordering (optional)
+## Ordering a print on Etsy (optional)
 
-The export menu includes an **"Order on Etsy"** entry that uploads the current design + a thumbnail PNG to Vercel Blob and redirects to a recap page at `/order/<id>`. The recap shows the panel preview, color choices, the computed price, and a button that points to a single Etsy listing where buyers paste the design ID in the personalization note.
+Buyers can order their panel 3D printed through a single Etsy listing:
 
-To enable on a Vercel deployment:
+1. **Order this panel** (project panel) opens a dialog with the print preview in the chosen filaments (panel, then text and patterns), the price, and checks such as the maximum width.
+2. **Get my design code** stores the design with Vercel Blob under a code like `EPD-7K3Q-9XMB` and opens its page at `/order/<code>`.
+3. That page shows the design in 3D, the code, and what to pick on Etsy. **Buy on Etsy** copies the code and opens the listing, where the buyer chooses the width and pastes the code in the personalization field.
+4. To print an order, open `/order/<code>` with the code from the Etsy order: **Download STL** builds the print file at the order thickness, and **Download design (JSON)** opens in the designer with **Import JSON**.
 
-1. **Enable Vercel Blob** on the project — this auto-injects `BLOB_READ_WRITE_TOKEN` for the serverless functions in `api/`.
-2. **Configure environment variables** (Vercel dashboard or `.env.local` for local `vercel dev`):
-   - `VITE_ETSY_LISTING_URL` — the Etsy listing buyers are sent to.
-   - `VITE_PRICE_BASE_EUR` — base price in euros (default `8`).
-   - `VITE_PRICE_PER_HP_EUR` — price per HP (default `1.5`). Final price = base + widthHp × perHp.
-   - Optionally set `PRICE_BASE_EUR` / `PRICE_PER_HP_EUR` for the server-side recompute in `api/order.ts`.
-3. The rewrite for `/order/:id` is already configured in `vercel.json`.
+Prices, widths, and filaments live in `src/lib/orderCatalog.ts`: 9 € + 1 € per HP, from 1 to 42 HP, in white, black, or sky blue. `api/order.ts` repeats the widths and filament ids to validate designs; its tests check that both agree.
 
-When a customer places the Etsy order, you'll receive the design ID in the personalization note. Fetch the panel JSON / thumbnail from the Vercel Blob URLs (visible in the Vercel dashboard) to print it.
+To enable it on Vercel:
 
-See `.env.example` for the full list of variables.
+1. **Enable Vercel Blob** on the project. It injects `BLOB_READ_WRITE_TOKEN` for `api/order.ts`, which stores each design as `orders/<code>/design.json` (public blobs; the API never shares their URLs).
+2. **Create the Etsy listing**:
+   - one variation, "Width", with one option per HP from 1 to 42 HP, each priced like `orderPriceEur` (12 HP = 21 €);
+   - a required personalization text field for the code, with instructions such as "Paste your EPD-… code from the Eurorack Panel Designer" (Etsy allows 120 characters).
+3. **Set `VITE_ETSY_LISTING_URL`** to the listing URL, or to its Etsy Share & Save link, which gives back part of the fees on orders from the designer.
+4. **Add a rate limit** in the Vercel Firewall on `/api/order`, for example 10 requests per 10 minutes per IP. Every stored design uses Blob operations, which the Hobby plan caps each month.
+5. **Turn the feature flag on** with `VITE_ORDERING_ENABLED=true`, then redeploy: both variables are read at build time. You can set it on the Preview environment first to try the whole flow on a preview deployment.
+
+While the flag is off (the default), the order button is hidden and `/api/order` refuses new designs. Codes already given keep opening their page, so orders placed before can still be printed.
+
+The `/order/:id` rewrite is already configured in `vercel.json`.
 
 ## KiCad Edge.Cuts export
 
@@ -98,3 +109,5 @@ Issues, feature ideas, and pull requests are welcome. Please open a discussion b
 ## License
 
 Distributed under the [MIT License](LICENSE). Feel free to fork, remix, and build on the project.
+
+The fonts in `public/fonts/` (Roboto, Barlow Condensed, JetBrains Mono, Michroma, Orbitron) are distributed under the [SIL Open Font License 1.1](https://openfontlicense.org); each folder holds the font's license.

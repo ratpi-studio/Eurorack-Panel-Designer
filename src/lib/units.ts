@@ -14,6 +14,9 @@ interface PanelWidthComputation {
 
 const MIN_PANEL_WIDTH_CM = 1;
 
+/** Typographic points to millimeters: a text's size is the height of its em square. */
+export const PT_TO_MM = 25.4 / 72;
+
 export function sanitizeWidthCm(value: number): number {
   if (!Number.isFinite(value)) {
     return MIN_PANEL_WIDTH_CM;

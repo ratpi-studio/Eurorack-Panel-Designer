@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.10.0 - 2026-09-18
+
+- Text now prints: it is part of the STL export and of the 3D view, raised like the SVG patterns, at the same height and in the design color. Where text lies over a cut-out, it is cut away like the patterns.
+- Pick the font of each text among five bundled fonts chosen to print well at small sizes: Roboto Bold, Barlow Condensed Bold, JetBrains Mono Bold, Michroma, and Orbitron Bold (all under the SIL Open Font License). The canvas, PNG, SVG, and STL all draw the same outlines, and the SVG export turns text into paths, so it no longer depends on the fonts installed where the file is opened.
+- Choose what text does over an SVG pattern: clear the pattern around it (the default, with an adjustable clearance, 1 mm by default), or merge into the pattern at the same height.
+- The text's color is the design color, now also editable from the text's properties: it applies to every text and SVG pattern, since panels print in two colors.
+- The relief thickness and penetration are now set once for the whole panel and shared by every text and SVG pattern, from the properties of either. Designs saved before keep the tallest relief of their SVG artwork.
+- A warning appears in the properties of text that is likely too small to print (under 6 pt, or strokes under about 0.4 mm), or that uses characters its font does not have.
+- The SVG export now fills SVG patterns and text with the design color, as they print.
+- Added ordering your panel 3D printed on Etsy. "Order this panel" shows the print preview in the filament colors you pick (white, black, or sky blue), the price (9 € plus 1 € per HP, up to 42 HP), and anything to check, then gives you a design code. The code's page shows the design, copies the code, and opens the Etsy listing, where you choose the width and paste the code in the personalization field.
+
 ## 0.9.0 - 2026-09-18
 
 - Added a live 3D view of the panel as it will be exported to STL. Switch the render area between 2D, 3D, and 2D + 3D with the buttons above it; the choice is remembered. The model follows every edit and uses the panel and design colors, with the SVG relief on the front and inserts on the back. Drag to rotate, right-drag to pan, and scroll to zoom; "Reset view" reframes both views. The STL export dialog shows the same 3D view, and the 2D canvas now fills the whole render area.

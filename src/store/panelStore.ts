@@ -7,6 +7,7 @@ import { createPanelElement } from "@lib/elements";
 import {
   DEFAULT_CLEARANCE_CONFIG,
   DEFAULT_DESIGN_COLOR,
+  DEFAULT_DESIGN_RELIEF,
   DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   DEFAULT_PANEL_COLOR,
@@ -18,10 +19,10 @@ import {
   type PanelElement,
   type PanelElementPropertiesMap,
   type PanelModel,
-  type PanelModelInput,
   type Vector2,
 } from "@lib/panelTypes";
 import { reportDegradation } from "@lib/monitoring";
+import { migratePersistedPanelState, PANEL_STATE_VERSION } from "@lib/panelStateMigration";
 import { createPanelStateStorage } from "@lib/panelStateStorage";
 import { createPanelDimensions } from "@lib/units";
 import type { ReferenceImage } from "@lib/referenceImage";
@@ -79,6 +80,7 @@ const createInitialModel = (): PanelModel =>
     clearance: { ...DEFAULT_CLEARANCE_CONFIG },
     panelColor: DEFAULT_PANEL_COLOR,
     designColor: DEFAULT_DESIGN_COLOR,
+    designRelief: { ...DEFAULT_DESIGN_RELIEF },
   });
 
 export const usePanelStore = create<PanelState & PanelActions>()(
@@ -294,72 +296,14 @@ export const usePanelStore = create<PanelState & PanelActions>()(
           reportDegradation(error, "autosave", "save-failed");
         },
       }),
-      // v8: panel options gained `showDimensions`; migrating re-normalizes the persisted model.
-      version: 8,
-      migrate: (state, version) => {
-        const typedState = state as (PanelState & PanelActions) | undefined;
-        if (!typedState) {
-          return typedState;
-        }
-        if (version && version < 2) {
-          const nextModel = typedState.model
-            ? normalizePanelModel(typedState.model as PanelModelInput)
-            : createInitialModel();
-          return {
-            ...typedState,
-            model: nextModel,
-          };
-        }
-        if (version && version < 3) {
-          return {
-            ...typedState,
-            model: typedState.model
-              ? normalizePanelModel(typedState.model as PanelModelInput)
-              : createInitialModel(),
-          };
-        }
-        if (version && version < 4) {
-          return {
-            ...typedState,
-            model: typedState.model
-              ? normalizePanelModel(typedState.model as PanelModelInput)
-              : createInitialModel(),
-          };
-        }
-        if (version && version < 5) {
-          return {
-            ...typedState,
-            referenceImage: null,
-            referenceImageSelected: false,
-            model: typedState.model
-              ? normalizePanelModel(typedState.model as PanelModelInput)
-              : createInitialModel(),
-          };
-        }
-        if (version && version < 6) {
-          return {
-            ...typedState,
-            model: typedState.model
-              ? normalizePanelModel(typedState.model as PanelModelInput)
-              : createInitialModel(),
-          };
-        }
-        if (version && version < 7) {
-          return {
-            ...typedState,
-            model: typedState.model
-              ? normalizePanelModel(typedState.model as PanelModelInput)
-              : createInitialModel(),
-          };
-        }
-        if (typedState.model) {
-          return {
-            ...typedState,
-            model: normalizePanelModel(typedState.model as PanelModelInput),
-          };
-        }
-        return typedState;
-      },
+      // Migrating re-normalizes the persisted model: see `PANEL_STATE_VERSION` for the history.
+      version: PANEL_STATE_VERSION,
+      migrate: (state, version) =>
+        migratePersistedPanelState(
+          state as (PanelState & PanelActions) | undefined,
+          version,
+          createInitialModel,
+        ),
     },
   ),
 );

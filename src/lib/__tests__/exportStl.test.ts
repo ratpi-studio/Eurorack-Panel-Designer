@@ -10,6 +10,7 @@ import {
 import { generateMountingHoles } from "@lib/mountingHoles";
 import {
   DEFAULT_CLEARANCE_CONFIG,
+  DEFAULT_DESIGN_RELIEF,
   DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   PanelElementType,
@@ -34,6 +35,7 @@ function createEmptyPanel(): PanelModel {
     clearance: { ...DEFAULT_CLEARANCE_CONFIG },
     panelColor: "#1a1a1a",
     designColor: "#ffffff",
+    designRelief: { ...DEFAULT_DESIGN_RELIEF },
   };
 }
 
@@ -514,8 +516,6 @@ describe("buildPanelStl", () => {
         widthMm: 8,
         heightMm: 8,
         color: "#ffffff",
-        stlThicknessMm: 0.6,
-        stlPenetrationMm: 0.2,
       },
     });
 
@@ -541,8 +541,6 @@ describe("buildPanelStl", () => {
         widthMm: 8,
         heightMm: 8,
         color: "#ffffff",
-        stlThicknessMm: 0.6,
-        stlPenetrationMm: 0.2,
         sourceName: "white.svg",
       },
     });
@@ -568,8 +566,6 @@ describe("buildPanelStl", () => {
         widthMm: 8,
         heightMm: 8,
         color: "#ffffff",
-        stlThicknessMm: 0.6,
-        stlPenetrationMm: 0.2,
         sourceName: "text.svg",
       },
     });

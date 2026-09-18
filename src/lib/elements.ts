@@ -1,4 +1,6 @@
 import {
+  DEFAULT_LABEL_FONT_SIZE_PT,
+  DEFAULT_LABEL_KNOCKOUT_PADDING_MM,
   PanelElementType,
   type CircularElementProperties,
   type InsertElementProperties,
@@ -8,11 +10,8 @@ import {
   type SvgArtworkElementProperties,
   type Vector2,
 } from "@lib/panelTypes";
-import {
-  DEFAULT_SVG_ARTWORK_COLOR,
-  DEFAULT_SVG_ARTWORK_STL_PENETRATION_MM,
-  DEFAULT_SVG_ARTWORK_STL_THICKNESS_MM,
-} from "@lib/svgArtwork";
+import { DEFAULT_SVG_ARTWORK_COLOR } from "@lib/svgArtwork";
+import { DEFAULT_TEXT_FONT_ID } from "@lib/text/textFonts";
 
 function generateElementId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -78,7 +77,10 @@ const DEFAULT_INSERT: InsertElementProperties = {
 
 const DEFAULT_LABEL: LabelElementProperties = {
   text: "Label",
-  fontSizePt: 10,
+  fontSizePt: DEFAULT_LABEL_FONT_SIZE_PT,
+  fontId: DEFAULT_TEXT_FONT_ID,
+  patternOverlap: "knockout",
+  knockoutPaddingMm: DEFAULT_LABEL_KNOCKOUT_PADDING_MM,
   label: "",
 };
 
@@ -88,8 +90,6 @@ const DEFAULT_SVG_ARTWORK: SvgArtworkElementProperties = {
   widthMm: 20,
   heightMm: 20,
   color: DEFAULT_SVG_ARTWORK_COLOR,
-  stlThicknessMm: DEFAULT_SVG_ARTWORK_STL_THICKNESS_MM,
-  stlPenetrationMm: DEFAULT_SVG_ARTWORK_STL_PENETRATION_MM,
   label: "",
 };
 
