@@ -259,7 +259,7 @@ export const DEFAULT_CLEARANCE_CONFIG: ClearanceConfig = {
   minSpacingMm: 5,
 };
 
-export const DEFAULT_PANEL_COLOR = "#0f2742";
+export const DEFAULT_PANEL_COLOR = "#226bbf";
 export const DEFAULT_DESIGN_COLOR = "#ffffff";
 
 export function clampClearanceConfig(

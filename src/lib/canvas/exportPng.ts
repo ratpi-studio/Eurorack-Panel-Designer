@@ -4,6 +4,7 @@ import { buildSvgArtworkDataUrl, isSvgArtworkElement } from "@lib/svgArtwork";
 import { themeValues } from "@styles/theme.css";
 
 import { deriveExportPaletteFromModel } from "./palette";
+import { buildPanelSurfaceClipPathData } from "./panelSurfaceClip";
 import { drawPanelScene } from "./renderScene";
 import { computeCanvasTransform } from "./transform";
 
@@ -61,9 +62,20 @@ export async function buildPanelPngDataUrl(
     svgArtworkImages.set(id, image);
   });
 
+  const panelSizeMm = { x: model.dimensions.widthMm, y: model.dimensions.heightMm };
+  const panelSurfacePath = artworkElements.length
+    ? new Path2D(
+        await buildPanelSurfaceClipPathData({
+          panelSizeMm,
+          mountingHoles,
+          elements: model.elements,
+        }),
+      )
+    : null;
+
   const transform = computeCanvasTransform({
     canvasSizePx: { x: widthPx, y: heightPx },
-    panelSizeMm: { x: model.dimensions.widthMm, y: model.dimensions.heightMm },
+    panelSizeMm,
     zoom: 1,
     pan: { x: 0, y: 0 },
     paddingPx: 0,
@@ -74,7 +86,7 @@ export async function buildPanelPngDataUrl(
   drawPanelScene({
     context,
     transform,
-    panelSizeMm: { x: model.dimensions.widthMm, y: model.dimensions.heightMm },
+    panelSizeMm,
     elements: model.elements,
     mountingHoles,
     elementMountingHoles,
@@ -87,6 +99,7 @@ export async function buildPanelPngDataUrl(
     elementStyles: derived.elementStyles,
     fontFamily: themeValues.font.body,
     svgArtworkImages,
+    panelSurfacePath,
   });
 
   return offscreen.toDataURL("image/png");

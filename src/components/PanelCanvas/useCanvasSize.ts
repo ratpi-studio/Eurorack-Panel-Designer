@@ -10,6 +10,7 @@ interface CanvasSizeResult {
   canvasSize: Vector2;
 }
 
+/** Tracks the size of the box the canvas fills, which the surrounding layout decides. */
 export function useCanvasSize(): CanvasSizeResult {
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const [canvasSize, setCanvasSize] = React.useState<Vector2>({
@@ -22,13 +23,17 @@ export function useCanvasSize(): CanvasSizeResult {
     if (!container) {
       return;
     }
-    const aspectRatio = CANVAS_WIDTH_PX / CANVAS_HEIGHT_PX;
 
     const updateSize = () => {
-      const rect = container.getBoundingClientRect();
-      const width = rect.width > 0 ? Math.min(rect.width, CANVAS_WIDTH_PX) : CANVAS_WIDTH_PX;
-      const height = width / aspectRatio;
-      setCanvasSize({ x: Math.round(width), y: Math.round(height) });
+      // The client box excludes the border, so it matches the canvas drawn inside it.
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      if (width <= 0 || height <= 0) {
+        return;
+      }
+      setCanvasSize((current) =>
+        current.x === width && current.y === height ? current : { x: width, y: height },
+      );
     };
 
     updateSize();

@@ -4,8 +4,10 @@ import { PanelCanvas } from "@components/PanelCanvas/PanelCanvas";
 import { LeftPanel } from "@components/PanelDesigner/LeftPanel";
 import { PanelHeader } from "@components/PanelDesigner/PanelHeader";
 import { RightPanel } from "@components/PanelDesigner/RightPanel";
+import { ViewModeSwitch } from "@components/PanelDesigner/ViewModeSwitch";
 import { SvgArtworkModal } from "@components/SvgArtworkModal/SvgArtworkModal";
 import { useResponsivePanels } from "@components/PanelDesigner/useResponsivePanels";
+import { useViewMode } from "@components/PanelDesigner/useViewMode";
 import { useI18n } from "@i18n/I18nContext";
 import { createPanelElement } from "@lib/elements";
 import { generateMountingHoles } from "@lib/mountingHoles";
@@ -16,7 +18,7 @@ import {
   type PanelElement,
   type MountingHole,
   type MountingHoleConfig,
-  type PanelModel,
+  type PanelDimensions,
   type Vector2,
 } from "@lib/panelTypes";
 import { createPanelDimensions, hpToMm, mmToCm } from "@lib/units";
@@ -24,7 +26,7 @@ import { changelogEntries } from "@lib/changelog";
 import { computeElementMountingHoles } from "@lib/elementMountingHoles";
 import { shrinkReferenceImage, type ReferenceImage } from "@lib/referenceImage";
 import { computeClearanceLines, applyClearanceLinePosition } from "@lib/clearance";
-import { type ExportFormat } from "@lib/exportPreferences";
+import { type ExportFormat } from "@lib/preferences";
 import { usePanelStore } from "@store/panelStore";
 import { usePanelHistory } from "@store/usePanelHistory";
 import { useProjects } from "@store/useProjects";
@@ -37,18 +39,21 @@ const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 4;
 const CHANGELOG_URL =
   "https://github.com/ratpi-studio/Eurorack-Panel-Designer/blob/master/CHANGELOG.md";
-const LazyStlPreview = React.lazy(() =>
-  import("@components/StlPreview/StlPreview").then((module) => ({
-    default: module.StlPreview,
+const LazyPanel3DView = React.lazy(() =>
+  import("@components/Panel3DView/Panel3DView").then((module) => ({
+    default: module.Panel3DView,
   })),
 );
 
-function computeMountingHoles(model: PanelModel): MountingHole[] {
+function computeMountingHoles(
+  dimensions: PanelDimensions,
+  config: MountingHoleConfig,
+): MountingHole[] {
   return generateMountingHoles({
-    widthHp: model.dimensions.widthHp,
-    widthMm: model.dimensions.widthMm,
-    heightMm: model.dimensions.heightMm,
-    config: model.mountingHoleConfig,
+    widthHp: dimensions.widthHp,
+    widthMm: dimensions.widthMm,
+    heightMm: dimensions.heightMm,
+    config,
   });
 }
 
@@ -73,6 +78,9 @@ export function PanelDesigner() {
   const selectReferenceImage = usePanelStore((state) => state.selectReferenceImage);
   const [zoom, setZoom] = React.useState(DEFAULT_ZOOM);
   const [pan, setPan] = React.useState<Vector2>({ ...DEFAULT_PAN });
+  // Bumped by "Reset view" so the 3D view frames the panel again too.
+  const [viewResetKey, setViewResetKey] = React.useState(0);
+  const [viewMode, setViewMode] = useViewMode();
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const [isExportMenuOpen, setIsExportMenuOpen] = React.useState(false);
   const [isStlModalOpen, setIsStlModalOpen] = React.useState(false);
@@ -140,7 +148,10 @@ export function PanelDesigner() {
     removeElements,
   } = usePanelHistory();
 
-  const mountingHoles = React.useMemo(() => computeMountingHoles(panelModel), [panelModel]);
+  const mountingHoles = React.useMemo(
+    () => computeMountingHoles(panelModel.dimensions, panelModel.mountingHoleConfig),
+    [panelModel.dimensions, panelModel.mountingHoleConfig],
+  );
 
   const elementMountingHoles = React.useMemo(
     () => computeElementMountingHoles(panelModel.elements, panelModel.elementHoleConfig),
@@ -186,6 +197,7 @@ export function PanelDesigner() {
   const resetView = React.useCallback(() => {
     setZoom(DEFAULT_ZOOM);
     setPan({ ...DEFAULT_PAN });
+    setViewResetKey((key) => key + 1);
   }, []);
 
   const clampZoom = React.useCallback(
@@ -506,8 +518,12 @@ export function PanelDesigner() {
     (type: PanelElementType | null) => {
       clearSelection();
       setPlacementType(type);
+      // Elements are placed on the 2D canvas: bring it back next to the 3D view.
+      if (type && viewMode === "3d") {
+        setViewMode("split");
+      }
     },
-    [clearSelection, setPlacementType],
+    [clearSelection, setPlacementType, setViewMode, viewMode],
   );
 
   const handleOpenSvgArtworkModal = React.useCallback(() => {
@@ -951,68 +967,92 @@ export function PanelDesigner() {
             />
           ) : null}
           <div className={styles.canvasColumn}>
-            {isCompact ? (
-              <div className={styles.compactToggleBar}>
-                <button
-                  type="button"
-                  className={styles.secondaryButton}
-                  onClick={() => {
-                    setShowLeftPanel((prev) => !prev);
-                    setShowRightPanel(false);
-                  }}
-                >
-                  Tools
-                </button>
-                <button
-                  type="button"
-                  className={styles.secondaryButton}
-                  onClick={() => {
-                    setShowRightPanel((prev) => !prev);
-                    setShowLeftPanel(false);
-                  }}
-                >
-                  Properties
-                </button>
-              </div>
-            ) : null}
-            <PanelCanvas
-              canvasRef={canvasRef}
-              model={panelModel}
-              mountingHoles={mountingHoles}
-              elementMountingHoles={elementMountingHoles}
-              referenceImage={referenceImage}
-              referenceImageSelected={referenceImageSelected}
-              mountingHolesSelected={mountingHolesSelected}
-              zoom={zoom}
-              pan={pan}
-              zoomLimits={{ min: MIN_ZOOM, max: MAX_ZOOM }}
-              placementType={placementType}
-              onPlaceElement={handlePlaceElement}
-              onMoveElement={handleMoveElement}
-              onMoveElements={moveElements}
-              onMoveStart={beginMove}
-              onMoveEnd={endMove}
-              onUpdateElement={handleUpdateElement}
-              onZoomChange={handleZoomChange}
-              onPanChange={handlePanChange}
-              onSelectElement={setSelectedElementId}
-              onAddSelectedElements={addSelectedElements}
-              onSelectElements={setSelectedElementIds}
-              onToggleElementSelection={toggleElementSelection}
-              onClearSelection={clearSelection}
-              onSelectReferenceImage={handleSelectReferenceImage}
-              onClearReferenceSelection={handleClearReferenceSelection}
-              onUpdateReferenceImage={handleReferenceImageChange}
-              onSelectMountingHoles={handleSelectMountingHoles}
-              onClearMountingHoleSelection={handleClearMountingHoleSelection}
-              displayOptions={panelModel.options}
-              selectedElementIds={selectedElementIds}
-              draftProperties={draftProperties}
-              clearanceLines={clearanceLines}
-              onClearanceLineChange={handleClearanceLineChange}
-              onClearanceLineDragStart={handleClearanceDragStart}
-              onClearanceLineDragEnd={handleClearanceDragEnd}
-            />
+            <div className={styles.canvasToolbar}>
+              <ViewModeSwitch t={t} value={viewMode} onChange={setViewMode} />
+              {isCompact ? (
+                <div className={styles.compactToggles}>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={() => {
+                      setShowLeftPanel((prev) => !prev);
+                      setShowRightPanel(false);
+                    }}
+                  >
+                    Tools
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={() => {
+                      setShowRightPanel((prev) => !prev);
+                      setShowLeftPanel(false);
+                    }}
+                  >
+                    Properties
+                  </button>
+                </div>
+              ) : null}
+            </div>
+            <div className={viewMode === "split" ? styles.viewportSplit : styles.viewport}>
+              {viewMode !== "3d" ? (
+                <div className={styles.viewportPane}>
+                  <PanelCanvas
+                    canvasRef={canvasRef}
+                    model={panelModel}
+                    mountingHoles={mountingHoles}
+                    elementMountingHoles={elementMountingHoles}
+                    referenceImage={referenceImage}
+                    referenceImageSelected={referenceImageSelected}
+                    mountingHolesSelected={mountingHolesSelected}
+                    zoom={zoom}
+                    pan={pan}
+                    zoomLimits={{ min: MIN_ZOOM, max: MAX_ZOOM }}
+                    placementType={placementType}
+                    onPlaceElement={handlePlaceElement}
+                    onMoveElement={handleMoveElement}
+                    onMoveElements={moveElements}
+                    onMoveStart={beginMove}
+                    onMoveEnd={endMove}
+                    onUpdateElement={handleUpdateElement}
+                    onZoomChange={handleZoomChange}
+                    onPanChange={handlePanChange}
+                    onSelectElement={setSelectedElementId}
+                    onAddSelectedElements={addSelectedElements}
+                    onSelectElements={setSelectedElementIds}
+                    onToggleElementSelection={toggleElementSelection}
+                    onClearSelection={clearSelection}
+                    onSelectReferenceImage={handleSelectReferenceImage}
+                    onClearReferenceSelection={handleClearReferenceSelection}
+                    onUpdateReferenceImage={handleReferenceImageChange}
+                    onSelectMountingHoles={handleSelectMountingHoles}
+                    onClearMountingHoleSelection={handleClearMountingHoleSelection}
+                    displayOptions={panelModel.options}
+                    selectedElementIds={selectedElementIds}
+                    draftProperties={draftProperties}
+                    clearanceLines={clearanceLines}
+                    onClearanceLineChange={handleClearanceLineChange}
+                    onClearanceLineDragStart={handleClearanceDragStart}
+                    onClearanceLineDragEnd={handleClearanceDragEnd}
+                  />
+                </div>
+              ) : null}
+              {viewMode !== "2d" ? (
+                <div className={styles.viewportPane}>
+                  <React.Suspense
+                    fallback={<div className={styles.viewportFallback}>{t.view3d.loading}</div>}
+                  >
+                    <LazyPanel3DView
+                      model={panelModel}
+                      mountingHoles={combinedMountingHoles}
+                      thicknessMm={previewThickness}
+                      resetKey={viewResetKey}
+                      showHud
+                    />
+                  </React.Suspense>
+                </div>
+              ) : null}
+            </div>
             <div className={styles.shortcuts}>
               <span className={styles.key}>{t.shortcuts.shift}</span>
               <span className={styles.shortcutLabel}>{t.shortcuts.disableSnap}</span>
@@ -1082,19 +1122,21 @@ export function PanelDesigner() {
             </label>
             <div className={styles.previewSection}>
               <span className={styles.label}>{t.projects.stlDialog.previewLabel}</span>
-              <React.Suspense
-                fallback={
-                  <div className={styles.previewFallback}>
-                    {t.projects.stlDialog.previewLoading}
-                  </div>
-                }
-              >
-                <LazyStlPreview
-                  model={panelModel}
-                  mountingHoles={mountingHoles}
-                  thicknessMm={previewThickness}
-                />
-              </React.Suspense>
+              <div className={styles.stlPreviewFrame}>
+                <React.Suspense
+                  fallback={
+                    <div className={styles.viewportFallback}>
+                      {t.projects.stlDialog.previewLoading}
+                    </div>
+                  }
+                >
+                  <LazyPanel3DView
+                    model={panelModel}
+                    mountingHoles={combinedMountingHoles}
+                    thicknessMm={previewThickness}
+                  />
+                </React.Suspense>
+              </div>
             </div>
             <div className={styles.modalActions}>
               <button

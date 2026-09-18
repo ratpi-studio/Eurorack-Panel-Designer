@@ -20,8 +20,6 @@ import { useCanvasSize } from "./useCanvasSize";
 import * as styles from "./PanelCanvas.css";
 
 const CANVAS_PADDING_PX = 48;
-const CANVAS_WIDTH_PX = 1200;
-const CANVAS_HEIGHT_PX = 720;
 
 type DraftPropertiesState = Partial<{
   [T in PanelElementType]: PanelElement["properties"];
@@ -233,16 +231,6 @@ export function PanelCanvas({
     placementType,
   });
 
-  const canvasStyle = React.useMemo(
-    () => ({
-      width: "100%",
-      maxWidth: `${CANVAS_WIDTH_PX}px`,
-      height: `${canvasSize.y}px`,
-      minHeight: `${Math.round(CANVAS_HEIGHT_PX * 0.6)}px`,
-    }),
-    [canvasSize.y],
-  );
-
   const pointerText = pointerPanelPos
     ? ` · X ${pointerPanelPos.x.toFixed(1)} mm · Y ${pointerPanelPos.y.toFixed(1)} mm`
     : "";
@@ -254,7 +242,7 @@ export function PanelCanvas({
   // has to remove one. Keep this subtree static: one HUD text node, selection rect always
   // mounted, translation disabled.
   return (
-    <div ref={containerRef} className={styles.root} style={canvasStyle} translate="no">
+    <div ref={containerRef} className={styles.root} translate="no">
       <canvas
         ref={canvasRef}
         className={canvasClassName}

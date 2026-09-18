@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.9.0 - 2026-09-18
+
+- Added a live 3D view of the panel as it will be exported to STL. Switch the render area between 2D, 3D, and 2D + 3D with the buttons above it; the choice is remembered. The model follows every edit and uses the panel and design colors, with the SVG relief on the front and inserts on the back. Drag to rotate, right-drag to pan, and scroll to zoom; "Reset view" reframes both views. The STL export dialog shows the same 3D view, and the 2D canvas now fills the whole render area.
+- Overlapping cut-outs, such as two jacks or a screw hole touching a jack, are now merged into a single opening, and cut-outs that cross the panel edge open onto it, in every export and on the canvas. Before, the STL could keep walls inside the opening, KiCad exports had crossing Edge.Cuts lines that KiCad rejects, and the SVG export filled the overlap with the panel color again.
+- Rotated cut-outs now come out rotated in the STL, SVG, and KiCad exports, turned the same way as on the canvas; rotated text too in the SVG export.
+- Inserts are now built on the back of the panel, opposite the SVG relief, and no longer fill the cut-outs next to them.
+- Fixed slots having their rounded ends curved inward in the STL export.
+- Fixed STL files having their faces turned inside out.
+- SVG artwork relief is built more reliably, stroked lines included. When part of it still cannot be built, the STL export keeps the rest and warns you, instead of silently dropping the whole relief.
+- New designs start with a brighter blue panel.
+- The app loads less code at startup: the SVG and KiCad export code now loads only when needed.
+
 ## 0.8.1 - 2026-09-18
 
 - Fixed the editor breaking and autosave silently stopping once browser storage was full, typically after importing a large reference image. The design keeps being saved (without the image when it does not fit), and a message explains what happened.

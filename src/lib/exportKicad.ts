@@ -1,8 +1,11 @@
+import { mergePanelSurface } from "@lib/mergedPanelSurface";
+import { elementPointToPanel, type SurfaceRing } from "@lib/panelSurface";
 import {
   PanelElementType,
   type MountingHole,
   type PanelElement,
   type PanelModel,
+  type Vector2,
 } from "@lib/panelTypes";
 
 interface CircularCutout {
@@ -11,32 +14,13 @@ interface CircularCutout {
   radius: number;
 }
 
-interface RectangularCutout {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-interface OvalCutout {
-  cx: number;
-  cy: number;
-  radiusX: number;
-  radiusY: number;
-}
-
-interface SlotCutout {
+/** A cut-out sized before rotation, turned by `rotationDeg` around its center like on the canvas. */
+interface SizedCutout {
   cx: number;
   cy: number;
   width: number;
   height: number;
-}
-
-interface TriangleCutout {
-  cx: number;
-  cy: number;
-  width: number;
-  height: number;
+  rotationDeg: number;
 }
 
 const SVG_STROKE = "black";
@@ -57,6 +41,57 @@ function formatNumber(value: number): string {
   }
 
   return fixed.toString();
+}
+
+interface EdgeCuts {
+  /** Outline and opening rings, once cut-outs that overlap each other or the edge are merged. */
+  mergedRings: Vector2[][] | null;
+  /** The panel with only the cut-outs that keep their own shape. */
+  model: PanelModel;
+  mountingHoles: MountingHole[];
+}
+
+/** Ring corners at the precision of the file, without repeats that would make zero-length lines. */
+function roundRing(ring: SurfaceRing): Vector2[] {
+  const points: Vector2[] = [];
+  for (const [x, y] of ring) {
+    const point = { x: Number(formatNumber(x)), y: Number(formatNumber(y)) };
+    const previous = points[points.length - 1];
+    if (!previous || previous.x !== point.x || previous.y !== point.y) {
+      points.push(point);
+    }
+  }
+  const first = points[0];
+  const last = points[points.length - 1];
+  if (points.length > 1 && first.x === last.x && first.y === last.y) {
+    points.pop();
+  }
+  return points;
+}
+
+/**
+ * Merges cut-outs that overlap each other or cross the panel edge into the outline, like the STL:
+ * drawn one by one, their outlines would cross, which KiCad rejects as a board outline. The other
+ * cut-outs keep their own shapes.
+ */
+function planEdgeCuts(model: PanelModel, mountingHoles: MountingHole[]): EdgeCuts {
+  const merged = mergePanelSurface({
+    panelSizeMm: { x: model.dimensions.widthMm, y: model.dimensions.heightMm },
+    mountingHoles,
+    elements: model.elements,
+  });
+  if (!merged) {
+    return { mergedRings: null, model, mountingHoles };
+  }
+  const mergedSources = new Set(merged.mergedCutouts.map((cutout) => cutout.source));
+  return {
+    mergedRings: merged.polygons
+      .flat()
+      .map(roundRing)
+      .filter((ring) => ring.length >= 3),
+    model: { ...model, elements: model.elements.filter((element) => !mergedSources.has(element)) },
+    mountingHoles: mountingHoles.filter((hole) => !mergedSources.has(hole)),
+  };
 }
 
 function collectCircularCutouts(
@@ -106,102 +141,69 @@ function collectCircularCutouts(
   return holes;
 }
 
-function collectRectangularCutouts(model: PanelModel): RectangularCutout[] {
-  const holes: RectangularCutout[] = [];
+function collectSizedCutouts(model: PanelModel, types: PanelElementType[]): SizedCutout[] {
+  const holes: SizedCutout[] = [];
 
   for (const element of model.elements) {
-    if (element.type !== PanelElementType.Switch && element.type !== PanelElementType.Rectangle) {
+    if (!types.includes(element.type)) {
       continue;
     }
-
-    const props = element.properties;
+    const props = element.properties as { widthMm: number; heightMm: number };
     if (props.widthMm <= 0 || props.heightMm <= 0) {
       continue;
     }
-
-    holes.push({
-      x: element.positionMm.x - props.widthMm / 2,
-      y: element.positionMm.y - props.heightMm / 2,
-      width: props.widthMm,
-      height: props.heightMm,
-    });
-  }
-
-  return holes;
-}
-
-function collectOvalCutouts(model: PanelModel): OvalCutout[] {
-  const holes: OvalCutout[] = [];
-
-  for (const element of model.elements) {
-    if (element.type !== PanelElementType.Oval) {
-      continue;
-    }
-    const props = element.properties;
-    if (props.widthMm <= 0 || props.heightMm <= 0) {
-      continue;
-    }
-
     holes.push({
       cx: element.positionMm.x,
       cy: element.positionMm.y,
-      radiusX: props.widthMm / 2,
-      radiusY: props.heightMm / 2,
+      width: props.widthMm,
+      height: props.heightMm,
+      rotationDeg: element.rotationDeg ?? 0,
     });
   }
 
   return holes;
 }
 
-function collectSlotCutouts(model: PanelModel, mountingHoles: MountingHole[]): SlotCutout[] {
-  const holes: SlotCutout[] = mountingHoles
+function collectRectangularCutouts(model: PanelModel): SizedCutout[] {
+  return collectSizedCutouts(model, [PanelElementType.Switch, PanelElementType.Rectangle]);
+}
+
+function collectOvalCutouts(model: PanelModel): SizedCutout[] {
+  return collectSizedCutouts(model, [PanelElementType.Oval]);
+}
+
+function collectSlotCutouts(model: PanelModel, mountingHoles: MountingHole[]): SizedCutout[] {
+  const railSlots: SizedCutout[] = mountingHoles
     .filter((hole) => hole.shape === "slot" && (hole.slotLengthMm ?? hole.diameterMm) > 0)
     .map((hole) => ({
       cx: hole.center.x,
       cy: hole.center.y,
       width: hole.slotLengthMm ?? hole.diameterMm,
       height: hole.diameterMm,
+      rotationDeg: 0,
     }));
 
-  for (const element of model.elements) {
-    if (element.type !== PanelElementType.Slot) {
-      continue;
-    }
-    const props = element.properties;
-    if (props.widthMm <= 0 || props.heightMm <= 0) {
-      continue;
-    }
-    holes.push({
-      cx: element.positionMm.x,
-      cy: element.positionMm.y,
-      width: props.widthMm,
-      height: props.heightMm,
-    });
-  }
-
-  return holes;
+  return [...railSlots, ...collectSizedCutouts(model, [PanelElementType.Slot])];
 }
 
-function collectTriangleCutouts(model: PanelModel): TriangleCutout[] {
-  const holes: TriangleCutout[] = [];
+function collectTriangleCutouts(model: PanelModel): SizedCutout[] {
+  return collectSizedCutouts(model, [PanelElementType.Triangle]);
+}
 
-  for (const element of model.elements) {
-    if (element.type !== PanelElementType.Triangle) {
-      continue;
-    }
-    const props = element.properties;
-    if (props.widthMm <= 0 || props.heightMm <= 0) {
-      continue;
-    }
-    holes.push({
-      cx: element.positionMm.x,
-      cy: element.positionMm.y,
-      width: props.widthMm,
-      height: props.heightMm,
-    });
+/** SVG transform turning a cut-out around its center like on the canvas; empty when unrotated. */
+function rotationTransform(hole: SizedCutout): string {
+  if (!hole.rotationDeg) {
+    return "";
   }
+  return ` transform="rotate(${formatNumber(hole.rotationDeg)} ${formatNumber(hole.cx)} ${formatNumber(
+    hole.cy,
+  )})"`;
+}
 
-  return holes;
+/** Places points given around the cut-out center, before rotation, on the panel. */
+function placeCutoutPoints(hole: SizedCutout, localPoints: Vector2[]): Vector2[] {
+  const center = { x: hole.cx, y: hole.cy };
+  return localPoints.map((point) => elementPointToPanel(point, center, hole.rotationDeg));
 }
 
 function hasCircularCutout(element: PanelElement): element is PanelElement & {
@@ -217,11 +219,21 @@ function hasCircularCutout(element: PanelElement): element is PanelElement & {
 export function buildKicadEdgeCutsSvg(model: PanelModel, mountingHoles: MountingHole[]): string {
   const width = formatNumber(model.dimensions.widthMm);
   const height = formatNumber(model.dimensions.heightMm);
-  const circularCutouts = collectCircularCutouts(model, mountingHoles);
-  const rectangularCutouts = collectRectangularCutouts(model);
-  const ovalCutouts = collectOvalCutouts(model);
-  const slotCutouts = collectSlotCutouts(model, mountingHoles);
-  const triangleCutouts = collectTriangleCutouts(model);
+  const edgeCuts = planEdgeCuts(model, mountingHoles);
+  const circularCutouts = collectCircularCutouts(edgeCuts.model, edgeCuts.mountingHoles);
+  const rectangularCutouts = collectRectangularCutouts(edgeCuts.model);
+  const ovalCutouts = collectOvalCutouts(edgeCuts.model);
+  const slotCutouts = collectSlotCutouts(edgeCuts.model, edgeCuts.mountingHoles);
+  const triangleCutouts = collectTriangleCutouts(edgeCuts.model);
+
+  const outlineSvg = edgeCuts.mergedRings
+    ? edgeCuts.mergedRings
+        .map(
+          (ring) =>
+            `  <path d="${ringPath(ring)}" stroke="${SVG_STROKE}" stroke-width="${SVG_STROKE_WIDTH}" fill="none" />`,
+        )
+        .join("\n")
+    : `  <rect x="0" y="0" width="${width}" height="${height}" stroke="${SVG_STROKE}" stroke-width="${SVG_STROKE_WIDTH}" fill="none" />`;
 
   const circularSvgs = circularCutouts
     .map(
@@ -235,11 +247,11 @@ export function buildKicadEdgeCutsSvg(model: PanelModel, mountingHoles: Mounting
   const rectangularSvgs = rectangularCutouts
     .map(
       (hole) =>
-        `  <rect x="${formatNumber(hole.x)}" y="${formatNumber(
-          hole.y,
+        `  <rect x="${formatNumber(hole.cx - hole.width / 2)}" y="${formatNumber(
+          hole.cy - hole.height / 2,
         )}" width="${formatNumber(hole.width)}" height="${formatNumber(
           hole.height,
-        )}" stroke="${SVG_STROKE}" stroke-width="${SVG_STROKE_WIDTH}" fill="none" />`,
+        )}" stroke="${SVG_STROKE}" stroke-width="${SVG_STROKE_WIDTH}" fill="none"${rotationTransform(hole)} />`,
     )
     .join("\n");
 
@@ -248,9 +260,9 @@ export function buildKicadEdgeCutsSvg(model: PanelModel, mountingHoles: Mounting
       (hole) =>
         `  <ellipse cx="${formatNumber(hole.cx)}" cy="${formatNumber(
           hole.cy,
-        )}" rx="${formatNumber(hole.radiusX)}" ry="${formatNumber(
-          hole.radiusY,
-        )}" stroke="${SVG_STROKE}" stroke-width="${SVG_STROKE_WIDTH}" fill="none" />`,
+        )}" rx="${formatNumber(hole.width / 2)}" ry="${formatNumber(
+          hole.height / 2,
+        )}" stroke="${SVG_STROKE}" stroke-width="${SVG_STROKE_WIDTH}" fill="none"${rotationTransform(hole)} />`,
     )
     .join("\n");
 
@@ -262,7 +274,7 @@ export function buildKicadEdgeCutsSvg(model: PanelModel, mountingHoles: Mounting
           hole.cy,
           hole.width,
           hole.height,
-        )}" stroke="${SVG_STROKE}" stroke-width="${SVG_STROKE_WIDTH}" fill="none" />`,
+        )}" stroke="${SVG_STROKE}" stroke-width="${SVG_STROKE_WIDTH}" fill="none"${rotationTransform(hole)} />`,
     )
     .join("\n");
 
@@ -274,7 +286,7 @@ export function buildKicadEdgeCutsSvg(model: PanelModel, mountingHoles: Mounting
           hole.cy,
           hole.width,
           hole.height,
-        )}" stroke="${SVG_STROKE}" stroke-width="${SVG_STROKE_WIDTH}" fill="none" />`,
+        )}" stroke="${SVG_STROKE}" stroke-width="${SVG_STROKE_WIDTH}" fill="none"${rotationTransform(hole)} />`,
     )
     .join("\n");
 
@@ -283,9 +295,7 @@ export function buildKicadEdgeCutsSvg(model: PanelModel, mountingHoles: Mounting
     .join("\n");
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}mm" height="${height}mm" viewBox="0 0 ${width} ${height}">
-  <rect x="0" y="0" width="${width}" height="${height}" stroke="${SVG_STROKE}" stroke-width="${SVG_STROKE_WIDTH}" fill="none" />${
-    holeLines ? `\n${holeLines}` : ""
-  }
+${outlineSvg}${holeLines ? `\n${holeLines}` : ""}
 </svg>`;
 }
 
@@ -315,76 +325,88 @@ function circleLines(
   radius: number,
   segments = MIN_CIRCLE_SEGMENTS,
 ): string[] {
-  return ellipseLines(cx, cy, radius, radius, segments);
+  return closedShapeLines(
+    ellipsePoints(radius, radius, segments).map(({ x, y }) => ({
+      x: cx + x,
+      y: cy + y,
+    })),
+  );
 }
 
-function ellipseLines(
-  cx: number,
-  cy: number,
+function ellipsePoints(
   radiusX: number,
   radiusY: number,
   segments = MIN_CIRCLE_SEGMENTS,
-): string[] {
+): Vector2[] {
   const segmentCount = Math.max(MIN_CIRCLE_SEGMENTS, segments);
-  const points: Array<{ x: number; y: number }> = [];
+  const points: Vector2[] = [];
 
   for (let i = 0; i < segmentCount; i += 1) {
     const angle = (i / segmentCount) * Math.PI * 2;
     points.push({
-      x: cx + radiusX * Math.cos(angle),
-      y: cy + radiusY * Math.sin(angle),
+      x: radiusX * Math.cos(angle),
+      y: radiusY * Math.sin(angle),
     });
   }
 
-  return closedShapeLines(points);
+  return points;
 }
 
-function slotLines(
-  cx: number,
-  cy: number,
-  width: number,
-  height: number,
-  segments = MIN_CIRCLE_SEGMENTS / 2,
-): string[] {
-  const radius = Math.min(width / 2, height / 2);
-  const straightHalf = Math.max(width / 2 - radius, 0);
-  const rightCenterX = cx + straightHalf;
-  const leftCenterX = cx - straightHalf;
+function rectangleCutoutLines(hole: SizedCutout): string[] {
+  const halfWidth = hole.width / 2;
+  const halfHeight = hole.height / 2;
+  return closedShapeLines(
+    placeCutoutPoints(hole, [
+      { x: -halfWidth, y: -halfHeight },
+      { x: halfWidth, y: -halfHeight },
+      { x: halfWidth, y: halfHeight },
+      { x: -halfWidth, y: halfHeight },
+    ]),
+  );
+}
+
+function ovalCutoutLines(hole: SizedCutout): string[] {
+  return closedShapeLines(placeCutoutPoints(hole, ellipsePoints(hole.width / 2, hole.height / 2)));
+}
+
+function slotCutoutLines(hole: SizedCutout, segments = MIN_CIRCLE_SEGMENTS / 2): string[] {
+  const radius = Math.min(hole.width / 2, hole.height / 2);
+  const straightHalf = Math.max(hole.width / 2 - radius, 0);
   const arcSegments = Math.max(8, Math.round(segments));
-  const points: Array<{ x: number; y: number }> = [];
+  const points: Vector2[] = [];
 
   for (let i = 0; i <= arcSegments; i += 1) {
     const angle = -Math.PI / 2 + (i / arcSegments) * Math.PI;
     points.push({
-      x: rightCenterX + radius * Math.cos(angle),
-      y: cy + radius * Math.sin(angle),
+      x: straightHalf + radius * Math.cos(angle),
+      y: radius * Math.sin(angle),
     });
   }
 
   for (let i = 0; i <= arcSegments; i += 1) {
     const angle = Math.PI / 2 + (i / arcSegments) * Math.PI;
     points.push({
-      x: leftCenterX + radius * Math.cos(angle),
-      y: cy + radius * Math.sin(angle),
+      x: -straightHalf + radius * Math.cos(angle),
+      y: radius * Math.sin(angle),
     });
   }
 
-  return closedShapeLines(points);
+  return closedShapeLines(placeCutoutPoints(hole, points));
 }
 
-function triangleLines(cx: number, cy: number, width: number, height: number): string[] {
-  const halfWidth = width / 2;
-  const halfHeight = height / 2;
-  const points: Array<{ x: number; y: number }> = [
-    { x: cx, y: cy - halfHeight },
-    { x: cx + halfWidth, y: cy + halfHeight },
-    { x: cx - halfWidth, y: cy + halfHeight },
-  ];
-
-  return closedShapeLines(points);
+function triangleCutoutLines(hole: SizedCutout): string[] {
+  const halfWidth = hole.width / 2;
+  const halfHeight = hole.height / 2;
+  return closedShapeLines(
+    placeCutoutPoints(hole, [
+      { x: 0, y: -halfHeight },
+      { x: halfWidth, y: halfHeight },
+      { x: -halfWidth, y: halfHeight },
+    ]),
+  );
 }
 
-function closedShapeLines(points: Array<{ x: number; y: number }>): string[] {
+function closedShapeLines(points: Vector2[]): string[] {
   const lines: string[] = [];
   for (let i = 0; i < points.length; i += 1) {
     const current = points[i];
@@ -410,6 +432,15 @@ function slotPath(cx: number, cy: number, width: number, height: number): string
   )} 0 0 1 ${formatNumber(left)} ${formatNumber(top)} Z`;
 }
 
+function ringPath(points: Vector2[]): string {
+  const [first, ...rest] = points;
+  return [
+    `M ${formatNumber(first.x)} ${formatNumber(first.y)}`,
+    ...rest.map((point) => `L ${formatNumber(point.x)} ${formatNumber(point.y)}`),
+    "Z",
+  ].join(" ");
+}
+
 function trianglePath(cx: number, cy: number, width: number, height: number): string {
   const halfWidth = width / 2;
   const halfHeight = height / 2;
@@ -423,21 +454,22 @@ function trianglePath(cx: number, cy: number, width: number, height: number): st
 export function buildKicadPcbFile(model: PanelModel, mountingHoles: MountingHole[]): string {
   const width = model.dimensions.widthMm;
   const height = model.dimensions.heightMm;
-  const circularCutouts = collectCircularCutouts(model, mountingHoles);
-  const rectangularCutouts = collectRectangularCutouts(model);
-  const ovalCutouts = collectOvalCutouts(model);
-  const slotCutouts = collectSlotCutouts(model, mountingHoles);
-  const triangleCutouts = collectTriangleCutouts(model);
+  const edgeCuts = planEdgeCuts(model, mountingHoles);
+  const circularCutouts = collectCircularCutouts(edgeCuts.model, edgeCuts.mountingHoles);
+  const rectangularCutouts = collectRectangularCutouts(edgeCuts.model);
+  const ovalCutouts = collectOvalCutouts(edgeCuts.model);
+  const slotCutouts = collectSlotCutouts(edgeCuts.model, edgeCuts.mountingHoles);
+  const triangleCutouts = collectTriangleCutouts(edgeCuts.model);
 
-  const outlineLines = rectangleLines(0, 0, width, height);
+  const outlineLines = edgeCuts.mergedRings
+    ? edgeCuts.mergedRings.flatMap(closedShapeLines)
+    : rectangleLines(0, 0, width, height);
   const holeLines = [
-    ...rectangularCutouts.flatMap((hole) =>
-      rectangleLines(hole.x, hole.y, hole.width, hole.height),
-    ),
+    ...rectangularCutouts.flatMap(rectangleCutoutLines),
     ...circularCutouts.flatMap((hole) => circleLines(hole.cx, hole.cy, hole.radius)),
-    ...ovalCutouts.flatMap((hole) => ellipseLines(hole.cx, hole.cy, hole.radiusX, hole.radiusY)),
-    ...slotCutouts.flatMap((hole) => slotLines(hole.cx, hole.cy, hole.width, hole.height)),
-    ...triangleCutouts.flatMap((hole) => triangleLines(hole.cx, hole.cy, hole.width, hole.height)),
+    ...ovalCutouts.flatMap(ovalCutoutLines),
+    ...slotCutouts.flatMap((hole) => slotCutoutLines(hole)),
+    ...triangleCutouts.flatMap(triangleCutoutLines),
   ];
 
   const allLines = [...outlineLines, ...holeLines].map((line) => `  ${line}`);

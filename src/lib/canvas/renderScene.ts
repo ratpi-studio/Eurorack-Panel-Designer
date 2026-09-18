@@ -84,6 +84,11 @@ interface PanelSceneDrawingOptions {
   selectionAnimation?: SelectionAnimationState;
   ghostElement?: PanelElement | null;
   svgArtworkImages?: Map<string, HTMLImageElement>;
+  /**
+   * Clips SVG artwork to the panel minus its cut-outs, with the even-odd rule. Built once per
+   * design change (see `buildPanelSurfaceClipPathData`), not on every frame.
+   */
+  panelSurfacePath: Path2D | null;
   clearanceLines?: ClearanceLines | null;
   showGhostDistances?: boolean;
   /** Editor-only measurement annotations (diameters, side lengths). */
@@ -114,6 +119,7 @@ export function drawPanelScene({
   selectionAnimation,
   ghostElement,
   svgArtworkImages,
+  panelSurfacePath,
   referenceImage,
   clearanceLines,
   panelSizeMm,
@@ -148,11 +154,6 @@ export function drawPanelScene({
     }
   }
 
-  const panelSurfacePath = createPanelSurfacePath2D({
-    panelSizeMm,
-    mountingHoles,
-    elements,
-  });
   drawElements(
     context,
     elements,
