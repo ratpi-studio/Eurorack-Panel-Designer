@@ -1,8 +1,6 @@
 import React from "react";
 
 import { useI18n } from "@i18n/I18nContext";
-import { buildKicadEdgeCutsSvg, buildKicadPcbFile } from "@lib/exportKicad";
-import { buildPanelSvg } from "@lib/exportSvg";
 import {
   DEFAULT_CLEARANCE_CONFIG,
   DEFAULT_DESIGN_COLOR,
@@ -19,7 +17,7 @@ import {
   getPreferredExportFormat,
   setPreferredExportFormat,
   type ExportFormat,
-} from "@lib/exportPreferences";
+} from "@lib/preferences";
 import {
   deleteProject,
   listProjects,
@@ -262,48 +260,71 @@ export function useProjects({
       });
   }, [renderPanelPng, projectName, setStatus, t.projects.messages]);
 
+  // The SVG and KiCad builders merge overlapping cut-outs with polygon-clipping, which stays out of
+  // the startup bundle: they load on demand, like the STL one.
   const handleExportSvg = React.useCallback(() => {
-    const svg = buildPanelSvg(panelModel, mountingHoles, {
-      stroke: "#f5f3f0",
-      panelStroke: "#f5f3f0",
-      background: null,
-      strokeWidth: 0.8,
-    });
-    const blob = new Blob([svg], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    const baseName = (projectName || "panel").trim().replace(/\s+/g, "-");
-    link.download = `${baseName || "panel"}.svg`;
-    link.href = url;
-    link.click();
-    URL.revokeObjectURL(url);
-    setStatus(t.projects.messages.svgExport, "success");
+    import("@lib/exportSvg")
+      .then(({ buildPanelSvg }) => {
+        const svg = buildPanelSvg(panelModel, mountingHoles, {
+          stroke: "#f5f3f0",
+          panelStroke: "#f5f3f0",
+          background: null,
+          strokeWidth: 0.8,
+        });
+        const blob = new Blob([svg], { type: "image/svg+xml" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const baseName = (projectName || "panel").trim().replace(/\s+/g, "-");
+        link.download = `${baseName || "panel"}.svg`;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+        setStatus(t.projects.messages.svgExport, "success");
+      })
+      .catch((error) => {
+        reportError(error, "export-svg");
+        setStatus(t.projects.messages.svgError, "error");
+      });
   }, [mountingHoles, panelModel, projectName, setStatus, t.projects.messages]);
 
   const handleExportKicadSvg = React.useCallback(() => {
-    const svg = buildKicadEdgeCutsSvg(panelModel, mountingHoles);
-    const blob = new Blob([svg], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    const baseName = (projectName || "panel").trim().replace(/\s+/g, "-");
-    link.download = `${baseName || "panel"}-edge-cuts.svg`;
-    link.href = url;
-    link.click();
-    URL.revokeObjectURL(url);
-    setStatus(t.projects.messages.kicadSvgExport, "success");
+    import("@lib/exportKicad")
+      .then(({ buildKicadEdgeCutsSvg }) => {
+        const svg = buildKicadEdgeCutsSvg(panelModel, mountingHoles);
+        const blob = new Blob([svg], { type: "image/svg+xml" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const baseName = (projectName || "panel").trim().replace(/\s+/g, "-");
+        link.download = `${baseName || "panel"}-edge-cuts.svg`;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+        setStatus(t.projects.messages.kicadSvgExport, "success");
+      })
+      .catch((error) => {
+        reportError(error, "export-kicad");
+        setStatus(t.projects.messages.kicadError, "error");
+      });
   }, [mountingHoles, panelModel, projectName, setStatus, t.projects.messages]);
 
   const handleExportKicadPcb = React.useCallback(() => {
-    const pcb = buildKicadPcbFile(panelModel, mountingHoles);
-    const blob = new Blob([pcb], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    const baseName = (projectName || "panel").trim().replace(/\s+/g, "-");
-    link.download = `${baseName || "panel"}.kicad_pcb`;
-    link.href = url;
-    link.click();
-    URL.revokeObjectURL(url);
-    setStatus(t.projects.messages.kicadPcbExport, "success");
+    import("@lib/exportKicad")
+      .then(({ buildKicadPcbFile }) => {
+        const pcb = buildKicadPcbFile(panelModel, mountingHoles);
+        const blob = new Blob([pcb], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const baseName = (projectName || "panel").trim().replace(/\s+/g, "-");
+        link.download = `${baseName || "panel"}.kicad_pcb`;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+        setStatus(t.projects.messages.kicadPcbExport, "success");
+      })
+      .catch((error) => {
+        reportError(error, "export-kicad");
+        setStatus(t.projects.messages.kicadError, "error");
+      });
   }, [mountingHoles, panelModel, projectName, setStatus, t.projects.messages]);
 
   const handleExportStl = React.useCallback(

@@ -5,7 +5,7 @@ import { ElementMountingHoles } from "@components/ElementMountingHoles/ElementMo
 import { ElementProperties } from "@components/ElementProperties/ElementProperties";
 import { MountingHoleSettings } from "@components/MountingHoleSettings/MountingHoleSettings";
 import { ReferenceImageControls } from "@components/ReferenceImageControls/ReferenceImageControls";
-import type { ExportFormat } from "@lib/exportPreferences";
+import type { ExportFormat } from "@lib/preferences";
 import {
   PanelElementType,
   type ElementMountingHoleConfig,

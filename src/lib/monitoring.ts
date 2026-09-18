@@ -2,10 +2,15 @@ import * as Sentry from "@sentry/react";
 
 /** User-facing flows whose caught failures are reported, sent as the `flow` tag. */
 export type MonitoredFlow =
+  | "3d-view"
   | "autosave"
+  | "export-kicad"
   | "export-png"
   | "export-stl"
+  | "export-svg"
   | "github-pages-import"
+  // Merging overlapping cut-outs, for the canvas, PNG, SVG and KiCad outputs.
+  | "panel-surface"
   | "save-project"
   | "stl-geometry";
 

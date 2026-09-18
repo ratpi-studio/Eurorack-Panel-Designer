@@ -188,6 +188,11 @@ export default defineConfig({
           if (id.includes("node_modules/react-hot-toast")) {
             return "react-hot-toast";
           }
+          if (/node_modules\/(polygon-clipping|splaytree|robust-predicates)\//.test(id)) {
+            // Only code loaded on demand uses it (exports, merged cut-outs): keep it out of the
+            // vendor chunk, which loads at startup.
+            return "polygon-clipping";
+          }
           return "vendor";
         },
       },

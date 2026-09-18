@@ -22,6 +22,16 @@ interface Translations {
   canvas: {
     hudSuffix: string;
   };
+  view3d: {
+    modeLabel: string;
+    mode2d: string;
+    mode3d: string;
+    modeSplit: string;
+    canvasLabel: string;
+    loading: string;
+    unavailable: string;
+    hud: (thicknessMm: number) => string;
+  };
   controls: {
     widthHpLabel: string;
     widthMmLabel: string;
@@ -159,8 +169,10 @@ interface Translations {
       pngSuccess: string;
       jsonExport: string;
       svgExport: string;
+      svgError: string;
       kicadSvgExport: string;
       kicadPcbExport: string;
+      kicadError: string;
       stlExport: string;
       stlExportWithWarnings: (count: number) => string;
       stlError: string;
@@ -248,6 +260,16 @@ export const enUS: Translations = {
   },
   canvas: {
     hudSuffix: "Static render",
+  },
+  view3d: {
+    modeLabel: "View",
+    mode2d: "2D",
+    mode3d: "3D",
+    modeSplit: "2D + 3D",
+    canvasLabel: "3D view of the panel",
+    loading: "Loading 3D view…",
+    unavailable: "The 3D view needs WebGL, which this browser does not provide.",
+    hud: (thicknessMm: number) => `${Number(thicknessMm.toFixed(2))} mm thick · Drag to rotate`,
   },
   controls: {
     widthHpLabel: "Width (HP)",
@@ -438,11 +460,13 @@ export const enUS: Translations = {
       pngSuccess: "PNG export created.",
       jsonExport: "JSON export created.",
       svgExport: "SVG export created.",
+      svgError: "Failed to generate SVG export.",
       kicadSvgExport: "KiCad Edge.Cuts SVG created.",
       kicadPcbExport: "KiCad PCB export created.",
+      kicadError: "Failed to generate KiCad export.",
       stlExport: "STL export created.",
       stlExportWithWarnings: (count: number) =>
-        `STL export created. ${count} SVG artwork item${count === 1 ? " was" : "s were"} omitted.`,
+        `STL export created. ${count} SVG artwork item${count === 1 ? " is" : "s are"} missing or incomplete in the model.`,
       stlError: "Failed to generate STL export.",
       orderUploadInProgress: "Uploading your design…",
       orderUploadSuccess: "Design uploaded — review your order.",

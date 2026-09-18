@@ -9,9 +9,59 @@ import {
   DEFAULT_PANEL_OPTIONS,
   DEFAULT_MM_PER_HP,
   PanelElementType,
+  type PanelElement,
   type PanelModel,
 } from "@lib/panelTypes";
 import { createPanelDimensions } from "@lib/units";
+
+type Point = [number, number];
+
+interface EdgeCutLine {
+  start: Point;
+  end: Point;
+}
+
+function jack(id: string, x: number, y: number): PanelElement {
+  return { id, type: PanelElementType.Jack, positionMm: { x, y }, properties: { diameterMm: 6 } };
+}
+
+function parseEdgeCutLines(pcb: string): EdgeCutLine[] {
+  return [...pcb.matchAll(/\(gr_line \(start (\S+) (\S+)\) \(end (\S+) (\S+)\)/g)].map((match) => ({
+    start: [Number(match[1]), Number(match[2])],
+    end: [Number(match[3]), Number(match[4])],
+  }));
+}
+
+/** Corners that do not end exactly one line and start exactly one other: open outlines. */
+function openCorners(lines: EdgeCutLine[]): string[] {
+  const balance = new Map<string, number>();
+  for (const { start, end } of lines) {
+    balance.set(start.join(" "), (balance.get(start.join(" ")) ?? 0) + 1);
+    balance.set(end.join(" "), (balance.get(end.join(" ")) ?? 0) - 1);
+  }
+  return [...balance].filter(([, count]) => count !== 0).map(([corner]) => corner);
+}
+
+function side(a: Point, b: Point, point: Point): number {
+  return (b[0] - a[0]) * (point[1] - a[1]) - (b[1] - a[1]) * (point[0] - a[0]);
+}
+
+/** Pairs of lines that cross each other, which KiCad rejects in a board outline. */
+function crossingLines(lines: EdgeCutLine[]): Array<[number, number]> {
+  const crossings: Array<[number, number]> = [];
+  lines.forEach((a, index) => {
+    for (let other = index + 1; other < lines.length; other += 1) {
+      const b = lines[other];
+      if (
+        side(b.start, b.end, a.start) * side(b.start, b.end, a.end) < 0 &&
+        side(a.start, a.end, b.start) * side(a.start, a.end, b.end) < 0
+      ) {
+        crossings.push([index, other]);
+      }
+    }
+  });
+  return crossings;
+}
 
 function createSampleModel(): PanelModel {
   return {
@@ -142,5 +192,95 @@ describe("buildKicadPcbFile", () => {
       4 + // rectangular hole
       (mountingHoles.length + 1) * 32; // 32 segments per circular cutout (mounting holes + jack)
     expect(grLineCount).toBeGreaterThanOrEqual(expectedMinimum);
+  });
+});
+
+describe("rotated cut-outs", () => {
+  it("turns cut-outs around their center like the canvas", () => {
+    const model: PanelModel = {
+      ...createSampleModel(),
+      elements: [
+        {
+          id: "rectangle-turned",
+          type: PanelElementType.Rectangle,
+          positionMm: { x: 10, y: 25 },
+          rotationDeg: 90,
+          properties: {
+            widthMm: 30,
+            heightMm: 4,
+          },
+        },
+      ],
+    };
+
+    const svg = buildKicadEdgeCutsSvg(model, []);
+    const pcb = buildKicadPcbFile(model, []);
+
+    expect(svg).toContain(
+      `<rect x="-5" y="23" width="30" height="4" stroke="black" stroke-width="0.1" fill="none" transform="rotate(90 10 25)" />`,
+    );
+    // Once turned, the 30 × 4 mm cut-out spans x 8 → 12 and y 10 → 40.
+    expect(pcb).toContain(`(gr_line (start 12 10) (end 12 40) (layer "Edge.Cuts") (width 0.15))`);
+    expect(pcb).toContain(`(gr_line (start 12 40) (end 8 40) (layer "Edge.Cuts") (width 0.15))`);
+    expect(pcb).toContain(`(gr_line (start 8 40) (end 8 10) (layer "Edge.Cuts") (width 0.15))`);
+    expect(pcb).toContain(`(gr_line (start 8 10) (end 12 10) (layer "Edge.Cuts") (width 0.15))`);
+  });
+});
+
+describe("overlapping cut-outs", () => {
+  it("merges overlapping jacks into one outline, without crossing lines", () => {
+    const model: PanelModel = {
+      ...createSampleModel(),
+      elements: [jack("jack-1", 8, 20), jack("jack-2", 13, 20), jack("jack-3", 10, 35)],
+    };
+    const mountingHoles = generateMountingHoles({
+      widthHp: model.dimensions.widthHp,
+      widthMm: model.dimensions.widthMm,
+      heightMm: model.dimensions.heightMm,
+    });
+
+    const svg = buildKicadEdgeCutsSvg(model, mountingHoles);
+    const lines = parseEdgeCutLines(buildKicadPcbFile(model, mountingHoles));
+
+    // Edge.Cuts SVG: the board outline, one path for both jacks, circles for the other holes.
+    expect(svg.match(/<path /g)).toHaveLength(2);
+    expect(svg.match(/<circle /g)).toHaveLength(mountingHoles.length + 1);
+    expect(svg).toContain(
+      `<circle cx="10" cy="35" r="3" stroke="black" stroke-width="0.1" fill="none" />`,
+    );
+
+    // .kicad_pcb: closed outlines that never cross, and no corner left inside the merged jacks.
+    expect(openCorners(lines)).toEqual([]);
+    expect(crossingLines(lines)).toEqual([]);
+    const closest = 3 * Math.cos(Math.PI / 48) - 1e-4;
+    expect(
+      lines.filter(
+        ({ start: [x, y] }) =>
+          Math.hypot(x - 8, y - 20) < closest || Math.hypot(x - 13, y - 20) < closest,
+      ),
+    ).toEqual([]);
+  });
+
+  it("opens a jack that crosses the panel edge into the board outline", () => {
+    const model: PanelModel = { ...createSampleModel(), elements: [jack("jack-edge", 1, 20)] };
+
+    const svg = buildKicadEdgeCutsSvg(model, []);
+    const lines = parseEdgeCutLines(buildKicadPcbFile(model, []));
+
+    expect(svg.match(/<path /g)).toHaveLength(1);
+    expect(svg).not.toContain("<rect");
+    expect(svg).not.toContain("<circle");
+    expect(openCorners(lines)).toEqual([]);
+    expect(crossingLines(lines)).toEqual([]);
+    // The left side of the board stops where the jack starts.
+    expect(
+      lines.filter(
+        ({ start, end }) =>
+          start[0] === 0 &&
+          end[0] === 0 &&
+          Math.min(start[1], end[1]) < 20 &&
+          Math.max(start[1], end[1]) > 20,
+      ),
+    ).toEqual([]);
   });
 });

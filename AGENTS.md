@@ -51,6 +51,7 @@ Prefer Vite+ commands when working in the repository:
 - `src/lib/`
   - Non-React model logic, geometry, unit conversion, serialization, storage helpers, export builders, and canvas drawing helpers.
   - `src/lib/canvas/` contains drawing and transform logic used by the canvas and PNG export path.
+  - `src/lib/view3d/` contains the live 3D view: a `three` scene that renders the STL geometry from `exportStl.ts`, and camera framing math.
 - `src/i18n/`
   - User-facing copy lives here. The app currently ships with `en_US.ts`.
 - `src/styles/`
@@ -97,6 +98,8 @@ Prefer Vite+ commands when working in the repository:
 - Canvas interaction logic belongs in the dedicated canvas hooks and `src/lib/canvas/` helpers, not in unrelated UI components.
 - Export logic belongs in `src/lib/` and supporting store hooks, not inline in presentation components.
 - `three` is already part of the project for STL generation / preview. Reuse that stack for 3D-related work instead of adding another rendering solution.
+- Cut-outs that overlap each other or cross the panel edge are merged into single openings in every output (STL, SVG, KiCad, canvas, PNG). `splitOverlappingCutouts` (`src/lib/panelSurface.ts`) finds them; `mergePanelSurface` (`src/lib/mergedPanelSurface.ts`) merges them with `polygon-clipping`. Designs without overlaps keep their exact previous output.
+- `polygon-clipping` stays out of the startup bundle: only modules loaded on demand import it (`exportStl`, `exportSvg`, `exportKicad`, `mergedPanelSurface`), and `vite.config.ts` gives it its own chunk. Load these modules with `import()`, like the export handlers in `useProjects.ts` and `loadPanelSurfaceMerge` for the canvas.
 - If you add a new element type, wire it through the full pipeline:
   - element type definitions
   - element factory / defaults

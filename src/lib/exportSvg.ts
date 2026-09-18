@@ -4,7 +4,7 @@ import {
   type PanelElement,
   type PanelModel,
 } from "@lib/panelTypes";
-import { buildPanelSurfacePathData } from "@lib/panelSurface";
+import { buildMergedPanelSurfacePathData } from "@lib/mergedPanelSurface";
 import { buildSvgArtworkNestedMarkup, isSvgArtworkElement } from "@lib/svgArtwork";
 
 interface SvgOptions {
@@ -19,8 +19,18 @@ const DEFAULT_STROKE = "#e5e7eb";
 const DEFAULT_BACKGROUND: string | null = null;
 const DEFAULT_PANEL_FILL = "#0f172a";
 
+/** Turns a shape around the element center like the canvas does; empty when unrotated. */
+function rotationTransform(element: PanelElement): string {
+  const rotationDeg = element.rotationDeg ?? 0;
+  if (!rotationDeg) {
+    return "";
+  }
+  return ` transform="rotate(${rotationDeg} ${element.positionMm.x} ${element.positionMm.y})"`;
+}
+
 function elementToSvg(element: PanelElement, stroke: string): string {
   const strokeWidth = 0.6;
+  const transform = rotationTransform(element);
 
   switch (element.type) {
     case PanelElementType.Jack:
@@ -34,24 +44,24 @@ function elementToSvg(element: PanelElement, stroke: string): string {
       const props = element.properties as { widthMm: number; heightMm: number };
       const x = element.positionMm.x - props.widthMm / 2;
       const y = element.positionMm.y - props.heightMm / 2;
-      return `<rect x="${x}" y="${y}" width="${props.widthMm}" height="${props.heightMm}" stroke="${stroke}" stroke-width="${strokeWidth}" fill="none" />`;
+      return `<rect x="${x}" y="${y}" width="${props.widthMm}" height="${props.heightMm}" stroke="${stroke}" stroke-width="${strokeWidth}" fill="none"${transform} />`;
     }
     case PanelElementType.Rectangle: {
       const props = element.properties as { widthMm: number; heightMm: number };
       const x = element.positionMm.x - props.widthMm / 2;
       const y = element.positionMm.y - props.heightMm / 2;
-      return `<rect x="${x}" y="${y}" width="${props.widthMm}" height="${props.heightMm}" stroke="${stroke}" stroke-width="${strokeWidth}" fill="none" />`;
+      return `<rect x="${x}" y="${y}" width="${props.widthMm}" height="${props.heightMm}" stroke="${stroke}" stroke-width="${strokeWidth}" fill="none"${transform} />`;
     }
     case PanelElementType.Oval: {
       const props = element.properties as { widthMm: number; heightMm: number };
       const rx = props.widthMm / 2;
       const ry = props.heightMm / 2;
-      return `<ellipse cx="${element.positionMm.x}" cy="${element.positionMm.y}" rx="${rx}" ry="${ry}" stroke="${stroke}" stroke-width="${strokeWidth}" fill="none" />`;
+      return `<ellipse cx="${element.positionMm.x}" cy="${element.positionMm.y}" rx="${rx}" ry="${ry}" stroke="${stroke}" stroke-width="${strokeWidth}" fill="none"${transform} />`;
     }
     case PanelElementType.Slot: {
       const props = element.properties as { widthMm: number; heightMm: number };
       const d = slotPath(element.positionMm.x, element.positionMm.y, props.widthMm, props.heightMm);
-      return `<path d="${d}" stroke="${stroke}" stroke-width="${strokeWidth}" fill="none" />`;
+      return `<path d="${d}" stroke="${stroke}" stroke-width="${strokeWidth}" fill="none"${transform} />`;
     }
     case PanelElementType.Triangle: {
       const props = element.properties as { widthMm: number; heightMm: number };
@@ -61,7 +71,7 @@ function elementToSvg(element: PanelElement, stroke: string): string {
         props.widthMm,
         props.heightMm,
       );
-      return `<path d="${d}" stroke="${stroke}" stroke-width="${strokeWidth}" fill="none" />`;
+      return `<path d="${d}" stroke="${stroke}" stroke-width="${strokeWidth}" fill="none"${transform} />`;
     }
     case PanelElementType.Insert: {
       const props = element.properties as {
@@ -82,7 +92,7 @@ function elementToSvg(element: PanelElement, stroke: string): string {
     case PanelElementType.Label: {
       const props = element.properties as { fontSizePt: number; text: string };
       const fontSizePx = props.fontSizePt * 1.333; // rough pt→px
-      return `<text x="${element.positionMm.x}" y="${element.positionMm.y}" fill="${stroke}" font-size="${fontSizePx}" font-family="Arial, sans-serif" dominant-baseline="middle" text-anchor="middle">${escapeXml(
+      return `<text x="${element.positionMm.x}" y="${element.positionMm.y}" fill="${stroke}" font-size="${fontSizePx}" font-family="Arial, sans-serif" dominant-baseline="middle" text-anchor="middle"${transform}>${escapeXml(
         props.text,
       )}</text>`;
     }
@@ -167,7 +177,9 @@ export function buildPanelSvg(
     })
     .join("\n    ");
 
-  const cutoutPaths = buildPanelSurfacePathData({
+  // Overlapping cut-outs are merged into one opening: drawn one by one, the even-odd rule would
+  // fill their overlap with the panel again, and show the artwork there.
+  const cutoutPaths = buildMergedPanelSurfacePathData({
     panelSizeMm: { x: width, y: height },
     mountingHoles,
     elements: model.elements,

@@ -1,15 +1,27 @@
 // @vitest-environment jsdom
 
-import { describe, expect, it } from "vite-plus/test";
+import { readFileSync } from "node:fs";
 
-import { buildPanelStlWithWarnings } from "@lib/exportStl";
+import polygonClipping from "polygon-clipping";
+import { describe, expect, it, vi } from "vite-plus/test";
+
+import {
+  PANEL_BODY_MATERIAL_INDEX,
+  PANEL_RELIEF_MATERIAL_INDEX,
+  buildPanelStlWithWarnings,
+  createPanelExtrusion,
+} from "@lib/exportStl";
 import {
   DEFAULT_CLEARANCE_CONFIG,
   DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   PanelElementType,
+  type PanelElement,
   type PanelModel,
 } from "@lib/panelTypes";
+import { createPanelElement } from "@lib/elements";
+import { generateMountingHoles } from "@lib/mountingHoles";
+import { createSvgArtworkElement, sanitizeSvgArtwork } from "@lib/svgArtwork";
 import { createPanelDimensions } from "@lib/units";
 
 function createPanel(widthHp = 8): PanelModel {
@@ -135,4 +147,159 @@ describe("buildPanelStl with SVG artwork", () => {
     });
     expect(distancesToJackCenter.some((d) => d < jackRadius - 0.01)).toBe(false);
   });
+
+  it("puts the SVG relief in its own material group after the panel body", () => {
+    const model = createPanel(8);
+    model.elements.push({
+      id: "svg-square",
+      type: PanelElementType.SvgArtwork,
+      positionMm: { x: model.dimensions.widthMm / 2, y: model.dimensions.heightMm / 2 },
+      properties: {
+        svgText:
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect x="0" y="0" width="10" height="10" fill="#000"/></svg>',
+        viewBox: { minX: 0, minY: 0, width: 10, height: 10 },
+        widthMm: 20,
+        heightMm: 20,
+        color: "#ffffff",
+        stlThicknessMm: 0.6,
+        stlPenetrationMm: 0.2,
+      },
+    });
+
+    const geometry = createPanelExtrusion(model, [], 2);
+
+    const [body, relief] = geometry.groups;
+    expect(geometry.groups).toHaveLength(2);
+    expect(body).toMatchObject({ start: 0, materialIndex: PANEL_BODY_MATERIAL_INDEX });
+    expect(relief).toMatchObject({
+      start: body.count,
+      count: geometry.getAttribute("position").count - body.count,
+      materialIndex: PANEL_RELIEF_MATERIAL_INDEX,
+    });
+    const position = geometry.getAttribute("position");
+    for (let vertex = relief.start; vertex < relief.start + relief.count; vertex += 1) {
+      expect(position.getZ(vertex)).toBeGreaterThanOrEqual(1.8 - 1e-6);
+    }
+  });
+  it("rebuilds the relief when the artwork moves or turns", () => {
+    const model = createPanel(8);
+    const artwork: PanelElement = {
+      id: "svg-bar",
+      type: PanelElementType.SvgArtwork,
+      positionMm: { x: 15, y: 40 },
+      rotationDeg: 0,
+      properties: {
+        svgText:
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 2"><rect x="0" y="0" width="10" height="2" fill="#000"/></svg>',
+        viewBox: { minX: 0, minY: 0, width: 10, height: 2 },
+        widthMm: 10,
+        heightMm: 2,
+        color: "#ffffff",
+        stlThicknessMm: 0.6,
+        stlPenetrationMm: 0.2,
+      },
+    };
+    const measureRelief = (element: PanelElement) => {
+      const geometry = createPanelExtrusion({ ...model, elements: [element] }, [], 2);
+      const relief = geometry.groups[1];
+      const position = geometry.getAttribute("position");
+      const xs: number[] = [];
+      const ys: number[] = [];
+      for (let vertex = relief.start; vertex < relief.start + relief.count; vertex += 1) {
+        xs.push(position.getX(vertex));
+        ys.push(position.getY(vertex));
+      }
+      return {
+        width: Math.max(...xs) - Math.min(...xs),
+        height: Math.max(...ys) - Math.min(...ys),
+        centerX: (Math.max(...xs) + Math.min(...xs)) / 2,
+      };
+    };
+
+    const initial = measureRelief(artwork);
+    const moved = measureRelief({ ...artwork, positionMm: { x: 25, y: 40 } });
+    const turned = measureRelief({ ...artwork, rotationDeg: 90 });
+
+    expect(initial.width).toBeCloseTo(10);
+    expect(initial.height).toBeCloseTo(2);
+    expect(moved.centerX - initial.centerX).toBeCloseTo(10);
+    expect(turned.width).toBeCloseTo(2);
+    expect(turned.height).toBeCloseTo(10);
+    expect(measureRelief(artwork)).toEqual(initial);
+  });
+  it("warns when the relief cannot be clipped to the panel", () => {
+    const intersection = vi.spyOn(polygonClipping, "intersection").mockImplementation(() => {
+      throw new Error("Unable to find segment");
+    });
+    try {
+      const model = createPanel(8);
+      model.elements.push({
+        id: "svg-square",
+        type: PanelElementType.SvgArtwork,
+        positionMm: { x: 20, y: 40 },
+        properties: {
+          svgText:
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" fill="#000"/></svg>',
+          viewBox: { minX: 0, minY: 0, width: 10, height: 10 },
+          widthMm: 10,
+          heightMm: 10,
+          color: "#ffffff",
+          stlThicknessMm: 0.6,
+          stlPenetrationMm: 0.2,
+          sourceName: "square.svg",
+        },
+      });
+
+      const result = buildPanelStlWithWarnings(model, [], { thicknessMm: 2 });
+
+      expect(result.warnings).toEqual(["square.svg"]);
+      expect(result.stl).not.toMatch(/2\.4/);
+    } finally {
+      intersection.mockRestore();
+    }
+  });
+});
+
+const libraryItems = JSON.parse(readFileSync("public/svg-library/manifest.json", "utf8")) as Array<{
+  id: string;
+  src: string;
+}>;
+
+describe("built-in SVG library", () => {
+  it.each(libraryItems.map((item) => [item.id, item.src]))(
+    "turns %s into relief wherever it sits",
+    (id, src) => {
+      const model = createPanel(10);
+      const panelSizeMm = { x: model.dimensions.widthMm, y: model.dimensions.heightMm };
+      const railHoles = generateMountingHoles({
+        widthHp: model.dimensions.widthHp,
+        widthMm: model.dimensions.widthMm,
+        heightMm: model.dimensions.heightMm,
+      });
+      const artwork = createSvgArtworkElement({
+        ...sanitizeSvgArtwork(readFileSync(`public/${src}`, "utf8")),
+        panelSizeMm,
+        sourceName: id,
+      });
+      const turned: PanelElement = {
+        ...artwork,
+        positionMm: { x: 42.3, y: 71.9 },
+        rotationDeg: 33.7,
+        properties: { ...artwork.properties, widthMm: 61.7, heightMm: 61.7 },
+      } as PanelElement;
+
+      for (const placement of [artwork, turned]) {
+        const warnings: string[] = [];
+        model.elements = [createPanelElement(PanelElementType.Jack, { x: 45, y: 60 }), placement];
+
+        const geometry = createPanelExtrusion(model, railHoles, 2, warnings);
+
+        expect(warnings).toEqual([]);
+        expect(geometry.groups.map((group) => group.materialIndex)).toContain(
+          PANEL_RELIEF_MATERIAL_INDEX,
+        );
+      }
+    },
+    20_000,
+  );
 });

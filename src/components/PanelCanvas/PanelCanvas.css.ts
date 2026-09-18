@@ -4,11 +4,9 @@ import { vars } from "@styles/theme.css";
 
 export const root = style({
   position: "relative",
-  flex: "0 0 auto",
-  borderRadius: "20px",
-  border: `1px solid ${vars.color.border}`,
+  width: "100%",
+  height: "100%",
   backgroundColor: vars.color.surface,
-  boxShadow: "0 25px 60px rgba(2, 6, 23, 0.55)",
   overflow: "hidden",
   overscrollBehavior: "none",
   touchAction: "none",

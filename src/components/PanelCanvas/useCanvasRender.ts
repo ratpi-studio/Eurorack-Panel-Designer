@@ -14,6 +14,7 @@ import type { ReferenceImage } from "@lib/referenceImage";
 import { themeValues } from "@styles/theme.css";
 import { type CanvasTransform } from "@lib/canvas/transform";
 import { buildSvgArtworkDataUrl, isSvgArtworkElement } from "@lib/svgArtwork";
+import { usePanelSurfacePath } from "./usePanelSurfacePath";
 
 interface CanvasRenderOptions {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -121,6 +122,13 @@ export function useCanvasRender({
     [svgArtworkImages],
   );
 
+  const panelSurfacePath = usePanelSurfacePath(
+    model.dimensions.widthMm,
+    model.dimensions.heightMm,
+    mountingHoles,
+    model.elements,
+  );
+
   React.useLayoutEffect(() => {
     let frameId: number | null = null;
     const canvas = canvasRef.current;
@@ -198,6 +206,7 @@ export function useCanvasRender({
         selectionAnimation,
         ghostElement,
         svgArtworkImages: svgArtworkImageMap,
+        panelSurfacePath,
         clearanceLines,
         showGhostDistances: Boolean(ghostElement && placementType),
         showDimensions: model.options.showDimensions,
@@ -242,5 +251,6 @@ export function useCanvasRender({
     model.options.showDimensions,
     placementType,
     svgArtworkImageMap,
+    panelSurfacePath,
   ]);
 }

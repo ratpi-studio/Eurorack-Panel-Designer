@@ -1,5 +1,13 @@
 import polygonClipping from "polygon-clipping";
-import { BufferGeometry, ExtrudeGeometry, Mesh, MeshStandardMaterial, Path, Shape } from "three";
+import {
+  BufferGeometry,
+  ExtrudeGeometry,
+  Float32BufferAttribute,
+  Mesh,
+  MeshStandardMaterial,
+  Path,
+  Shape,
+} from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { STLExporter } from "three/examples/jsm/exporters/STLExporter.js";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
@@ -16,10 +24,12 @@ import {
 } from "@lib/panelTypes";
 import {
   buildPanelSurfaceMultiPolygon,
+  circleRing,
   type SurfaceMultiPolygon,
   type SurfacePolygon,
   type SurfaceRing,
 } from "@lib/panelSurface";
+import { strokeOutline } from "@lib/strokeOutline";
 import { buildSvgArtworkMaskMarkup, isBlackSvgPaint, isSvgArtworkElement } from "@lib/svgArtwork";
 import { expandSvgPatterns } from "@lib/svgPatternExpand";
 
@@ -27,214 +37,14 @@ interface BuildPanelStlOptions {
   thicknessMm: number;
 }
 
+/** Material group of the panel itself, inserts included. */
+export const PANEL_BODY_MATERIAL_INDEX = 0;
+/** Material group of the SVG artwork relief, shown in the design color. */
+export const PANEL_RELIEF_MATERIAL_INDEX = 1;
+
 export interface BuildPanelStlResult {
   stl: string;
   warnings: string[];
-}
-
-interface CircularHole {
-  centerX: number;
-  centerY: number;
-  radius: number;
-}
-
-interface RectangularHole {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-interface OvalHole {
-  centerX: number;
-  centerY: number;
-  radiusX: number;
-  radiusY: number;
-}
-
-interface SlotHole {
-  centerX: number;
-  centerY: number;
-  width: number;
-  height: number;
-}
-
-interface TriangleHole {
-  centerX: number;
-  centerY: number;
-  width: number;
-  height: number;
-}
-
-export function getCircularHoles(model: PanelModel, mountingHoles: MountingHole[]): CircularHole[] {
-  const circularHoles: CircularHole[] = mountingHoles
-    .filter((hole) => hole.shape !== "slot")
-    .map((hole) => ({
-      centerX: hole.center.x,
-      centerY: hole.center.y,
-      radius: hole.diameterMm / 2,
-    }));
-
-  for (const element of model.elements) {
-    switch (element.type) {
-      case PanelElementType.Jack:
-      case PanelElementType.Potentiometer:
-      case PanelElementType.Led: {
-        const props = element.properties as { diameterMm: number };
-        circularHoles.push({
-          centerX: element.positionMm.x,
-          centerY: element.positionMm.y,
-          radius: props.diameterMm / 2,
-        });
-        break;
-      }
-      case PanelElementType.Insert: {
-        const props = element.properties as {
-          innerDiameterMm: number;
-          outerDepthMm: number;
-          embedDepthMm: number;
-          innerDepthMm: number;
-        };
-        if (props.outerDepthMm <= 0 || props.embedDepthMm <= 0 || props.innerDepthMm <= 0) {
-          break;
-        }
-        circularHoles.push({
-          centerX: element.positionMm.x,
-          centerY: element.positionMm.y,
-          radius: props.innerDiameterMm / 2,
-        });
-        break;
-      }
-      default:
-        break;
-    }
-  }
-
-  return circularHoles;
-}
-
-function getRectangularHoles(model: PanelModel): RectangularHole[] {
-  const rectangularHoles: RectangularHole[] = [];
-
-  for (const element of model.elements) {
-    if (element.type !== PanelElementType.Switch && element.type !== PanelElementType.Rectangle) {
-      continue;
-    }
-    const props = element.properties as { widthMm: number; heightMm: number };
-    rectangularHoles.push({
-      x: element.positionMm.x - props.widthMm / 2,
-      y: element.positionMm.y - props.heightMm / 2,
-      width: props.widthMm,
-      height: props.heightMm,
-    });
-  }
-
-  return rectangularHoles;
-}
-
-function getOvalHoles(model: PanelModel): OvalHole[] {
-  const ovalHoles: OvalHole[] = [];
-
-  for (const element of model.elements) {
-    if (element.type !== PanelElementType.Oval) {
-      continue;
-    }
-    const props = element.properties;
-    if (props.widthMm <= 0 || props.heightMm <= 0) {
-      continue;
-    }
-    ovalHoles.push({
-      centerX: element.positionMm.x,
-      centerY: element.positionMm.y,
-      radiusX: props.widthMm / 2,
-      radiusY: props.heightMm / 2,
-    });
-  }
-
-  return ovalHoles;
-}
-
-function getSlotHoles(model: PanelModel, mountingHoles: MountingHole[]): SlotHole[] {
-  const slotHoles: SlotHole[] = mountingHoles
-    .filter((hole) => hole.shape === "slot" && (hole.slotLengthMm ?? hole.diameterMm) > 0)
-    .map((hole) => ({
-      centerX: hole.center.x,
-      centerY: hole.center.y,
-      width: hole.slotLengthMm ?? hole.diameterMm,
-      height: hole.diameterMm,
-    }));
-
-  for (const element of model.elements) {
-    if (element.type !== PanelElementType.Slot) {
-      continue;
-    }
-    const props = element.properties;
-    if (props.widthMm <= 0 || props.heightMm <= 0) {
-      continue;
-    }
-    slotHoles.push({
-      centerX: element.positionMm.x,
-      centerY: element.positionMm.y,
-      width: props.widthMm,
-      height: props.heightMm,
-    });
-  }
-
-  return slotHoles;
-}
-
-function getTriangleHoles(model: PanelModel): TriangleHole[] {
-  const triangleHoles: TriangleHole[] = [];
-
-  for (const element of model.elements) {
-    if (element.type !== PanelElementType.Triangle) {
-      continue;
-    }
-    const props = element.properties;
-    if (props.widthMm <= 0 || props.heightMm <= 0) {
-      continue;
-    }
-    triangleHoles.push({
-      centerX: element.positionMm.x,
-      centerY: element.positionMm.y,
-      width: props.widthMm,
-      height: props.heightMm,
-    });
-  }
-
-  return triangleHoles;
-}
-
-function createSlotHolePath(hole: SlotHole): Path {
-  const path = new Path();
-  const radius = Math.min(hole.width / 2, hole.height / 2);
-  const straightHalf = Math.max(hole.width / 2 - radius, 0);
-  const left = hole.centerX - straightHalf;
-  const right = hole.centerX + straightHalf;
-  const top = hole.centerY - radius;
-  const bottom = hole.centerY + radius;
-
-  path.moveTo(left, top);
-  path.lineTo(right, top);
-  path.absarc(right, hole.centerY, radius, -Math.PI / 2, Math.PI / 2, true);
-  path.lineTo(left, bottom);
-  path.absarc(left, hole.centerY, radius, Math.PI / 2, -Math.PI / 2, true);
-  path.lineTo(left, top);
-
-  return path;
-}
-
-function createTriangleHolePath(hole: TriangleHole): Path {
-  const path = new Path();
-  const halfWidth = hole.width / 2;
-  const halfHeight = hole.height / 2;
-
-  path.moveTo(hole.centerX, hole.centerY - halfHeight);
-  path.lineTo(hole.centerX + halfWidth, hole.centerY + halfHeight);
-  path.lineTo(hole.centerX - halfWidth, hole.centerY + halfHeight);
-  path.lineTo(hole.centerX, hole.centerY - halfHeight);
-
-  return path;
 }
 
 function clampInsertProperties(properties: InsertElementProperties, panelThicknessMm: number) {
@@ -256,6 +66,15 @@ function clampInsertProperties(properties: InsertElementProperties, panelThickne
   };
 }
 
+function extrudeShapeBetween(shape: Shape, fromZ: number, toZ: number): BufferGeometry {
+  const geometry = new ExtrudeGeometry(shape, {
+    depth: toZ - fromZ,
+    bevelEnabled: false,
+  });
+  geometry.translate(0, 0, fromZ);
+  return geometry;
+}
+
 function buildInsertGeometry(
   element: PanelElement & { type: PanelElementType.Insert; properties: InsertElementProperties },
   panelThicknessMm: number,
@@ -263,52 +82,35 @@ function buildInsertGeometry(
   const { outerDepthMm, innerDepthMm, embedDepthMm, outerRadius, innerRadius } =
     clampInsertProperties(element.properties, panelThicknessMm);
 
-  if (outerDepthMm <= 0 || outerRadius <= 0) {
+  // Inserts stand on the back of the panel (z = 0), opposite the SVG relief, sunk into it by the
+  // embed depth. That sunk part is panel material already: only what sticks out behind the panel
+  // is built, so an insert never fills a cut-out next to it. The hole starts on the panel side.
+  const farEndZ = embedDepthMm - outerDepthMm;
+  if (farEndZ >= 0 || outerRadius <= 0) {
     return null;
   }
-
-  const baseZ = Math.max(panelThicknessMm - embedDepthMm, 0);
-  const ringHeight = Math.min(innerDepthMm, outerDepthMm);
-  const remainingHeight = Math.max(outerDepthMm - ringHeight, 0);
-
-  const ringShape = new Shape();
-  ringShape.absarc(0, 0, outerRadius, 0, Math.PI * 2, false);
-  if (innerRadius > 0) {
-    const hole = new Path();
-    hole.absarc(0, 0, innerRadius, 0, Math.PI * 2, true);
-    ringShape.holes.push(hole);
-  }
-
+  const holeBottomZ = innerRadius > 0 ? Math.max(embedDepthMm - innerDepthMm, farEndZ) : 0;
+  const outerRing = circleRing(element.positionMm, outerRadius);
   const geometries: BufferGeometry[] = [];
 
-  if (ringHeight > 0) {
-    const ringGeometry = new ExtrudeGeometry(ringShape, {
-      depth: ringHeight,
-      bevelEnabled: false,
-    });
-    ringGeometry.translate(element.positionMm.x, element.positionMm.y, baseZ);
-    geometries.push(ringGeometry);
+  if (holeBottomZ < 0) {
+    const tube = ringToShape(outerRing);
+    const hole = ringToPath(circleRing(element.positionMm, innerRadius));
+    if (tube && hole) {
+      tube.holes.push(hole);
+      geometries.push(extrudeShapeBetween(tube, holeBottomZ, 0));
+    }
   }
 
-  if (remainingHeight > 0) {
-    const plugShape = new Shape();
-    plugShape.absarc(0, 0, outerRadius, 0, Math.PI * 2, false);
-    const plugGeometry = new ExtrudeGeometry(plugShape, {
-      depth: remainingHeight,
-      bevelEnabled: false,
-    });
-    plugGeometry.translate(element.positionMm.x, element.positionMm.y, baseZ + ringHeight);
-    geometries.push(plugGeometry);
+  const solidTopZ = Math.min(holeBottomZ, 0);
+  const plug = ringToShape(outerRing);
+  if (plug && solidTopZ > farEndZ) {
+    geometries.push(extrudeShapeBetween(plug, farEndZ, solidTopZ));
   }
 
-  if (!geometries.length) {
-    return null;
+  if (geometries.length < 2) {
+    return geometries[0] ?? null;
   }
-
-  if (geometries.length === 1) {
-    return geometries[0];
-  }
-
   return mergeGeometries(geometries) ?? null;
 }
 
@@ -324,40 +126,36 @@ function closeRing(ring: SurfaceRing): SurfaceRing {
   return [...ring, first];
 }
 
-function transformSvgPoint(
-  point: { x: number; y: number },
+/** Maps SVG user units of the artwork to panel millimeters, turning it like the canvas does. */
+function createSvgArtworkTransform(
   element: PanelElement & {
     type: PanelElementType.SvgArtwork;
     properties: SvgArtworkElementProperties;
   },
-): [number, number] {
+  viewBox: SvgViewBox,
+): (point: [number, number]) => [number, number] {
   const { properties } = element;
-  const viewBox = properties.viewBox;
-  const localX = ((point.x - viewBox.minX) / viewBox.width - 0.5) * properties.widthMm;
-  const localY = ((point.y - viewBox.minY) / viewBox.height - 0.5) * properties.heightMm;
   const rotation = ((element.rotationDeg ?? 0) * Math.PI) / 180;
   const cos = Math.cos(rotation);
   const sin = Math.sin(rotation);
-  return [
-    element.positionMm.x + localX * cos - localY * sin,
-    element.positionMm.y + localX * sin + localY * cos,
-  ];
+  return ([x, y]) => {
+    const localX = ((x - viewBox.minX) / viewBox.width - 0.5) * properties.widthMm;
+    const localY = ((y - viewBox.minY) / viewBox.height - 0.5) * properties.heightMm;
+    return [
+      element.positionMm.x + localX * cos - localY * sin,
+      element.positionMm.y + localX * sin + localY * cos,
+    ];
+  };
 }
 
-function shapeToPolygon(
-  shape: Shape,
-  element: PanelElement & {
-    type: PanelElementType.SvgArtwork;
-    properties: SvgArtworkElementProperties;
-  },
-): SurfacePolygon | null {
+function shapeToPolygon(shape: Shape): SurfacePolygon | null {
   const extracted = shape.extractPoints(20);
-  const outer = closeRing(extracted.shape.map((point) => transformSvgPoint(point, element)));
+  const outer = closeRing(extracted.shape.map((point): [number, number] => [point.x, point.y]));
   if (outer.length < 4) {
     return null;
   }
   const holes = extracted.holes
-    .map((hole) => closeRing(hole.map((point) => transformSvgPoint(point, element))))
+    .map((hole) => closeRing(hole.map((point): [number, number] => [point.x, point.y])))
     .filter((ring) => ring.length >= 4);
   return [outer, ...holes];
 }
@@ -370,44 +168,8 @@ interface StrokeStyleLike {
   strokeMiterLimit?: string | number;
 }
 
-function strokeBufferToPolygons(
-  buffer: BufferGeometry,
-  element: PanelElement & {
-    type: PanelElementType.SvgArtwork;
-    properties: SvgArtworkElementProperties;
-  },
-): SurfaceMultiPolygon {
-  const positions = buffer.getAttribute("position");
-  if (!positions) {
-    return [];
-  }
-  const array = positions.array;
-  const triangles: SurfaceMultiPolygon = [];
-  for (let index = 0; index + 8 < array.length; index += 9) {
-    const ring: SurfaceRing = [
-      transformSvgPoint({ x: array[index], y: array[index + 1] }, element),
-      transformSvgPoint({ x: array[index + 3], y: array[index + 4] }, element),
-      transformSvgPoint({ x: array[index + 6], y: array[index + 7] }, element),
-    ];
-    triangles.push([closeRing(ring)]);
-  }
-  if (!triangles.length) {
-    return [];
-  }
-  try {
-    return polygonClipping.union(triangles as polygonClipping.MultiPolygon) as SurfaceMultiPolygon;
-  } catch (error) {
-    reportDegradation(error, "stl-geometry", "surface-union");
-    return triangles;
-  }
-}
-
 function strokePathToPolygons(
   shapePath: ReturnType<SVGLoader["parse"]>["paths"][number],
-  element: PanelElement & {
-    type: PanelElementType.SvgArtwork;
-    properties: SvgArtworkElementProperties;
-  },
 ): SurfaceMultiPolygon {
   const style = (shapePath.userData?.style ?? {}) as StrokeStyleLike;
   if (!style.stroke || style.stroke === "none") {
@@ -417,29 +179,21 @@ function strokePathToPolygons(
   if (!Number.isFinite(strokeWidth) || strokeWidth <= 0) {
     return [];
   }
+  const miterLimit = Number(style.strokeMiterLimit);
   const polygons: SurfaceMultiPolygon = [];
   for (const subPath of shapePath.subPaths) {
-    const points = subPath.getPoints(20);
-    if (points.length < 2) {
-      continue;
+    const ring = strokeOutline(
+      subPath.getPoints(20).map((point): [number, number] => [point.x, point.y]),
+      {
+        width: strokeWidth,
+        lineJoin: style.strokeLineJoin,
+        lineCap: style.strokeLineCap,
+        miterLimit: Number.isFinite(miterLimit) && miterLimit >= 1 ? miterLimit : undefined,
+      },
+    );
+    if (ring && ring.length >= 3) {
+      polygons.push([ring]);
     }
-    let buffer: BufferGeometry | null = null;
-    try {
-      buffer = SVGLoader.pointsToStroke(
-        points,
-        style as unknown as Parameters<typeof SVGLoader.pointsToStroke>[1],
-        6,
-        0,
-      );
-    } catch (error) {
-      reportDegradation(error, "stl-geometry", "svg-stroke");
-      buffer = null;
-    }
-    if (!buffer) {
-      continue;
-    }
-    polygons.push(...strokeBufferToPolygons(buffer, element));
-    buffer.dispose();
   }
   return polygons;
 }
@@ -526,21 +280,8 @@ function parseViewBox(svgText: string): SvgViewBox {
   };
 }
 
-function fallbackSvgArtworkToMultiPolygon(
-  element: PanelElement & {
-    type: PanelElementType.SvgArtwork;
-    properties: SvgArtworkElementProperties;
-  },
-  svgText: string,
-): SurfaceMultiPolygon {
-  const viewBox = parseViewBox(svgText);
-  const fallbackElement = {
-    ...element,
-    properties: {
-      ...element.properties,
-      viewBox,
-    },
-  };
+/** Rect and polygon shapes, for environments without an SVG parser. */
+function fallbackSvgArtworkPolygons(svgText: string): SurfaceMultiPolygon {
   const polygons: SurfacePolygon[] = [];
 
   svgText.replace(/<rect\b([^>]*)\/?>/gi, (_match, rawAttributes: string) => {
@@ -555,15 +296,14 @@ function fallbackSvgArtworkToMultiPolygon(
     if (width <= 0 || height <= 0) {
       return "";
     }
-    const ring = closeRing(
-      [
-        { x, y },
-        { x: x + width, y },
-        { x: x + width, y: y + height },
-        { x, y: y + height },
-      ].map((point) => transformSvgPoint(point, fallbackElement)),
-    );
-    polygons.push([ring]);
+    polygons.push([
+      closeRing([
+        [x, y],
+        [x + width, y],
+        [x + width, y + height],
+        [x, y + height],
+      ]),
+    ]);
     return "";
   });
 
@@ -578,9 +318,10 @@ function fallbackSvgArtworkToMultiPolygon(
       }
       const attributes = parseSvgAttributes(rawAttributes);
       const ring = closeRing(
-        parsePointsAttribute(attributes.points).map((point) =>
-          transformSvgPoint(point, fallbackElement),
-        ),
+        parsePointsAttribute(attributes.points).map((point): [number, number] => [
+          point.x,
+          point.y,
+        ]),
       );
       if (ring.length >= 4) {
         polygons.push([ring]);
@@ -592,13 +333,39 @@ function fallbackSvgArtworkToMultiPolygon(
   return polygons;
 }
 
-function svgArtworkToMultiPolygon(
-  element: PanelElement & {
-    type: PanelElementType.SvgArtwork;
-    properties: SvgArtworkElementProperties;
-  },
-): SurfaceMultiPolygon {
-  const maskedSvgText = buildSvgArtworkMaskMarkup(element.properties.svgText, "#000000");
+/**
+ * Unions polygons. polygon-clipping throws on some nearly degenerate inputs: each half is then
+ * unioned on its own, and the halves are kept side by side, overlapping where they meet.
+ */
+function unionPolygons(polygons: SurfaceMultiPolygon): SurfaceMultiPolygon {
+  if (!polygons.length) {
+    return polygons;
+  }
+  try {
+    return polygonClipping.union(polygons as polygonClipping.MultiPolygon) as SurfaceMultiPolygon;
+  } catch (error) {
+    reportDegradation(error, "stl-geometry", "surface-union");
+    if (polygons.length === 1) {
+      return polygons;
+    }
+    const middle = Math.ceil(polygons.length / 2);
+    return [...unionPolygons(polygons.slice(0, middle)), ...unionPolygons(polygons.slice(middle))];
+  }
+}
+
+interface SvgArtworkOutline {
+  /** Black areas of the artwork, in SVG user units. */
+  polygons: SurfaceMultiPolygon;
+  /** View box that maps the polygons onto the element, when it is not the element's own. */
+  viewBox?: SvgViewBox;
+}
+
+/**
+ * Black areas of the artwork, unioned in SVG user units: strokes that meet or overlap there line
+ * up exactly, which scaling and turning them to panel millimeters would break.
+ */
+function traceSvgArtwork(svgText: string): SvgArtworkOutline {
+  const maskedSvgText = buildSvgArtworkMaskMarkup(svgText, "#000000");
   const expandedSvgText = expandSvgPatterns(maskedSvgText);
   if (typeof DOMParser !== "undefined") {
     try {
@@ -609,23 +376,99 @@ function svgArtworkToMultiPolygon(
         const fillStyle = (path.userData?.style ?? {}) as { fill?: string };
         if (fillStyle.fill && fillStyle.fill !== "none") {
           for (const shape of SVGLoader.createShapes(path)) {
-            const polygon = shapeToPolygon(shape, element);
+            const polygon = shapeToPolygon(shape);
             if (polygon) {
               polygons.push(polygon);
             }
           }
         }
-        polygons.push(...strokePathToPolygons(path, element));
+        polygons.push(...strokePathToPolygons(path));
       }
       if (polygons.length) {
-        return polygons;
+        return { polygons: unionPolygons(polygons) };
       }
     } catch {
       // Fall through to the small parser for simple SVGs.
     }
   }
 
-  return fallbackSvgArtworkToMultiPolygon(element, expandedSvgText);
+  return {
+    polygons: unionPolygons(fallbackSvgArtworkPolygons(expandedSvgText)),
+    viewBox: parseViewBox(expandedSvgText),
+  };
+}
+
+const ARTWORK_CACHE_SIZE = 16;
+// Tracing is the slowest step, and the live 3D view rebuilds the model on every edit. The outline
+// does not depend on where the artwork sits, so it is cached by markup; Map order doubles as
+// least-recently-used order.
+const artworkOutlineCache = new Map<string, SvgArtworkOutline>();
+
+function getSvgArtworkOutline(svgText: string): SvgArtworkOutline {
+  const cached = artworkOutlineCache.get(svgText);
+  if (cached) {
+    artworkOutlineCache.delete(svgText);
+    artworkOutlineCache.set(svgText, cached);
+    return cached;
+  }
+  const outline = traceSvgArtwork(svgText);
+  artworkOutlineCache.set(svgText, outline);
+  if (artworkOutlineCache.size > ARTWORK_CACHE_SIZE) {
+    const oldestKey = artworkOutlineCache.keys().next().value;
+    if (oldestKey !== undefined) {
+      artworkOutlineCache.delete(oldestKey);
+    }
+  }
+  return outline;
+}
+
+function placeSvgArtwork(
+  outline: SvgArtworkOutline,
+  element: PanelElement & {
+    type: PanelElementType.SvgArtwork;
+    properties: SvgArtworkElementProperties;
+  },
+): SurfaceMultiPolygon {
+  const toPanel = createSvgArtworkTransform(element, outline.viewBox ?? element.properties.viewBox);
+  return outline.polygons.map((polygon) => polygon.map((ring) => ring.map(toPanel)));
+}
+
+/**
+ * Keeps the parts of the artwork over the panel surface. When polygon-clipping fails on the whole
+ * artwork, each polygon is clipped on its own, and only the ones that still fail are dropped.
+ */
+function clipToPanelSurface(
+  artwork: SurfaceMultiPolygon,
+  panelSurface: SurfaceMultiPolygon,
+): { polygons: SurfaceMultiPolygon; complete: boolean } {
+  try {
+    return {
+      polygons: polygonClipping.intersection(
+        artwork as polygonClipping.MultiPolygon,
+        panelSurface as polygonClipping.MultiPolygon,
+      ) as SurfaceMultiPolygon,
+      complete: true,
+    };
+  } catch (error) {
+    reportDegradation(error, "stl-geometry", "artwork-clip");
+  }
+
+  const polygons: SurfaceMultiPolygon = [];
+  let complete = true;
+  for (const polygon of artwork) {
+    try {
+      polygons.push(
+        ...(polygonClipping.intersection(
+          [polygon] as polygonClipping.MultiPolygon,
+          panelSurface as polygonClipping.MultiPolygon,
+        ) as SurfaceMultiPolygon),
+      );
+    } catch (error) {
+      reportDegradation(error, "stl-geometry", "artwork-clip-polygon");
+      complete = false;
+    }
+  }
+  return { polygons, complete };
 }
 
 function ringToShape(ring: SurfaceRing): Shape | null {
@@ -652,39 +495,17 @@ function ringToPath(ring: SurfaceRing): Path | null {
   return path;
 }
 
-function multiPolygonToExtrusions({
-  artwork,
-  panelSurface,
-  baseZ,
-  depth,
-}: {
-  artwork: SurfaceMultiPolygon;
-  panelSurface: SurfaceMultiPolygon;
-  baseZ: number;
-  depth: number;
-}): BufferGeometry[] {
-  if (depth <= 0 || !artwork.length) {
-    return [];
-  }
-
-  let clipped: SurfaceMultiPolygon;
-  try {
-    clipped = polygonClipping.intersection(
-      artwork as polygonClipping.MultiPolygon,
-      panelSurface as polygonClipping.MultiPolygon,
-    ) as SurfaceMultiPolygon;
-  } catch (error) {
-    // The artwork is dropped from the model: report it, users would not notice otherwise.
-    reportDegradation(error, "stl-geometry", "artwork-clip");
-    return [];
-  }
-
-  if (!clipped.length) {
+function extrudePolygons(
+  polygons: SurfaceMultiPolygon,
+  baseZ: number,
+  depth: number,
+): BufferGeometry[] {
+  if (depth <= 0) {
     return [];
   }
 
   const geometries: BufferGeometry[] = [];
-  for (const polygon of clipped) {
+  for (const polygon of polygons) {
     const [outer, ...holes] = polygon;
     if (!outer) {
       continue;
@@ -723,10 +544,19 @@ function buildSvgArtworkGeometry(
     return [];
   }
 
-  const artworkMultiPolygon = svgArtworkToMultiPolygon(element);
-  if (!artworkMultiPolygon.length) {
+  const outline = getSvgArtworkOutline(element.properties.svgText);
+  if (!outline.polygons.length) {
     warnings.push(element.properties.sourceName || element.id);
     return [];
+  }
+
+  const { polygons, complete } = clipToPanelSurface(
+    placeSvgArtwork(outline, element),
+    panelSurface,
+  );
+  if (!complete) {
+    // Part of the relief is missing: say so instead of exporting it silently.
+    warnings.push(element.properties.sourceName || element.id);
   }
 
   const penetration = Math.min(
@@ -734,86 +564,59 @@ function buildSvgArtworkGeometry(
     panelThicknessMm,
     artworkThickness,
   );
-  const baseZ = panelThicknessMm - penetration;
-  return multiPolygonToExtrusions({
-    artwork: artworkMultiPolygon,
-    panelSurface,
-    baseZ,
-    depth: artworkThickness,
-  });
+  return extrudePolygons(polygons, panelThicknessMm - penetration, artworkThickness);
 }
 
-function buildPanelShape(model: PanelModel, mountingHoles: MountingHole[]): Shape {
-  const shape = new Shape();
-  const width = model.dimensions.widthMm;
-  const height = model.dimensions.heightMm;
+/**
+ * The panel minus its cut-outs, with overlapping cut-outs merged into one opening: extruding them
+ * one by one would leave the walls of each cut-out standing inside the others.
+ */
+function buildPanelSurface(model: PanelModel, mountingHoles: MountingHole[]): SurfaceMultiPolygon {
+  const surface = buildPanelSurfaceMultiPolygon({
+    panelSizeMm: {
+      x: model.dimensions.widthMm,
+      y: model.dimensions.heightMm,
+    },
+    mountingHoles,
+    elements: model.elements,
+  });
+  try {
+    return polygonClipping.union(surface as polygonClipping.MultiPolygon) as SurfaceMultiPolygon;
+  } catch (error) {
+    reportDegradation(error, "stl-geometry", "panel-surface");
+    return surface;
+  }
+}
 
-  // Outer rectangle (counter-clockwise)
-  shape.moveTo(0, 0);
-  shape.lineTo(width, 0);
-  shape.lineTo(width, height);
-  shape.lineTo(0, height);
-  shape.lineTo(0, 0);
+function countDrawnVertices(geometries: BufferGeometry[]): number {
+  return geometries.reduce(
+    (count, geometry) => count + (geometry.index?.count ?? geometry.getAttribute("position").count),
+    0,
+  );
+}
 
-  // Circular holes (clockwise)
-  const circularHoles = getCircularHoles(model, mountingHoles);
-  for (const hole of circularHoles) {
-    const path = new Path();
-    path.absellipse(
-      hole.centerX,
-      hole.centerY,
-      hole.radius,
-      hole.radius,
-      0,
-      Math.PI * 2,
-      true, // clockwise for holes
-      0,
-    );
-    shape.holes.push(path);
+function reverseTriangleWinding(geometry: BufferGeometry): void {
+  const index = geometry.index;
+  if (index) {
+    for (let first = 0; first + 2 < index.count; first += 3) {
+      const second = index.getX(first + 1);
+      index.setX(first + 1, index.getX(first + 2));
+      index.setX(first + 2, second);
+    }
+    index.needsUpdate = true;
+    return;
   }
 
-  // Rectangular holes (clockwise)
-  const rectangularHoles = getRectangularHoles(model);
-  for (const hole of rectangularHoles) {
-    const path = new Path();
-    path.moveTo(hole.x, hole.y);
-    path.lineTo(hole.x, hole.y + hole.height);
-    path.lineTo(hole.x + hole.width, hole.y + hole.height);
-    path.lineTo(hole.x + hole.width, hole.y);
-    path.lineTo(hole.x, hole.y);
-    shape.holes.push(path);
+  for (const attribute of Object.values(geometry.attributes)) {
+    for (let first = 0; first + 2 < attribute.count; first += 3) {
+      for (let component = 0; component < attribute.itemSize; component += 1) {
+        const second = attribute.getComponent(first + 1, component);
+        attribute.setComponent(first + 1, component, attribute.getComponent(first + 2, component));
+        attribute.setComponent(first + 2, component, second);
+      }
+    }
+    attribute.needsUpdate = true;
   }
-
-  // Oval holes
-  const ovalHoles = getOvalHoles(model);
-  for (const hole of ovalHoles) {
-    const path = new Path();
-    path.absellipse(
-      hole.centerX,
-      hole.centerY,
-      hole.radiusX,
-      hole.radiusY,
-      0,
-      Math.PI * 2,
-      true,
-      0,
-    );
-    shape.holes.push(path);
-  }
-
-  // Slot holes
-  const slotHoles = getSlotHoles(model, mountingHoles);
-  for (const hole of slotHoles) {
-    shape.holes.push(createSlotHolePath(hole));
-  }
-
-  // Triangle holes
-  const triangleHoles = getTriangleHoles(model);
-  for (const hole of triangleHoles) {
-    shape.holes.push(createTriangleHolePath(hole));
-  }
-
-  return shape;
 }
 
 export function createPanelExtrusion(
@@ -826,21 +629,9 @@ export function createPanelExtrusion(
     throw new Error("Panel thickness must be a positive number.");
   }
 
-  const shape = buildPanelShape(model, mountingHoles);
-  const panelGeometry = new ExtrudeGeometry(shape, {
-    depth: thicknessMm,
-    bevelEnabled: false,
-  });
-
-  const geometries: BufferGeometry[] = [panelGeometry];
-  const panelSurface = buildPanelSurfaceMultiPolygon({
-    panelSizeMm: {
-      x: model.dimensions.widthMm,
-      y: model.dimensions.heightMm,
-    },
-    mountingHoles,
-    elements: model.elements,
-  });
+  const panelSurface = buildPanelSurface(model, mountingHoles);
+  const bodyGeometries = extrudePolygons(panelSurface, 0, thicknessMm);
+  const reliefGeometries: BufferGeometry[] = [];
 
   for (const element of model.elements) {
     if (element.type === PanelElementType.Insert) {
@@ -852,23 +643,39 @@ export function createPanelExtrusion(
         thicknessMm,
       );
       if (insertGeometry) {
-        geometries.push(insertGeometry);
+        bodyGeometries.push(insertGeometry);
       }
       continue;
     }
 
     if (isSvgArtworkElement(element)) {
-      geometries.push(...buildSvgArtworkGeometry(element, panelSurface, thicknessMm, warnings));
+      reliefGeometries.push(
+        ...buildSvgArtworkGeometry(element, panelSurface, thicknessMm, warnings),
+      );
     }
   }
 
+  const geometries = [...bodyGeometries, ...reliefGeometries];
   const merged =
-    geometries.length === 1 ? geometries[0] : (mergeGeometries(geometries) ?? panelGeometry);
+    (geometries.length === 1 ? geometries[0] : mergeGeometries(geometries)) ??
+    // Nothing left to build, e.g. a cut-out covering the whole panel.
+    new BufferGeometry().setAttribute("position", new Float32BufferAttribute([], 3));
 
   // Flip Y so the exported model matches the on-canvas orientation (origin top-left).
   merged.scale(1, -1, 1);
   merged.translate(0, model.dimensions.heightMm, 0);
+  // The mirror turned the triangles inside out: restore outward-facing winding and normals.
+  reverseTriangleWinding(merged);
   merged.computeVertexNormals();
+
+  // Body first, relief last: two groups let the 3D view color the relief separately.
+  const totalCount = countDrawnVertices([merged]);
+  const bodyCount = Math.min(countDrawnVertices(bodyGeometries), totalCount);
+  merged.clearGroups();
+  merged.addGroup(0, bodyCount, PANEL_BODY_MATERIAL_INDEX);
+  if (totalCount > bodyCount) {
+    merged.addGroup(bodyCount, totalCount - bodyCount, PANEL_RELIEF_MATERIAL_INDEX);
+  }
 
   return merged;
 }

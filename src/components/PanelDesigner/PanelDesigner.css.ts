@@ -393,6 +393,7 @@ export const leftColumn = style({
 
 export const canvasColumn = style({
   minWidth: 0,
+  maxHeight: "100%",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
@@ -402,6 +403,96 @@ export const canvasColumn = style({
   backgroundColor: "#0b1426",
   border: `1px solid ${vars.color.border}`,
   borderRadius: "10px",
+});
+
+export const canvasToolbar = style({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  flexWrap: "wrap",
+  gap: vars.spacing.sm,
+  width: "100%",
+  maxWidth: "1200px",
+});
+
+export const viewModeSwitch = style({
+  display: "inline-flex",
+  padding: "2px",
+  gap: "2px",
+  borderRadius: "8px",
+  border: `1px solid ${vars.color.border}`,
+  backgroundColor: vars.color.surface,
+});
+
+export const viewModeButton = style({
+  ...baseButton,
+  backgroundColor: "transparent",
+  color: vars.color.textSecondary,
+  fontSize: "13px",
+  selectors: {
+    "&:hover": {
+      color: vars.color.textPrimary,
+    },
+    '&[aria-pressed="true"]': {
+      backgroundColor: vars.color.accent,
+      color: "#0b1426",
+    },
+  },
+});
+
+export const compactToggles = style({
+  display: "flex",
+  gap: vars.spacing.sm,
+  marginLeft: "auto",
+});
+
+export const viewport = style({
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr)",
+  gridTemplateRows: "minmax(0, 1fr)",
+  gap: vars.spacing.sm,
+  flex: "0 0 auto",
+  width: "100%",
+  maxWidth: "1200px",
+  aspectRatio: "5 / 3",
+  minHeight: "432px",
+});
+
+export const viewportSplit = style([
+  viewport,
+  {
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    "@media": {
+      // Too narrow for two columns: stack the 3D view under the 2D editor.
+      "screen and (max-width: 720px)": {
+        gridTemplateColumns: "minmax(0, 1fr)",
+        gridTemplateRows: "repeat(2, minmax(0, 1fr))",
+        aspectRatio: "auto",
+        minHeight: "720px",
+      },
+    },
+  },
+]);
+
+export const viewportPane = style({
+  position: "relative",
+  minWidth: 0,
+  minHeight: 0,
+  borderRadius: "20px",
+  border: `1px solid ${vars.color.border}`,
+  boxShadow: "0 25px 60px rgba(2, 6, 23, 0.55)",
+  overflow: "hidden",
+});
+
+export const viewportFallback = style({
+  width: "100%",
+  height: "100%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "#050c1b",
+  color: vars.color.textSecondary,
+  fontSize: "14px",
 });
 
 export const shortcuts = style({
@@ -463,14 +554,6 @@ export const drawerLeft = style({
 export const drawerOpen = style({
   transform: "translateX(0)",
   opacity: 1,
-});
-
-export const compactToggleBar = style({
-  display: "flex",
-  gap: vars.spacing.sm,
-  marginBottom: vars.spacing.sm,
-  width: "100%",
-  justifyContent: "flex-end",
 });
 
 export const drawerHeader = style({
@@ -541,16 +624,11 @@ export const previewSection = style({
   gap: vars.spacing.xs,
 });
 
-export const previewFallback = style({
-  minHeight: "220px",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  border: `1px solid ${vars.color.border}`,
+export const stlPreviewFrame = style({
+  height: "240px",
   borderRadius: "10px",
-  backgroundColor: "#050c1b",
-  color: vars.color.textSecondary,
-  fontSize: "14px",
+  border: `1px solid ${vars.color.border}`,
+  overflow: "hidden",
 });
 
 export const changelogList = style({
