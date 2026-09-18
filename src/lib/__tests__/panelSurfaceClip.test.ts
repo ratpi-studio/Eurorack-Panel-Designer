@@ -24,8 +24,6 @@ const artwork: PanelElement = {
     widthMm: 30,
     heightMm: 30,
     color: "#ffffff",
-    stlThicknessMm: 0.6,
-    stlPenetrationMm: 0.2,
     label: "",
   },
 };

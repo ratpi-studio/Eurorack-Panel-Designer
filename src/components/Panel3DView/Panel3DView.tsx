@@ -2,9 +2,11 @@ import React from "react";
 
 import { hud as hudStyle } from "@components/PanelCanvas/PanelCanvas.css";
 import { useI18n } from "@i18n/I18nContext";
+import { collectTextFontIds } from "@lib/designLayer";
 import { createPanelExtrusion } from "@lib/exportStl";
 import { reportDegradation } from "@lib/monitoring";
 import { type MountingHole, type PanelModel } from "@lib/panelTypes";
+import { getTextFontsVersion, loadTextFonts, subscribeTextFonts } from "@lib/text/textFontLoader";
 import { createPanelViewer, type PanelViewer } from "@lib/view3d/panelViewer";
 
 import * as styles from "./Panel3DView.css";
@@ -76,9 +78,24 @@ export function Panel3DView({
 
   // Colors and display options do not change the geometry, so they do not rebuild it.
   const { dimensions, elements } = model;
+  const { thicknessMm: reliefThicknessMm, penetrationMm: reliefPenetrationMm } = model.designRelief;
+  // Texts join the model once their font has loaded.
+  const fontsVersion = React.useSyncExternalStore(subscribeTextFonts, getTextFontsVersion);
+  React.useEffect(() => {
+    void loadTextFonts(collectTextFontIds(elements));
+  }, [elements]);
   React.useEffect(() => {
     viewer?.scheduleGeometry(() => buildGeometry());
-  }, [viewer, dimensions, elements, mountingHoles, thicknessMm]);
+  }, [
+    viewer,
+    dimensions,
+    elements,
+    reliefThicknessMm,
+    reliefPenetrationMm,
+    mountingHoles,
+    thicknessMm,
+    fontsVersion,
+  ]);
 
   return (
     <div className={styles.root} translate="no">

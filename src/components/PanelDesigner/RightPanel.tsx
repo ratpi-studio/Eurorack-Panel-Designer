@@ -8,6 +8,7 @@ import { ReferenceImageControls } from "@components/ReferenceImageControls/Refer
 import type { ExportFormat } from "@lib/preferences";
 import {
   PanelElementType,
+  type DesignReliefConfig,
   type ElementMountingHoleConfig,
   type MountingHoleConfig,
   type PanelElement,
@@ -49,7 +50,8 @@ interface ProjectPanelProps {
   onExportClick: () => void;
   onExportJson: () => void;
   onSelectExportFormat: (format: ExportFormat) => void;
-  onOrderOnEtsy: () => void;
+  /** Opens the order dialog; the button is hidden when ordering is not configured. */
+  onOrderPrint?: () => void;
 }
 
 interface PropertiesPanelProps {
@@ -66,6 +68,7 @@ interface PropertiesPanelProps {
   snapEnabled: boolean;
   onDisplayOptionsChange: (options: Partial<PanelModel["options"]>) => void;
   onColorsChange: (colors: { panelColor?: string; designColor?: string }) => void;
+  onDesignReliefChange: (relief: Partial<DesignReliefConfig>) => void;
   onResetView: () => void;
   onMountingHoleConfigChange: (updates: Partial<MountingHoleConfig>) => void;
   onClearMountingHoleSelection: () => void;
@@ -120,7 +123,7 @@ function ProjectPanel({
   onExportClick,
   onExportJson,
   onSelectExportFormat,
-  // onOrderOnEtsy,
+  onOrderPrint,
 }: ProjectPanelProps) {
   return (
     <>
@@ -241,20 +244,15 @@ function ProjectPanel({
               >
                 {t.projects.exportStl}
               </button>
-              {/* <button
-                type="button"
-                className={styles.exportMenuItem}
-                onClick={() => {
-                  onToggleExportMenu();
-                  onOrderOnEtsy();
-                }}
-              >
-                {t.projects.orderOnEtsy}
-              </button> */}
             </div>
           ) : null}
         </div>
       </div>
+      {onOrderPrint ? (
+        <button type="button" className={styles.orderButton} onClick={onOrderPrint}>
+          {t.projects.orderPrint}
+        </button>
+      ) : null}
       <label className={styles.fieldRow}>
         <span className={styles.label}>{t.projects.savedLabel}</span>
         <select
@@ -324,6 +322,7 @@ function PropertiesPanel({
   snapEnabled,
   onDisplayOptionsChange,
   onColorsChange,
+  onDesignReliefChange,
   onResetView,
   onMountingHoleConfigChange,
   onClearMountingHoleSelection,
@@ -373,6 +372,10 @@ function PropertiesPanel({
             <ElementProperties
               element={elementForProperties}
               selectionCount={selectedElementCount}
+              designColor={panelModel.designColor}
+              designRelief={panelModel.designRelief}
+              onChangeDesignColor={(designColor) => onColorsChange({ designColor })}
+              onChangeDesignRelief={onDesignReliefChange}
               onChangePosition={onChangePosition}
               onChangeRotation={onChangeRotation}
               onChangeProperties={(properties) => {

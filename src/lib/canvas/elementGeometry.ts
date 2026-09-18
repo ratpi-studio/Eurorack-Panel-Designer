@@ -4,11 +4,12 @@ import {
   type PanelElement,
   type Vector2,
 } from "@lib/panelTypes";
+import { getLabelTextLayout } from "@lib/text/textLayout";
+import { PT_TO_MM } from "@lib/units";
 
+// Estimated size of a label whose font has not loaded yet.
 const LABEL_CHAR_WIDTH_RATIO = 0.6;
 const LABEL_LINE_HEIGHT_RATIO = 1.25;
-
-export const PT_TO_MM = 25.4 / 72;
 
 interface LabelSizeMm {
   widthMm: number;
@@ -33,7 +34,12 @@ interface ElementSizeMm {
   heightMm: number;
 }
 
+/** Frame of a label, centered on its position: the ink of its text once the font has loaded. */
 export function getLabelSizeMm(properties: LabelElementProperties): LabelSizeMm {
+  const layout = getLabelTextLayout(properties);
+  if (layout) {
+    return layout.frameSizeMm;
+  }
   const fontSizeMm = Math.max(2, properties.fontSizePt * PT_TO_MM);
   const textLength = properties.text?.length ?? 0;
   const widthMm = Math.max(

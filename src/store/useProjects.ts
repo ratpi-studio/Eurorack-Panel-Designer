@@ -4,6 +4,7 @@ import { useI18n } from "@i18n/I18nContext";
 import {
   DEFAULT_CLEARANCE_CONFIG,
   DEFAULT_DESIGN_COLOR,
+  DEFAULT_DESIGN_RELIEF,
   DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   DEFAULT_PANEL_COLOR,
@@ -12,6 +13,7 @@ import {
   type PanelModel,
 } from "@lib/panelTypes";
 import { buildPanelPngDataUrl } from "@lib/canvas/exportPng";
+import { collectTextFontIds } from "@lib/designLayer";
 import {
   DEFAULT_EXPORT_FORMAT,
   getPreferredExportFormat,
@@ -26,8 +28,8 @@ import {
   type StoredProject,
 } from "@lib/storage";
 import { reportError } from "@lib/monitoring";
-import { buildOrderPayload, submitOrder } from "@lib/orderEtsy";
 import { deserializePanelModel, serializePanelModel } from "@lib/serialization";
+import { loadTextFonts } from "@lib/text/textFontLoader";
 import { createPanelDimensions } from "@lib/units";
 import { usePanelStore } from "@store/panelStore";
 
@@ -65,7 +67,6 @@ interface UseProjectsResult {
   handleExportKicadSvg: () => void;
   handleExportKicadPcb: () => void;
   handleExportStl: (thicknessMm: number, fileName?: string) => void;
-  handleOrderOnEtsy: () => void;
   exportFormat: ExportFormat;
   setExportFormat: (format: ExportFormat) => void;
   handleReset: () => void;
@@ -261,10 +262,11 @@ export function useProjects({
   }, [renderPanelPng, projectName, setStatus, t.projects.messages]);
 
   // The SVG and KiCad builders merge overlapping cut-outs with polygon-clipping, which stays out of
-  // the startup bundle: they load on demand, like the STL one.
+  // the startup bundle: they load on demand, like the STL one. Texts need their fonts loaded to be
+  // turned into outlines.
   const handleExportSvg = React.useCallback(() => {
-    import("@lib/exportSvg")
-      .then(({ buildPanelSvg }) => {
+    Promise.all([import("@lib/exportSvg"), loadTextFonts(collectTextFontIds(panelModel.elements))])
+      .then(([{ buildPanelSvg }]) => {
         const svg = buildPanelSvg(panelModel, mountingHoles, {
           stroke: "#f5f3f0",
           panelStroke: "#f5f3f0",
@@ -333,8 +335,11 @@ export function useProjects({
         return;
       }
 
-      import("@lib/exportStl")
-        .then(({ buildPanelStlWithWarnings }) => {
+      Promise.all([
+        import("@lib/exportStl"),
+        loadTextFonts(collectTextFontIds(panelModel.elements)),
+      ])
+        .then(([{ buildPanelStlWithWarnings }]) => {
           const { stl, warnings } = buildPanelStlWithWarnings(panelModel, mountingHoles, {
             thicknessMm,
           });
@@ -417,6 +422,7 @@ export function useProjects({
       clearance: { ...DEFAULT_CLEARANCE_CONFIG },
       panelColor: DEFAULT_PANEL_COLOR,
       designColor: DEFAULT_DESIGN_COLOR,
+      designRelief: { ...DEFAULT_DESIGN_RELIEF },
     };
     setModel(resetModel);
     clearHistory();
@@ -439,21 +445,6 @@ export function useProjects({
     t.projects.messages.reset,
   ]);
 
-  const handleOrderOnEtsy = React.useCallback(() => {
-    setStatus(t.projects.messages.orderUploadInProgress, "info");
-    buildOrderPayload(panelModel)
-      .then((payload) => submitOrder(payload))
-      .then((response) => {
-        setStatus(t.projects.messages.orderUploadSuccess, "success");
-        if (typeof window !== "undefined") {
-          window.location.assign(`/order/${response.id}`);
-        }
-      })
-      .catch(() => {
-        setStatus(t.projects.messages.orderUploadError, "error");
-      });
-  }, [panelModel, setStatus, t.projects.messages]);
-
   return {
     projectName,
     setProjectName,
@@ -475,7 +466,6 @@ export function useProjects({
     handleExportKicadSvg,
     handleExportKicadPcb,
     handleExportStl,
-    handleOrderOnEtsy,
     exportFormat,
     setExportFormat,
     handleReset,

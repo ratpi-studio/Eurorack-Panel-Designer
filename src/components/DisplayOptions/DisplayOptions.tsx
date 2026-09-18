@@ -16,7 +16,7 @@ interface DisplayOptionsProps {
 
 const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 
-function toColorInputValue(color: string, fallback: string): string {
+export function toColorInputValue(color: string, fallback: string): string {
   return HEX_COLOR_PATTERN.test(color) ? color : fallback;
 }
 
@@ -118,7 +118,7 @@ interface ColorPickerFieldProps {
   onChange: (color: string) => void;
 }
 
-function ColorPickerField({ label, value, onChange }: ColorPickerFieldProps) {
+export function ColorPickerField({ label, value, onChange }: ColorPickerFieldProps) {
   const normalizedValue = value.toLowerCase();
 
   return (

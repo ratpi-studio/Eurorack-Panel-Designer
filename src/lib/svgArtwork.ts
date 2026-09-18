@@ -7,8 +7,6 @@ import {
 } from "./panelTypes";
 
 export const DEFAULT_SVG_ARTWORK_COLOR = "#f8fafc";
-export const DEFAULT_SVG_ARTWORK_STL_THICKNESS_MM = 0.6;
-export const DEFAULT_SVG_ARTWORK_STL_PENETRATION_MM = 0.2;
 
 export interface SanitizedSvgArtwork {
   svgText: string;
@@ -503,8 +501,6 @@ export function createSvgArtworkElement({
       widthMm,
       heightMm,
       color: DEFAULT_SVG_ARTWORK_COLOR,
-      stlThicknessMm: DEFAULT_SVG_ARTWORK_STL_THICKNESS_MM,
-      stlPenetrationMm: DEFAULT_SVG_ARTWORK_STL_PENETRATION_MM,
       sourceName,
       sourceId,
       label: "",

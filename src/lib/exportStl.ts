@@ -15,6 +15,7 @@ import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import { reportDegradation } from "@lib/monitoring";
 import {
   PanelElementType,
+  isLabelElement,
   type InsertElementProperties,
   type MountingHole,
   type PanelElement,
@@ -32,6 +33,8 @@ import {
 import { strokeOutline } from "@lib/strokeOutline";
 import { buildSvgArtworkMaskMarkup, isBlackSvgPaint, isSvgArtworkElement } from "@lib/svgArtwork";
 import { expandSvgPatterns } from "@lib/svgPatternExpand";
+import { getLabelKnockoutRing, getLabelTextLayout } from "@lib/text/textLayout";
+import { placeLabelTextPolygons } from "@lib/text/textPolygons";
 
 interface BuildPanelStlOptions {
   thicknessMm: number;
@@ -39,7 +42,7 @@ interface BuildPanelStlOptions {
 
 /** Material group of the panel itself, inserts included. */
 export const PANEL_BODY_MATERIAL_INDEX = 0;
-/** Material group of the SVG artwork relief, shown in the design color. */
+/** Material group of the design relief (SVG patterns and texts), shown in the design color. */
 export const PANEL_RELIEF_MATERIAL_INDEX = 1;
 
 export interface BuildPanelStlResult {
@@ -530,41 +533,172 @@ function extrudePolygons(
   return geometries;
 }
 
-function buildSvgArtworkGeometry(
-  element: PanelElement & {
-    type: PanelElementType.SvgArtwork;
-    properties: SvgArtworkElementProperties;
-  },
+/** A pattern or a text of the design layer, named in warnings. */
+interface DesignItem {
+  name: string;
+  polygons: SurfaceMultiPolygon;
+}
+
+interface Bounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
+function measureRing(ring: SurfaceRing): Bounds {
+  const bounds = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+  for (const [x, y] of ring) {
+    bounds.minX = Math.min(bounds.minX, x);
+    bounds.minY = Math.min(bounds.minY, y);
+    bounds.maxX = Math.max(bounds.maxX, x);
+    bounds.maxY = Math.max(bounds.maxY, y);
+  }
+  return bounds;
+}
+
+function boundsOverlap(a: Bounds, b: Bounds): boolean {
+  return a.minX <= b.maxX && b.minX <= a.maxX && a.minY <= b.maxY && b.minY <= a.maxY;
+}
+
+/**
+ * Removes the zones of knocked-out texts from a pattern. Only the polygons near a zone go through
+ * polygon-clipping: large patterns stay fast to rebuild in the live 3D view.
+ */
+function knockOutPattern(
+  pattern: DesignItem,
+  zones: Array<{ ring: SurfaceRing; bounds: Bounds }>,
+  warnings: string[],
+): SurfaceMultiPolygon {
+  const near: SurfacePolygon[] = [];
+  const apart: SurfacePolygon[] = [];
+  for (const polygon of pattern.polygons) {
+    const bounds = measureRing(polygon[0] ?? []);
+    (zones.some((zone) => boundsOverlap(bounds, zone.bounds)) ? near : apart).push(polygon);
+  }
+  if (!near.length) {
+    return pattern.polygons;
+  }
+  try {
+    const cleared = polygonClipping.difference(
+      near as polygonClipping.MultiPolygon,
+      ...zones.map((zone): polygonClipping.Polygon => [zone.ring]),
+    ) as SurfaceMultiPolygon;
+    return [...apart, ...cleared];
+  } catch (error) {
+    reportDegradation(error, "stl-geometry", "text-knockout");
+    // The pattern still covers the texts: say so instead of exporting it silently.
+    warnings.push(pattern.name);
+    return pattern.polygons;
+  }
+}
+
+/**
+ * Merges the design into one layer clipped to the panel surface. polygon-clipping takes overlapping
+ * polygons as their union, so one intersection merges texts with the patterns they overlap. When
+ * it fails, each item is clipped on its own and overlapping items stay side by side.
+ */
+function clipDesignLayer(
+  items: DesignItem[],
+  panelSurface: SurfaceMultiPolygon,
+  warnings: string[],
+): SurfaceMultiPolygon {
+  if (!items.length) {
+    return [];
+  }
+  try {
+    return polygonClipping.intersection(
+      items.flatMap((item) => item.polygons) as polygonClipping.MultiPolygon,
+      panelSurface as polygonClipping.MultiPolygon,
+    ) as SurfaceMultiPolygon;
+  } catch (error) {
+    reportDegradation(error, "stl-geometry", "design-layer");
+  }
+  return items.flatMap((item) => {
+    const { polygons, complete } = clipToPanelSurface(item.polygons, panelSurface);
+    if (!complete) {
+      // Part of the relief is missing: say so instead of exporting it silently.
+      warnings.push(item.name);
+    }
+    return polygons;
+  });
+}
+
+/**
+ * What prints in relief, in the design color: the SVG patterns minus the zones of knocked-out
+ * texts, and the texts, merged and clipped to the panel surface. Patterns and texts that end up
+ * missing or incomplete are named in `warnings`. Texts need their font loaded (`loadTextFonts`).
+ */
+export function buildDesignLayerPolygons(
+  model: PanelModel,
+  panelSurface: SurfaceMultiPolygon,
+  warnings: string[] = [],
+): SurfaceMultiPolygon {
+  const patterns: DesignItem[] = [];
+  const texts: DesignItem[] = [];
+  const knockouts: Array<{ ring: SurfaceRing; bounds: Bounds }> = [];
+
+  for (const element of model.elements) {
+    if (isSvgArtworkElement(element)) {
+      const name = element.properties.sourceName || element.id;
+      const outline = getSvgArtworkOutline(element.properties.svgText);
+      if (!outline.polygons.length) {
+        warnings.push(name);
+        continue;
+      }
+      patterns.push({ name, polygons: placeSvgArtwork(outline, element) });
+      continue;
+    }
+    if (!isLabelElement(element) || !element.properties.text.trim()) {
+      continue;
+    }
+    const name = element.properties.text.trim();
+    const layout = getLabelTextLayout(element.properties);
+    if (!layout) {
+      // Its font did not load.
+      warnings.push(name);
+      continue;
+    }
+    texts.push({ name, polygons: placeLabelTextPolygons(element, layout) });
+    const knockout = getLabelKnockoutRing(element, layout);
+    if (knockout) {
+      knockouts.push({ ring: knockout, bounds: measureRing(knockout) });
+    }
+  }
+
+  if (knockouts.length) {
+    for (const pattern of patterns) {
+      pattern.polygons = knockOutPattern(pattern, knockouts, warnings);
+    }
+  }
+  return clipDesignLayer(
+    [...patterns, ...texts].filter((item) => item.polygons.length),
+    panelSurface,
+    warnings,
+  );
+}
+
+/** Extrudes the design layer between its base, sunk into the panel front, and its top. */
+function buildDesignReliefGeometry(
+  model: PanelModel,
   panelSurface: SurfaceMultiPolygon,
   panelThicknessMm: number,
   warnings: string[],
 ): BufferGeometry[] {
-  const artworkThickness = Math.max(element.properties.stlThicknessMm, 0);
-  if (artworkThickness <= 0) {
+  const reliefThickness = Math.max(model.designRelief.thicknessMm, 0);
+  if (reliefThickness <= 0) {
     return [];
   }
-
-  const outline = getSvgArtworkOutline(element.properties.svgText);
-  if (!outline.polygons.length) {
-    warnings.push(element.properties.sourceName || element.id);
-    return [];
-  }
-
-  const { polygons, complete } = clipToPanelSurface(
-    placeSvgArtwork(outline, element),
-    panelSurface,
-  );
-  if (!complete) {
-    // Part of the relief is missing: say so instead of exporting it silently.
-    warnings.push(element.properties.sourceName || element.id);
-  }
-
   const penetration = Math.min(
-    Math.max(element.properties.stlPenetrationMm, 0),
+    Math.max(model.designRelief.penetrationMm, 0),
     panelThicknessMm,
-    artworkThickness,
+    reliefThickness,
   );
-  return extrudePolygons(polygons, panelThicknessMm - penetration, artworkThickness);
+  return extrudePolygons(
+    buildDesignLayerPolygons(model, panelSurface, warnings),
+    panelThicknessMm - penetration,
+    reliefThickness,
+  );
 }
 
 /**
@@ -631,7 +765,6 @@ export function createPanelExtrusion(
 
   const panelSurface = buildPanelSurface(model, mountingHoles);
   const bodyGeometries = extrudePolygons(panelSurface, 0, thicknessMm);
-  const reliefGeometries: BufferGeometry[] = [];
 
   for (const element of model.elements) {
     if (element.type === PanelElementType.Insert) {
@@ -645,15 +778,10 @@ export function createPanelExtrusion(
       if (insertGeometry) {
         bodyGeometries.push(insertGeometry);
       }
-      continue;
-    }
-
-    if (isSvgArtworkElement(element)) {
-      reliefGeometries.push(
-        ...buildSvgArtworkGeometry(element, panelSurface, thicknessMm, warnings),
-      );
     }
   }
+
+  const reliefGeometries = buildDesignReliefGeometry(model, panelSurface, thicknessMm, warnings);
 
   const geometries = [...bodyGeometries, ...reliefGeometries];
   const merged =

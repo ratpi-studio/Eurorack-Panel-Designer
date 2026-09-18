@@ -1,6 +1,8 @@
+import { collectTextFontIds, hasDesignElements } from "@lib/designLayer";
 import { computeElementMountingHoles } from "@lib/elementMountingHoles";
 import { type MountingHole, type PanelModel } from "@lib/panelTypes";
 import { buildSvgArtworkDataUrl, isSvgArtworkElement } from "@lib/svgArtwork";
+import { loadTextFonts } from "@lib/text/textFontLoader";
 import { themeValues } from "@styles/theme.css";
 
 import { deriveExportPaletteFromModel } from "./palette";
@@ -48,22 +50,26 @@ export async function buildPanelPngDataUrl(
   const elementMountingHoles = computeElementMountingHoles(model.elements, model.elementHoleConfig);
   const svgArtworkImages = new Map<string, HTMLImageElement>();
   const artworkElements = model.elements.filter(isSvgArtworkElement);
-  const loadedArtworkImages = await Promise.all(
-    artworkElements.map((element) =>
-      loadImage(
-        buildSvgArtworkDataUrl({
-          ...element.properties,
-          color: model.designColor,
-        }),
-      ).then((image) => [element.id, image] as const),
+  const [loadedArtworkImages] = await Promise.all([
+    Promise.all(
+      artworkElements.map((element) =>
+        loadImage(
+          buildSvgArtworkDataUrl({
+            ...element.properties,
+            color: model.designColor,
+          }),
+        ).then((image) => [element.id, image] as const),
+      ),
     ),
-  );
+    // Texts are drawn from their font's outlines, like in the STL.
+    loadTextFonts(collectTextFontIds(model.elements)),
+  ]);
   loadedArtworkImages.forEach(([id, image]) => {
     svgArtworkImages.set(id, image);
   });
 
   const panelSizeMm = { x: model.dimensions.widthMm, y: model.dimensions.heightMm };
-  const panelSurfacePath = artworkElements.length
+  const panelSurfacePath = hasDesignElements(model.elements)
     ? new Path2D(
         await buildPanelSurfaceClipPathData({
           panelSizeMm,

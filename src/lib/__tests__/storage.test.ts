@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 
 import {
   DEFAULT_CLEARANCE_CONFIG,
+  DEFAULT_DESIGN_RELIEF,
   DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   DEFAULT_PANEL_OPTIONS,
@@ -48,6 +49,7 @@ const sampleModel: PanelModel = {
   clearance: { ...DEFAULT_CLEARANCE_CONFIG },
   panelColor: "#1a1a1a",
   designColor: "#ffffff",
+  designRelief: { ...DEFAULT_DESIGN_RELIEF },
 };
 
 describe("storage helpers", () => {
@@ -79,6 +81,58 @@ describe("storage helpers", () => {
     const afterDelete = deleteProject("Temp");
     expect(afterDelete).toHaveLength(0);
     expect(loadProject("Temp")).toBeNull();
+  });
+
+  it("loads projects saved before texts had fonts and the relief moved to the panel", () => {
+    const { designRelief: _unused, ...legacyModel } = sampleModel;
+    const legacyPayload = {
+      version: 6,
+      model: {
+        ...legacyModel,
+        elements: [
+          {
+            id: "label-1",
+            type: "label",
+            positionMm: { x: 10, y: 20 },
+            properties: { text: "OUT", fontSizePt: 9, label: "" },
+          },
+          {
+            id: "svg-1",
+            type: "svgArtwork",
+            positionMm: { x: 20, y: 40 },
+            properties: {
+              svgText: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"></svg>',
+              viewBox: { minX: 0, minY: 0, width: 10, height: 10 },
+              widthMm: 10,
+              heightMm: 10,
+              color: "#ffffff",
+              stlThicknessMm: 1.2,
+              stlPenetrationMm: 0.4,
+            },
+          },
+        ],
+      },
+    };
+    localStorage.setItem(
+      "eurorack-panel-projects",
+      JSON.stringify([{ name: "Old", payload: legacyPayload, updatedAt: 1 }]),
+    );
+
+    const model = loadProject("Old");
+
+    expect(model?.designRelief).toEqual({ thicknessMm: 1.2, penetrationMm: 0.4 });
+    expect(model?.elements[0].properties).toEqual({
+      text: "OUT",
+      fontSizePt: 9,
+      label: "",
+      fontId: "roboto",
+      patternOverlap: "knockout",
+      knockoutPaddingMm: 1,
+    });
+    expect(model?.elements[1].properties).not.toHaveProperty("stlThicknessMm");
+    // Saving again stores the current format.
+    saveProject("Old", model!);
+    expect(listProjects()[0].payload.model.designRelief).toEqual(model?.designRelief);
   });
 });
 

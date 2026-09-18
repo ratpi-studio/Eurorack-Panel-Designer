@@ -13,7 +13,10 @@ import {
 import type { ReferenceImage } from "@lib/referenceImage";
 import { themeValues } from "@styles/theme.css";
 import { type CanvasTransform } from "@lib/canvas/transform";
+import { collectTextFontIds } from "@lib/designLayer";
 import { buildSvgArtworkDataUrl, isSvgArtworkElement } from "@lib/svgArtwork";
+import { loadTextFonts } from "@lib/text/textFontLoader";
+import type { TextFontId } from "@lib/text/textFonts";
 import { usePanelSurfacePath } from "./usePanelSurfacePath";
 
 interface CanvasRenderOptions {
@@ -128,6 +131,20 @@ export function useCanvasRender({
     mountingHoles,
     model.elements,
   );
+
+  // Texts are drawn from their font's outlines, which the render loop picks up once loaded.
+  const textFontIds = React.useMemo(
+    () =>
+      collectTextFontIds(ghostElement ? [...model.elements, ghostElement] : model.elements).join(
+        " ",
+      ),
+    [ghostElement, model.elements],
+  );
+  React.useEffect(() => {
+    if (textFontIds) {
+      void loadTextFonts(textFontIds.split(" ") as TextFontId[]);
+    }
+  }, [textFontIds]);
 
   React.useLayoutEffect(() => {
     let frameId: number | null = null;

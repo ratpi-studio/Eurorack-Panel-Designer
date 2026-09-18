@@ -4,6 +4,7 @@ import { buildKicadEdgeCutsSvg, buildKicadPcbFile } from "@lib/exportKicad";
 import { generateMountingHoles } from "@lib/mountingHoles";
 import {
   DEFAULT_CLEARANCE_CONFIG,
+  DEFAULT_DESIGN_RELIEF,
   DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   DEFAULT_PANEL_OPTIONS,
@@ -127,6 +128,7 @@ function createSampleModel(): PanelModel {
     clearance: { ...DEFAULT_CLEARANCE_CONFIG },
     panelColor: "#1a1a1a",
     designColor: "#ffffff",
+    designRelief: { ...DEFAULT_DESIGN_RELIEF },
   };
 }
 

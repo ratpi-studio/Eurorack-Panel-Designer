@@ -277,6 +277,16 @@ export const primaryButton = style({
   color: "#0b1426",
 });
 
+// Ordering a print is the one call to action of the project panel: full width, above the lists.
+export const orderButton = style([
+  primaryButton,
+  {
+    width: "100%",
+    padding: `${vars.spacing.sm} ${vars.spacing.md}`,
+    fontSize: "14px",
+  },
+]);
+
 export const secondaryButton = style({
   ...baseButton,
   backgroundColor: vars.color.surface,

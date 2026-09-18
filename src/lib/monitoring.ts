@@ -9,10 +9,15 @@ export type MonitoredFlow =
   | "export-stl"
   | "export-svg"
   | "github-pages-import"
+  // Storing a design for an Etsy order, then loading it on the order page.
+  | "order-create"
+  | "order-page"
   // Merging overlapping cut-outs, for the canvas, PNG, SVG and KiCad outputs.
   | "panel-surface"
   | "save-project"
-  | "stl-geometry";
+  | "stl-geometry"
+  // Loading the fonts of text elements, and turning text into outlines.
+  | "text-font";
 
 // Chrome and Firefox name the DOM method; WebKit only says "The object can not be found here."
 const DOM_MUTATION_MESSAGE = /removeChild|insertBefore|The object can not be found here/i;
