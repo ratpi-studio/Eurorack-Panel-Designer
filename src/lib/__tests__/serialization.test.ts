@@ -226,6 +226,24 @@ describe("serialization helpers", () => {
     });
   });
 
+  it("keeps hidden and locked elements, and drops the flags when they are not set", () => {
+    const [jack] = sampleModel.elements;
+    const model: PanelModel = {
+      ...sampleModel,
+      elements: [
+        { ...jack, id: "hidden", hidden: true },
+        { ...jack, id: "locked", locked: true },
+        { ...jack, id: "plain", hidden: false, locked: undefined },
+      ],
+    };
+
+    const [hidden, locked, plain] = deserializePanelModel(serializePanelModel(model)).elements;
+
+    expect(hidden.hidden).toBe(true);
+    expect(locked.locked).toBe(true);
+    expect("hidden" in plain || "locked" in plain).toBe(false);
+  });
+
   it("rejects malformed payloads", () => {
     expect(() =>
       parseSerializedPanel(

@@ -41,7 +41,6 @@ interface Translations {
     widthMmHint: string;
   };
   display: {
-    title: string;
     grid: string;
     snap: string;
     holes: string;
@@ -86,6 +85,25 @@ interface Translations {
         color: string;
       }
     >;
+  };
+  rightPanel: {
+    tabsLabel: string;
+    display: string;
+    properties: string;
+    components: string;
+  };
+  components: {
+    listLabel: string;
+    summary: (count: number, hiddenCount: number) => string;
+    showAll: string;
+    empty: string;
+    hint: string;
+    rename: (name: string) => string;
+    hide: (name: string) => string;
+    show: (name: string) => string;
+    lock: (name: string) => string;
+    unlock: (name: string) => string;
+    remove: (name: string) => string;
   };
   properties: {
     title: string;
@@ -237,6 +255,7 @@ interface Translations {
     issueTooWide: (widthHp: number, maxWidthHp: number) => string;
     issueSameFilament: string;
     issueTextPrint: (count: number) => string;
+    issueHiddenElements: (count: number) => string;
     cancel: string;
     submit: string;
     submitting: string;
@@ -326,7 +345,6 @@ export const enUS: Translations = {
     widthMmHint: "Total panel width in millimeters",
   },
   display: {
-    title: "Display",
     grid: "Grid",
     snap: "Snap to grid",
     holes: "Mounting holes",
@@ -433,6 +451,26 @@ export const enUS: Translations = {
         color: "#f8fafc",
       },
     },
+  },
+  rightPanel: {
+    tabsLabel: "Panel settings",
+    display: "Display",
+    properties: "Properties",
+    components: "Components",
+  },
+  components: {
+    listLabel: "Placed components",
+    summary: (count, hiddenCount) =>
+      `${count} component${count === 1 ? "" : "s"}${hiddenCount ? ` · ${hiddenCount} hidden` : ""}`,
+    showAll: "Show all",
+    empty: "No components yet. Pick one in the palette, then click on the panel to place it.",
+    hint: "Shift-click to select several. Double-click a name to rename it. Hidden components are left out of the 3D view, exports and orders; locked ones cannot be moved on the canvas.",
+    rename: (name) => `Rename ${name}`,
+    hide: (name) => `Hide ${name}`,
+    show: (name) => `Show ${name}`,
+    lock: (name) => `Lock ${name}`,
+    unlock: (name) => `Unlock ${name}`,
+    remove: (name) => `Delete ${name}`,
   },
   properties: {
     title: "Properties",
@@ -599,6 +637,10 @@ export const enUS: Translations = {
       count === 1
         ? "A text may not print well: see the warning in its properties."
         : `${count} texts may not print well: see the warnings in their properties.`,
+    issueHiddenElements: (count) =>
+      count === 1
+        ? "A hidden component will not be printed. Show it in the Components tab to include it."
+        : `${count} hidden components will not be printed. Show them in the Components tab to include them.`,
     cancel: "Cancel",
     submit: "Get my design code",
     submitting: "Saving your design…",

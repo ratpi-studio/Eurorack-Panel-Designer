@@ -28,6 +28,7 @@ import {
   type StoredProject,
 } from "@lib/storage";
 import { reportError } from "@lib/monitoring";
+import { withoutHiddenElements } from "@lib/elementVisibility";
 import { deserializePanelModel, serializePanelModel } from "@lib/serialization";
 import { loadTextFonts } from "@lib/text/textFontLoader";
 import { createPanelDimensions } from "@lib/units";
@@ -79,6 +80,8 @@ export function useProjects({
 }: UseProjectsArgs): UseProjectsResult {
   const t = useI18n();
   const panelModel = usePanelStore((state) => state.model);
+  // Exports leave hidden elements out; saving and the JSON export keep them.
+  const outputModel = React.useMemo(() => withoutHiddenElements(panelModel), [panelModel]);
   const setModel = usePanelStore((state) => state.setModel);
   const setPlacementType = usePanelStore((state) => state.setPlacementType);
   const clearSelection = usePanelStore((state) => state.clearSelection);
@@ -126,8 +129,8 @@ export function useProjects({
   }, []);
 
   const renderPanelPng = React.useCallback(
-    () => buildPanelPngDataUrl(panelModel, mountingHoles),
-    [mountingHoles, panelModel],
+    () => buildPanelPngDataUrl(outputModel, mountingHoles),
+    [mountingHoles, outputModel],
   );
 
   const trySaveProject = React.useCallback(
@@ -265,9 +268,9 @@ export function useProjects({
   // the startup bundle: they load on demand, like the STL one. Texts need their fonts loaded to be
   // turned into outlines.
   const handleExportSvg = React.useCallback(() => {
-    Promise.all([import("@lib/exportSvg"), loadTextFonts(collectTextFontIds(panelModel.elements))])
+    Promise.all([import("@lib/exportSvg"), loadTextFonts(collectTextFontIds(outputModel.elements))])
       .then(([{ buildPanelSvg }]) => {
-        const svg = buildPanelSvg(panelModel, mountingHoles, {
+        const svg = buildPanelSvg(outputModel, mountingHoles, {
           stroke: "#f5f3f0",
           panelStroke: "#f5f3f0",
           background: null,
@@ -287,12 +290,12 @@ export function useProjects({
         reportError(error, "export-svg");
         setStatus(t.projects.messages.svgError, "error");
       });
-  }, [mountingHoles, panelModel, projectName, setStatus, t.projects.messages]);
+  }, [mountingHoles, outputModel, projectName, setStatus, t.projects.messages]);
 
   const handleExportKicadSvg = React.useCallback(() => {
     import("@lib/exportKicad")
       .then(({ buildKicadEdgeCutsSvg }) => {
-        const svg = buildKicadEdgeCutsSvg(panelModel, mountingHoles);
+        const svg = buildKicadEdgeCutsSvg(outputModel, mountingHoles);
         const blob = new Blob([svg], { type: "image/svg+xml" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -307,12 +310,12 @@ export function useProjects({
         reportError(error, "export-kicad");
         setStatus(t.projects.messages.kicadError, "error");
       });
-  }, [mountingHoles, panelModel, projectName, setStatus, t.projects.messages]);
+  }, [mountingHoles, outputModel, projectName, setStatus, t.projects.messages]);
 
   const handleExportKicadPcb = React.useCallback(() => {
     import("@lib/exportKicad")
       .then(({ buildKicadPcbFile }) => {
-        const pcb = buildKicadPcbFile(panelModel, mountingHoles);
+        const pcb = buildKicadPcbFile(outputModel, mountingHoles);
         const blob = new Blob([pcb], { type: "text/plain" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -327,7 +330,7 @@ export function useProjects({
         reportError(error, "export-kicad");
         setStatus(t.projects.messages.kicadError, "error");
       });
-  }, [mountingHoles, panelModel, projectName, setStatus, t.projects.messages]);
+  }, [mountingHoles, outputModel, projectName, setStatus, t.projects.messages]);
 
   const handleExportStl = React.useCallback(
     (thicknessMm: number, fileName?: string) => {
@@ -337,10 +340,10 @@ export function useProjects({
 
       Promise.all([
         import("@lib/exportStl"),
-        loadTextFonts(collectTextFontIds(panelModel.elements)),
+        loadTextFonts(collectTextFontIds(outputModel.elements)),
       ])
         .then(([{ buildPanelStlWithWarnings }]) => {
-          const { stl, warnings } = buildPanelStlWithWarnings(panelModel, mountingHoles, {
+          const { stl, warnings } = buildPanelStlWithWarnings(outputModel, mountingHoles, {
             thicknessMm,
           });
           const blob = new Blob([stl], { type: "model/stl" });
@@ -369,7 +372,7 @@ export function useProjects({
           setStatus(t.projects.messages.stlError, "error");
         });
     },
-    [mountingHoles, panelModel, projectName, setStatus, t.projects.messages],
+    [mountingHoles, outputModel, projectName, setStatus, t.projects.messages],
   );
 
   const setExportFormat = React.useCallback((format: ExportFormat) => {

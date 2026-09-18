@@ -8,6 +8,7 @@ import { ViewModeSwitch } from "@components/PanelDesigner/ViewModeSwitch";
 import { OrderDialog } from "@components/OrderDialog/OrderDialog";
 import { SvgArtworkModal } from "@components/SvgArtworkModal/SvgArtworkModal";
 import { useResponsivePanels } from "@components/PanelDesigner/useResponsivePanels";
+import { useRightPanelTab } from "@components/PanelDesigner/useRightPanelTab";
 import { useViewMode } from "@components/PanelDesigner/useViewMode";
 import { useI18n } from "@i18n/I18nContext";
 import { createPanelElement } from "@lib/elements";
@@ -23,6 +24,7 @@ import {
   type PanelDimensions,
   type Vector2,
 } from "@lib/panelTypes";
+import { getVisibleElements } from "@lib/elementVisibility";
 import { isOrderingEnabled } from "@lib/order";
 import { createPanelDimensions, hpToMm, mmToCm } from "@lib/units";
 import { changelogEntries } from "@lib/changelog";
@@ -84,6 +86,7 @@ export function PanelDesigner() {
   // Bumped by "Reset view" so the 3D view frames the panel again too.
   const [viewResetKey, setViewResetKey] = React.useState(0);
   const [viewMode, setViewMode] = useViewMode();
+  const { tab: rightPanelTab, setTab: setRightPanelTab, revealProperties } = useRightPanelTab();
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const [isExportMenuOpen, setIsExportMenuOpen] = React.useState(false);
   const [isStlModalOpen, setIsStlModalOpen] = React.useState(false);
@@ -157,9 +160,22 @@ export function PanelDesigner() {
     [panelModel.dimensions, panelModel.mountingHoleConfig],
   );
 
+  // Hidden elements stay in the design, but out of the canvas, the 3D view, exports and orders.
+  const visibleElements = React.useMemo(
+    () => getVisibleElements(panelModel.elements),
+    [panelModel.elements],
+  );
+  const outputModel = React.useMemo(
+    () =>
+      visibleElements === panelModel.elements
+        ? panelModel
+        : { ...panelModel, elements: visibleElements },
+    [panelModel, visibleElements],
+  );
+
   const elementMountingHoles = React.useMemo(
-    () => computeElementMountingHoles(panelModel.elements, panelModel.elementHoleConfig),
-    [panelModel.elements, panelModel.elementHoleConfig],
+    () => computeElementMountingHoles(visibleElements, panelModel.elementHoleConfig),
+    [visibleElements, panelModel.elementHoleConfig],
   );
 
   const clearanceLines = React.useMemo(
@@ -537,12 +553,15 @@ export function PanelDesigner() {
     (type: PanelElementType | null) => {
       clearSelection();
       setPlacementType(type);
+      if (type) {
+        setRightPanelTab("properties");
+      }
       // Elements are placed on the 2D canvas: bring it back next to the 3D view.
       if (type && viewMode === "3d") {
         setViewMode("split");
       }
     },
-    [clearSelection, setPlacementType, setViewMode, viewMode],
+    [clearSelection, setPlacementType, setRightPanelTab, setViewMode, viewMode],
   );
 
   const handleOpenSvgArtworkModal = React.useCallback(() => {
@@ -925,6 +944,71 @@ export function PanelDesigner() {
     onOrderPrint: isOrderingEnabled() ? () => setIsOrderDialogOpen(true) : undefined,
   };
 
+  const handleSelectComponent = React.useCallback(
+    (elementId: string, additive: boolean) => {
+      setPlacementType(null);
+      setMountingHolesSelected(false);
+      selectReferenceImage(false);
+      if (additive) {
+        toggleElementSelection(elementId);
+        return;
+      }
+      setSelectedElementIds([elementId]);
+    },
+    [selectReferenceImage, setPlacementType, setSelectedElementIds, toggleElementSelection],
+  );
+
+  const handleToggleComponentHidden = React.useCallback(
+    (elementId: string) => {
+      handleUpdateElement(elementId, (element) => ({
+        ...element,
+        hidden: element.hidden ? undefined : true,
+      }));
+    },
+    [handleUpdateElement],
+  );
+
+  const handleToggleComponentLocked = React.useCallback(
+    (elementId: string) => {
+      handleUpdateElement(elementId, (element) => ({
+        ...element,
+        locked: element.locked ? undefined : true,
+      }));
+    },
+    [handleUpdateElement],
+  );
+
+  const handleRenameComponent = React.useCallback(
+    (elementId: string, name: string) => {
+      handleUpdateElement(
+        elementId,
+        (element) =>
+          ({ ...element, properties: { ...element.properties, label: name } }) as PanelElement,
+      );
+    },
+    [handleUpdateElement],
+  );
+
+  const handleShowAllComponents = React.useCallback(() => {
+    updateModel((prev) => ({
+      ...prev,
+      elements: prev.elements.map((element) =>
+        element.hidden ? { ...element, hidden: undefined } : element,
+      ),
+    }));
+  }, [updateModel]);
+
+  const componentsPanelProps = {
+    elements: panelModel.elements,
+    selectedIds: selectedElementIds,
+    onSelect: handleSelectComponent,
+    onToggleHidden: handleToggleComponentHidden,
+    onToggleLocked: handleToggleComponentLocked,
+    onRename: handleRenameComponent,
+    onRemove: handleRemoveElement,
+    onShowAll: handleShowAllComponents,
+  };
+
   const propertiesPanelProps = {
     t,
     panelModel,
@@ -1037,15 +1121,35 @@ export function PanelDesigner() {
                     onUpdateElement={handleUpdateElement}
                     onZoomChange={handleZoomChange}
                     onPanChange={handlePanChange}
-                    onSelectElement={setSelectedElementId}
-                    onAddSelectedElements={addSelectedElements}
-                    onSelectElements={setSelectedElementIds}
-                    onToggleElementSelection={toggleElementSelection}
+                    onSelectElement={(elementId) => {
+                      setSelectedElementId(elementId);
+                      if (elementId) {
+                        revealProperties();
+                      }
+                    }}
+                    onAddSelectedElements={(elementIds) => {
+                      addSelectedElements(elementIds);
+                      revealProperties();
+                    }}
+                    onSelectElements={(elementIds) => {
+                      setSelectedElementIds(elementIds);
+                      revealProperties();
+                    }}
+                    onToggleElementSelection={(elementId) => {
+                      toggleElementSelection(elementId);
+                      revealProperties();
+                    }}
                     onClearSelection={clearSelection}
-                    onSelectReferenceImage={handleSelectReferenceImage}
+                    onSelectReferenceImage={() => {
+                      handleSelectReferenceImage();
+                      setRightPanelTab("properties");
+                    }}
                     onClearReferenceSelection={handleClearReferenceSelection}
                     onUpdateReferenceImage={handleReferenceImageChange}
-                    onSelectMountingHoles={handleSelectMountingHoles}
+                    onSelectMountingHoles={() => {
+                      handleSelectMountingHoles();
+                      setRightPanelTab("properties");
+                    }}
                     onClearMountingHoleSelection={handleClearMountingHoleSelection}
                     displayOptions={panelModel.options}
                     selectedElementIds={selectedElementIds}
@@ -1063,7 +1167,7 @@ export function PanelDesigner() {
                     fallback={<div className={styles.viewportFallback}>{t.view3d.loading}</div>}
                   >
                     <LazyPanel3DView
-                      model={panelModel}
+                      model={outputModel}
                       mountingHoles={combinedMountingHoles}
                       thicknessMm={previewThickness}
                       resetKey={viewResetKey}
@@ -1092,7 +1196,10 @@ export function PanelDesigner() {
               showPanel={showRightPanel}
               onClose={() => setShowRightPanel(false)}
               projectPanel={projectPanelProps}
+              activeTab={rightPanelTab}
+              onChangeTab={setRightPanelTab}
               propertiesPanel={propertiesPanelProps}
+              componentsPanel={componentsPanelProps}
             />
           ) : null}
         </section>
@@ -1151,7 +1258,7 @@ export function PanelDesigner() {
                   }
                 >
                   <LazyPanel3DView
-                    model={panelModel}
+                    model={outputModel}
                     mountingHoles={combinedMountingHoles}
                     thicknessMm={previewThickness}
                   />

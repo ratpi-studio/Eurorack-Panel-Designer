@@ -33,10 +33,15 @@ interface PanelElementBase<
   mountingHolesEnabled?: boolean;
   rotationDeg?: number;
   mountingHoleRotationDeg?: number;
+  /** Left out of the canvas, the 3D view, every export and orders, but kept in the design. */
+  hidden?: boolean;
+  /** Cannot be picked or moved on the canvas; still selectable from the components list. */
+  locked?: boolean;
   properties: TProperties;
 }
 
 interface PanelElementPropertiesBase {
+  /** Name shown in the components list; empty until someone renames the element. */
   label?: string;
 }
 
@@ -222,7 +227,7 @@ export function normalizePanelModel(model: PanelModelInput): PanelModel {
         typeof element.mountingHolesEnabled === "boolean"
           ? element
           : { ...element, mountingHolesEnabled: elementEnableDefault };
-      return (properties ? { ...base, properties } : base) as PanelElement;
+      return normalizeElementFlags((properties ? { ...base, properties } : base) as PanelElement);
     }) ?? [];
   return {
     ...model,
@@ -300,6 +305,21 @@ function readLegacyDesignRelief(elements: PanelModelInput["elements"]): DesignRe
     return null;
   }
   return normalizeDesignRelief({ thicknessMm, penetrationMm });
+}
+
+/** Keeps `hidden` and `locked` only when set, so saved designs stay as they were without them. */
+function normalizeElementFlags(element: PanelElement): PanelElement {
+  if (element.hidden === undefined && element.locked === undefined) {
+    return element;
+  }
+  const next = { ...element };
+  if (next.hidden !== true) {
+    delete next.hidden;
+  }
+  if (next.locked !== true) {
+    delete next.locked;
+  }
+  return next;
 }
 
 export type MountingHoleShape = "circle" | "slot";

@@ -1,4 +1,4 @@
-import { style } from "@vanilla-extract/css";
+import { style, styleVariants } from "@vanilla-extract/css";
 
 import { vars } from "@styles/theme.css";
 
@@ -696,4 +696,70 @@ export const changelogLink = style({
       textDecoration: "underline",
     },
   },
+});
+
+export const tabList = style({
+  display: "flex",
+  gap: "2px",
+  padding: "3px",
+  borderRadius: "8px",
+  backgroundColor: "#0b1426",
+  border: `1px solid ${vars.color.border}`,
+});
+
+const tabBase = style({
+  flex: 1,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: vars.spacing.xs,
+  padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
+  border: "none",
+  borderRadius: "6px",
+  background: "none",
+  color: vars.color.textSecondary,
+  fontSize: "13px",
+  fontWeight: 600,
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+  selectors: {
+    "&:hover": {
+      color: vars.color.textPrimary,
+    },
+    "&:focus-visible": {
+      outline: `2px solid ${vars.color.accent}`,
+      outlineOffset: "1px",
+    },
+  },
+});
+
+export const tab = styleVariants({
+  idle: [tabBase],
+  active: [
+    tabBase,
+    {
+      backgroundColor: vars.color.surface,
+      color: vars.color.textPrimary,
+      boxShadow: `inset 0 -2px 0 ${vars.color.accent}`,
+    },
+  ],
+});
+
+export const tabCount = style({
+  minWidth: "18px",
+  padding: "0 5px",
+  borderRadius: "999px",
+  backgroundColor: "#16233d",
+  color: vars.color.textSecondary,
+  fontSize: "11px",
+  lineHeight: "18px",
+  textAlign: "center",
+});
+
+export const tabPanel = style({
+  display: "flex",
+  flexDirection: "column",
+  gap: vars.spacing.sm,
+  minWidth: 0,
+  paddingTop: vars.spacing.xs,
 });

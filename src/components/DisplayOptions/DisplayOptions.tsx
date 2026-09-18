@@ -53,7 +53,6 @@ export function DisplayOptions({
 
   return (
     <div className={styles.root}>
-      <div className={styles.title}>{t.display.title}</div>
       <div className={styles.options}>
         <label className={styles.option}>
           <input type="checkbox" checked={options.showGrid} onChange={handleToggle("showGrid")} />

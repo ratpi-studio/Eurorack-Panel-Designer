@@ -1,11 +1,17 @@
 import React from "react";
 
+import {
+  ComponentList,
+  useElementTypeLabels,
+  type ComponentListProps,
+} from "@components/ComponentList/ComponentList";
 import { DisplayOptions } from "@components/DisplayOptions/DisplayOptions";
 import { ElementMountingHoles } from "@components/ElementMountingHoles/ElementMountingHoles";
 import { ElementProperties } from "@components/ElementProperties/ElementProperties";
 import { MountingHoleSettings } from "@components/MountingHoleSettings/MountingHoleSettings";
 import { ReferenceImageControls } from "@components/ReferenceImageControls/ReferenceImageControls";
-import type { ExportFormat } from "@lib/preferences";
+import { describeComponents } from "@lib/componentList";
+import type { ExportFormat, RightPanelTab } from "@lib/preferences";
 import {
   PanelElementType,
   type DesignReliefConfig,
@@ -90,8 +96,14 @@ interface RightPanelProps {
   showPanel: boolean;
   onClose: () => void;
   projectPanel: ProjectPanelProps;
+  activeTab: RightPanelTab;
+  onChangeTab: (tab: RightPanelTab) => void;
   propertiesPanel: PropertiesPanelProps;
+  componentsPanel: ComponentListProps;
 }
+
+const TAB_ORDER: readonly RightPanelTab[] = ["display", "properties", "components"];
+const TAB_PANEL_ID = "right-panel-tab-panel";
 
 function ProjectPanel({
   t,
@@ -309,9 +321,27 @@ function ProjectPanel({
   );
 }
 
-function PropertiesPanel({
+function DisplayTab({
   panelModel,
   displayOptions,
+  onDisplayOptionsChange,
+  onColorsChange,
+  onResetView,
+}: PropertiesPanelProps) {
+  return (
+    <DisplayOptions
+      options={displayOptions}
+      panelColor={panelModel.panelColor}
+      designColor={panelModel.designColor}
+      onChange={onDisplayOptionsChange}
+      onColorsChange={onColorsChange}
+      onResetView={onResetView}
+    />
+  );
+}
+
+function PropertiesTab({
+  panelModel,
   mountingHolesSelected,
   referenceImage,
   referenceImageSelected,
@@ -320,10 +350,8 @@ function PropertiesPanel({
   selectedElementCount,
   placementType,
   snapEnabled,
-  onDisplayOptionsChange,
   onColorsChange,
   onDesignReliefChange,
-  onResetView,
   onMountingHoleConfigChange,
   onClearMountingHoleSelection,
   onReferenceImageChange,
@@ -338,71 +366,146 @@ function PropertiesPanel({
   onChangeElementHoleRotation,
   onToggleElementHoleEnabled,
 }: PropertiesPanelProps) {
+  const typeLabels = useElementTypeLabels();
+  // The name the components list shows, so both panels call the element the same way.
+  const elementName = React.useMemo(() => {
+    if (!selectedElement) {
+      return null;
+    }
+    return (
+      describeComponents(panelModel.elements, typeLabels).find(
+        (item) => item.id === selectedElement.id,
+      )?.name ?? null
+    );
+  }, [panelModel.elements, selectedElement, typeLabels]);
+
+  if (mountingHolesSelected) {
+    return (
+      <MountingHoleSettings
+        config={panelModel.mountingHoleConfig}
+        onChange={onMountingHoleConfigChange}
+        onClose={onClearMountingHoleSelection}
+      />
+    );
+  }
+
+  if (referenceImage && referenceImageSelected) {
+    return (
+      <ReferenceImageControls
+        image={referenceImage}
+        onChange={onReferenceImageChange}
+        onReplace={onImportReferenceImageClick}
+        onRemove={onRemoveReferenceImage}
+      />
+    );
+  }
+
   return (
-    <>
-      <div className={styles.card}>
-        <DisplayOptions
-          options={displayOptions}
-          panelColor={panelModel.panelColor}
-          designColor={panelModel.designColor}
-          onChange={onDisplayOptionsChange}
-          onColorsChange={onColorsChange}
-          onResetView={onResetView}
+    <div className={styles.sectionStack}>
+      <ElementProperties
+        element={elementForProperties}
+        name={elementName}
+        selectionCount={selectedElementCount}
+        designColor={panelModel.designColor}
+        designRelief={panelModel.designRelief}
+        onChangeDesignColor={(designColor) => onColorsChange({ designColor })}
+        onChangeDesignRelief={onDesignReliefChange}
+        onChangePosition={onChangePosition}
+        onChangeRotation={onChangeRotation}
+        onChangeProperties={(properties) => {
+          if (selectedElement) {
+            onChangeProperties(properties);
+            return;
+          }
+          if (placementType) {
+            onChangeDraftProperties(placementType, properties);
+          }
+        }}
+        onRemove={onRemove}
+      />
+      {selectedElement ? (
+        <ElementMountingHoles
+          config={panelModel.elementHoleConfig}
+          onChangeConfig={onChangeElementHoleConfig}
+          onChangeElementRotation={onChangeElementHoleRotation}
+          element={selectedElement}
+          onToggleElementEnabled={onToggleElementHoleEnabled}
+          snapEnabled={snapEnabled}
         />
-      </div>
-      {mountingHolesSelected ? (
-        <div className={styles.card}>
-          <MountingHoleSettings
-            config={panelModel.mountingHoleConfig}
-            onChange={onMountingHoleConfigChange}
-            onClose={onClearMountingHoleSelection}
-          />
-        </div>
       ) : null}
-      <div className={styles.card}>
-        {referenceImage && referenceImageSelected ? (
-          <ReferenceImageControls
-            image={referenceImage}
-            onChange={onReferenceImageChange}
-            onReplace={onImportReferenceImageClick}
-            onRemove={onRemoveReferenceImage}
-          />
-        ) : (
-          <>
-            <ElementProperties
-              element={elementForProperties}
-              selectionCount={selectedElementCount}
-              designColor={panelModel.designColor}
-              designRelief={panelModel.designRelief}
-              onChangeDesignColor={(designColor) => onColorsChange({ designColor })}
-              onChangeDesignRelief={onDesignReliefChange}
-              onChangePosition={onChangePosition}
-              onChangeRotation={onChangeRotation}
-              onChangeProperties={(properties) => {
-                if (selectedElement) {
-                  onChangeProperties(properties);
-                  return;
-                }
-                if (placementType) {
-                  onChangeDraftProperties(placementType, properties);
-                }
-              }}
-              onRemove={onRemove}
-            />
-            {selectedElement ? (
-              <ElementMountingHoles
-                config={panelModel.elementHoleConfig}
-                onChangeConfig={onChangeElementHoleConfig}
-                onChangeElementRotation={onChangeElementHoleRotation}
-                element={selectedElement}
-                onToggleElementEnabled={onToggleElementHoleEnabled}
-                snapEnabled={snapEnabled}
-              />
+    </div>
+  );
+}
+
+interface RightPanelTabsProps {
+  t: ReturnTypeUseI18n;
+  activeTab: RightPanelTab;
+  componentCount: number;
+  onChangeTab: (tab: RightPanelTab) => void;
+}
+
+function RightPanelTabs({ t, activeTab, componentCount, onChangeTab }: RightPanelTabsProps) {
+  const tabRefs = React.useRef<Partial<Record<RightPanelTab, HTMLButtonElement | null>>>({});
+  const labels: Record<RightPanelTab, string> = {
+    display: t.rightPanel.display,
+    properties: t.rightPanel.properties,
+    components: t.rightPanel.components,
+  };
+
+  // Arrow keys move between tabs, as in any tab list.
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const index = TAB_ORDER.indexOf(activeTab);
+    const nextIndex =
+      event.key === "ArrowRight"
+        ? (index + 1) % TAB_ORDER.length
+        : event.key === "ArrowLeft"
+          ? (index - 1 + TAB_ORDER.length) % TAB_ORDER.length
+          : event.key === "Home"
+            ? 0
+            : event.key === "End"
+              ? TAB_ORDER.length - 1
+              : null;
+    if (nextIndex === null) {
+      return;
+    }
+    event.preventDefault();
+    const nextTab = TAB_ORDER[nextIndex];
+    onChangeTab(nextTab);
+    tabRefs.current[nextTab]?.focus();
+  };
+
+  return (
+    <div
+      role="tablist"
+      aria-label={t.rightPanel.tabsLabel}
+      className={styles.tabList}
+      onKeyDown={handleKeyDown}
+    >
+      {TAB_ORDER.map((tab) => {
+        const isActive = tab === activeTab;
+        return (
+          <button
+            key={tab}
+            ref={(node) => {
+              tabRefs.current[tab] = node;
+            }}
+            type="button"
+            role="tab"
+            id={`right-panel-tab-${tab}`}
+            aria-selected={isActive}
+            aria-controls={TAB_PANEL_ID}
+            tabIndex={isActive ? 0 : -1}
+            className={styles.tab[isActive ? "active" : "idle"]}
+            onClick={() => onChangeTab(tab)}
+          >
+            {labels[tab]}
+            {tab === "components" && componentCount > 0 ? (
+              <span className={styles.tabCount}>{componentCount}</span>
             ) : null}
-          </>
-        )}
-      </div>
-    </>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -411,7 +514,10 @@ export function RightPanel({
   showPanel,
   onClose,
   projectPanel,
+  activeTab,
+  onChangeTab,
   propertiesPanel,
+  componentsPanel,
 }: RightPanelProps) {
   const containerClass = `${styles.rightColumn} ${
     isCompact ? `${styles.drawer} ${styles.drawerRight} ${showPanel ? styles.drawerOpen : ""}` : ""
@@ -434,7 +540,24 @@ export function RightPanel({
         ) : null}
         <ProjectPanel {...projectPanel} />
       </div>
-      <PropertiesPanel {...propertiesPanel} />
+      <div className={styles.card}>
+        <RightPanelTabs
+          t={projectPanel.t}
+          activeTab={activeTab}
+          componentCount={componentsPanel.elements.length}
+          onChangeTab={onChangeTab}
+        />
+        <div
+          role="tabpanel"
+          id={TAB_PANEL_ID}
+          aria-labelledby={`right-panel-tab-${activeTab}`}
+          className={styles.tabPanel}
+        >
+          {activeTab === "display" ? <DisplayTab {...propertiesPanel} /> : null}
+          {activeTab === "properties" ? <PropertiesTab {...propertiesPanel} /> : null}
+          {activeTab === "components" ? <ComponentList {...componentsPanel} /> : null}
+        </div>
+      </div>
     </aside>
   );
 }
