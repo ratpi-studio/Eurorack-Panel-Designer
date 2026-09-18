@@ -3,6 +3,7 @@ import React from "react";
 import * as designerStyles from "@components/PanelDesigner/PanelDesigner.css";
 import { useI18n } from "@i18n/I18nContext";
 import { collectTextFontIds, hasDesignElements } from "@lib/designLayer";
+import { getVisibleElements, withoutHiddenElements } from "@lib/elementVisibility";
 import { reportError } from "@lib/monitoring";
 import {
   OrderRequestError,
@@ -65,6 +66,8 @@ function describeIssue(issue: OrderIssue, copy: OrderCopy): string {
       return copy.issueSameFilament;
     case "textPrint":
       return copy.issueTextPrint(issue.count);
+    case "hiddenElements":
+      return copy.issueHiddenElements(issue.count);
   }
 }
 
@@ -124,7 +127,7 @@ export function OrderDialog({ model, onClose }: OrderDialogProps) {
   // The preview shows the chosen filaments instead of the editor colors.
   const previewModel = React.useMemo(
     () => ({
-      ...model,
+      ...withoutHiddenElements(model),
       panelColor: filamentHex(filaments.panel),
       designColor: filamentHex(filaments.details),
     }),
@@ -210,7 +213,7 @@ export function OrderDialog({ model, onClose }: OrderDialogProps) {
               copy={copy}
               onChange={(panel) => setFilaments((previous) => ({ ...previous, panel }))}
             />
-            {hasDesignElements(model.elements) ? (
+            {hasDesignElements(getVisibleElements(model.elements)) ? (
               <FilamentPicker
                 name="order-details-filament"
                 label={copy.detailsFilamentLabel}

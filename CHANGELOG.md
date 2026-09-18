@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.0 - 2026-09-18
+
+- The right panel now has three tabs under the project controls: Display, Properties, and Components. Selecting something on the canvas opens Properties, and the open tab is remembered.
+- The new Components tab lists every placed element. Click to select (Shift-click to add), double-click a name to rename it, and hide, lock, or delete elements from the list. Hidden elements stay in the project but are left out of the canvas, the 3D view, the exports, and orders, and the order dialog tells you about them. Locked elements can no longer be picked or moved on the canvas.
+- The properties of the selected element now show its name, as in the Components tab, and its type in plain words.
+
 ## 0.10.1 - 2026-09-18
 
 - Fixed the app not starting since 0.10.0: the page stayed blank, with the error "t is not a function" in the console.

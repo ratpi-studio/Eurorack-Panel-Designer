@@ -1,6 +1,7 @@
 import { changelogEntries } from "@lib/changelog";
 import { hasDesignElements } from "@lib/designLayer";
 import { computeElementMountingHoles } from "@lib/elementMountingHoles";
+import { getVisibleElements, isElementHidden, withoutHiddenElements } from "@lib/elementVisibility";
 import { generateMountingHoles } from "@lib/mountingHoles";
 import { ORDER_MAX_WIDTH_HP, isOrderableWidth, type FilamentId } from "@lib/orderCatalog";
 import {
@@ -31,7 +32,8 @@ export interface OrderRecord {
 export type OrderIssue =
   | { kind: "tooWide"; widthHp: number; maxWidthHp: number }
   | { kind: "sameFilament" }
-  | { kind: "textPrint"; count: number };
+  | { kind: "textPrint"; count: number }
+  | { kind: "hiddenElements"; count: number };
 
 /** Failed order request, with the HTTP status (0 when the request did not reach the server). */
 export class OrderRequestError extends Error {
@@ -71,7 +73,9 @@ export function getAppInfo(): OrderRecord["app"] {
   };
 }
 
-/** Panel mounting holes plus the ones around elements, as the editor exports them. */
+/**
+ * Panel mounting holes plus the ones around the elements that print, as the editor exports them.
+ */
 export function computeOrderMountingHoles(model: PanelModel): MountingHole[] {
   const panelHoles = generateMountingHoles({
     widthHp: model.dimensions.widthHp,
@@ -79,12 +83,15 @@ export function computeOrderMountingHoles(model: PanelModel): MountingHole[] {
     heightMm: model.dimensions.heightMm,
     config: model.mountingHoleConfig,
   });
-  return [...panelHoles, ...computeElementMountingHoles(model.elements, model.elementHoleConfig)];
+  return [
+    ...panelHoles,
+    ...computeElementMountingHoles(getVisibleElements(model.elements), model.elementHoleConfig),
+  ];
 }
 
 /** Texts that are likely to print badly: too small, too thin, or with characters left out. */
-function countHardToPrintTexts(model: PanelModel): number {
-  return model.elements.filter(isLabelElement).filter((element) => {
+function countHardToPrintTexts(elements: PanelModel["elements"]): number {
+  return elements.filter(isLabelElement).filter((element) => {
     const printability = assessTextPrintability(element.properties);
     return (
       printability.tooSmall || printability.thinStrokes || printability.missingCharacters.length > 0
@@ -93,11 +100,12 @@ function countHardToPrintTexts(model: PanelModel): number {
 }
 
 /**
- * What stops the design from being ordered (`tooWide`), or deserves a second look. Characters
- * missing from a font are only known once the font has loaded.
+ * What stops the design from being ordered (`tooWide`), or deserves a second look. Hidden elements
+ * are not printed. Characters missing from a font are only known once the font has loaded.
  */
 export function listOrderIssues(model: PanelModel, filaments: OrderFilaments): OrderIssue[] {
   const issues: OrderIssue[] = [];
+  const printedElements = getVisibleElements(model.elements);
   if (!isOrderableWidth(model.dimensions.widthHp)) {
     issues.push({
       kind: "tooWide",
@@ -105,12 +113,16 @@ export function listOrderIssues(model: PanelModel, filaments: OrderFilaments): O
       maxWidthHp: ORDER_MAX_WIDTH_HP,
     });
   }
-  if (filaments.panel === filaments.details && hasDesignElements(model.elements)) {
+  if (filaments.panel === filaments.details && hasDesignElements(printedElements)) {
     issues.push({ kind: "sameFilament" });
   }
-  const hardToPrintTexts = countHardToPrintTexts(model);
+  const hardToPrintTexts = countHardToPrintTexts(printedElements);
   if (hardToPrintTexts > 0) {
     issues.push({ kind: "textPrint", count: hardToPrintTexts });
+  }
+  const hiddenElements = model.elements.filter(isElementHidden).length;
+  if (hiddenElements > 0) {
+    issues.push({ kind: "hiddenElements", count: hiddenElements });
   }
   return issues;
 }
@@ -124,9 +136,12 @@ async function readErrorMessage(response: Response): Promise<string> {
   return text || `Order request failed (${response.status}).`;
 }
 
-/** Stores the design for an order and returns its code, e.g. "EPD-7K3Q-9XMB". */
+/**
+ * Stores the design for an order, without its hidden elements, and returns its code, e.g.
+ * "EPD-7K3Q-9XMB".
+ */
 export async function createOrder(model: PanelModel, filaments: OrderFilaments): Promise<string> {
-  const design = JSON.parse(serializePanelModel(model)) as SerializedPanel;
+  const design = JSON.parse(serializePanelModel(withoutHiddenElements(model))) as SerializedPanel;
   let response: Response;
   try {
     response = await fetch("/api/order", {

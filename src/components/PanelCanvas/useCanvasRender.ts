@@ -14,6 +14,7 @@ import type { ReferenceImage } from "@lib/referenceImage";
 import { themeValues } from "@styles/theme.css";
 import { type CanvasTransform } from "@lib/canvas/transform";
 import { collectTextFontIds } from "@lib/designLayer";
+import { getVisibleElements } from "@lib/elementVisibility";
 import { buildSvgArtworkDataUrl, isSvgArtworkElement } from "@lib/svgArtwork";
 import { loadTextFonts } from "@lib/text/textFontLoader";
 import type { TextFontId } from "@lib/text/textFonts";
@@ -58,12 +59,14 @@ export function useCanvasRender({
   referenceImageSelected,
   placementType,
 }: CanvasRenderOptions) {
+  // Hidden elements are not drawn, nor used to clip the design or to measure distances.
+  const visibleElements = React.useMemo(() => getVisibleElements(model.elements), [model.elements]);
   const [svgArtworkImages, setSvgArtworkImages] = React.useState<
     Record<string, { key: string; image: HTMLImageElement }>
   >({});
 
   React.useEffect(() => {
-    const artworkEntries = model.elements.filter(isSvgArtworkElement).map((element) => ({
+    const artworkEntries = visibleElements.filter(isSvgArtworkElement).map((element) => ({
       id: element.id,
       key: JSON.stringify({
         svgText: element.properties.svgText,
@@ -117,7 +120,7 @@ export function useCanvasRender({
     return () => {
       cleanups.forEach((cleanup) => cleanup());
     };
-  }, [model.elements, model.designColor, svgArtworkImages]);
+  }, [visibleElements, model.designColor, svgArtworkImages]);
 
   const svgArtworkImageMap = React.useMemo(
     () =>
@@ -129,16 +132,16 @@ export function useCanvasRender({
     model.dimensions.widthMm,
     model.dimensions.heightMm,
     mountingHoles,
-    model.elements,
+    visibleElements,
   );
 
   // Texts are drawn from their font's outlines, which the render loop picks up once loaded.
   const textFontIds = React.useMemo(
     () =>
-      collectTextFontIds(ghostElement ? [...model.elements, ghostElement] : model.elements).join(
+      collectTextFontIds(ghostElement ? [...visibleElements, ghostElement] : visibleElements).join(
         " ",
       ),
-    [ghostElement, model.elements],
+    [ghostElement, visibleElements],
   );
   React.useEffect(() => {
     if (textFontIds) {
@@ -201,7 +204,7 @@ export function useCanvasRender({
           x: model.dimensions.widthMm,
           y: model.dimensions.heightMm,
         },
-        elements: model.elements,
+        elements: visibleElements,
         referenceImage:
           referenceImage && referenceImageElement
             ? {
@@ -246,7 +249,7 @@ export function useCanvasRender({
   }, [
     canvasRef,
     transform,
-    model.elements,
+    visibleElements,
     mountingHoles,
     elementMountingHoles,
     displayOptions.gridSizeMm,

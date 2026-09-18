@@ -26,6 +26,8 @@ import * as styles from "./ElementProperties.css";
 
 interface ElementPropertiesProps {
   element: PanelElement | null;
+  /** Name of the element in the components list; null for an element being placed. */
+  name?: string | null;
   selectionCount: number;
   /** Color of every text and SVG pattern, shared by the whole panel. */
   designColor: string;
@@ -46,6 +48,7 @@ function sanitizeNumber(value: string): number | null {
 
 export function ElementProperties({
   element,
+  name = null,
   selectionCount,
   designColor,
   designRelief,
@@ -276,8 +279,10 @@ export function ElementProperties({
     <div className={styles.root}>
       <div className={styles.header}>
         <div>
-          <div className={styles.title}>{t.properties.title}</div>
-          <div className={styles.subtitle}>{element.type}</div>
+          <div className={styles.title}>{name ?? t.properties.title}</div>
+          <div className={styles.subtitle}>
+            {t.palette.items[element.type]?.label ?? element.type}
+          </div>
         </div>
         <div className={styles.actions}>
           {!isDraft ? (

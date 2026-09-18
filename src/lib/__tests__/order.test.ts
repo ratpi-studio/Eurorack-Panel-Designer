@@ -100,6 +100,34 @@ describe("order helpers", () => {
     expect(listOrderIssues(createPanel(8, [jack()]), sameColors)).toEqual([]);
   });
 
+  it("leaves hidden elements out of orders, and says so", async () => {
+    const hiddenJack = { ...jack(), mountingHolesEnabled: true, hidden: true };
+    const model = createPanel(12, [hiddenJack, label()]);
+    model.elementHoleConfig = { ...model.elementHoleConfig, enabled: true, count: 2 };
+    const panelHoles = generateMountingHoles({
+      widthHp: 12,
+      widthMm: model.dimensions.widthMm,
+      heightMm: 128.5,
+      config: model.mountingHoleConfig,
+    });
+
+    expect(listOrderIssues(model, { panel: "black", details: "white" })).toEqual([
+      { kind: "hiddenElements", count: 1 },
+    ]);
+    // The screw holes around the hidden jack are not drilled either.
+    expect(computeOrderMountingHoles(model)).toHaveLength(panelHoles.length);
+
+    const fetchMock = vi.fn<typeof fetch>(async () => jsonResponse({ code: "EPD-7K3Q-9XMB" }, 201));
+    vi.stubGlobal("fetch", fetchMock);
+    await createOrder(model, { panel: "black", details: "white" });
+    const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string) as {
+      design: { model: PanelModel };
+    };
+    expect(body.design.model.elements.map((element) => element.type)).toEqual([
+      PanelElementType.Label,
+    ]);
+  });
+
   it("warns about texts that may not print well", () => {
     const tiny = label();
     if (tiny.type === PanelElementType.Label) {

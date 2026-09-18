@@ -43,6 +43,7 @@ Prefer Vite+ commands when working in the repository:
 - `src/components/`
   - React UI and orchestration.
   - `PanelDesigner` is the main shell.
+  - `RightPanel` keeps the project controls on top and three tabs below: Display, Properties, and Components (`ComponentList`). The open tab is a preference (`useRightPanelTab`); canvas selections open Properties unless Components is open.
   - `PanelCanvas` and its hooks handle canvas interaction and rendering orchestration.
 - `src/store/`
   - `panelStore.ts` is the main persisted Zustand store.
@@ -86,6 +87,7 @@ Prefer Vite+ commands when working in the repository:
 
 - `PanelModel` and related types in `src/lib/panelTypes.ts` are the source of truth for the editor data model.
 - The canvas must remain a projection of store state, not an independent source of truth.
+- Elements can be `hidden` or `locked`. Both stay in the model and in saves. Hidden elements are left out of everything that draws or builds the panel (canvas, 3D view, PNG/SVG/KiCad/STL exports, orders): go through `getVisibleElements` / `withoutHiddenElements` (`src/lib/elementVisibility.ts`) in any new output. Locked elements are only left out of canvas picking, moving, and resizing (`isElementInteractive`).
 - When changing the panel schema or element model, update all affected layers together:
   - `src/lib/panelTypes.ts`
   - normalization logic

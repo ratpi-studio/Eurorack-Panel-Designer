@@ -13,13 +13,6 @@ export const root = style({
   boxShadow: "0 12px 30px rgba(2, 6, 23, 0.35)",
 });
 
-export const title = style({
-  fontSize: "14px",
-  letterSpacing: "0.04em",
-  textTransform: "uppercase",
-  color: vars.color.textSecondary,
-});
-
 export const options = style({
   display: "flex",
   gap: vars.spacing.sm,

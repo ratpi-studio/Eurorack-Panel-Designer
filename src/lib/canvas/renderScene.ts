@@ -8,6 +8,7 @@ import {
 } from "@lib/panelTypes";
 import { type ClearanceLines } from "@lib/clearance";
 import { collectKnockoutRings } from "@lib/designLayer";
+import { isElementLocked } from "@lib/elementVisibility";
 import { createPanelSurfacePath2D } from "@lib/panelSurface";
 import { isSvgArtworkElement } from "@lib/svgArtwork";
 import { getLabelTextLayout, type LabelTextLayout } from "@lib/text/textLayout";
@@ -903,7 +904,10 @@ function drawSingleSelection(
       fontFamily,
     );
   }
-  drawTransformHandles(context, layout, palette);
+  // A locked element cannot be resized on the canvas: no handles to suggest otherwise.
+  if (!isElementLocked(element)) {
+    drawTransformHandles(context, layout, palette);
+  }
   context.restore();
 }
 

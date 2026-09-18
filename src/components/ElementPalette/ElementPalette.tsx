@@ -1,5 +1,6 @@
 import React from "react";
 
+import { ElementTypeIcon } from "@components/ElementTypeIcon/ElementTypeIcon";
 import { useI18n } from "@i18n/I18nContext";
 import { PanelElementType } from "@lib/panelTypes";
 
@@ -12,7 +13,6 @@ interface ElementPaletteProps {
 }
 
 const ICON_SIZE = 36;
-const SVG_TOOLBOX_ICON_URL = `${import.meta.env.BASE_URL}images/svg.png`;
 
 export function ElementPalette({ activeType, onSelect, onOpenSvgArtwork }: ElementPaletteProps) {
   const t = useI18n();
@@ -102,7 +102,7 @@ export function ElementPalette({ activeType, onSelect, onOpenSvgArtwork }: Eleme
             >
               <div className={styles.cardContent}>
                 <div className={styles.icon} aria-hidden>
-                  {renderIcon(item.type, item.color)}
+                  <ElementTypeIcon type={item.type} color={item.color} size={ICON_SIZE} />
                 </div>
                 <div className={styles.cardTitle}>{item.label}</div>
               </div>
@@ -112,100 +112,4 @@ export function ElementPalette({ activeType, onSelect, onOpenSvgArtwork }: Eleme
       </div>
     </div>
   );
-}
-
-function renderIcon(type: PanelElementType, color: string): React.ReactNode {
-  const commonProps = {
-    width: ICON_SIZE,
-    height: ICON_SIZE,
-    viewBox: "0 0 36 36",
-    role: "presentation",
-    focusable: false,
-  } as const;
-
-  switch (type) {
-    case PanelElementType.Jack:
-    case PanelElementType.Potentiometer:
-    case PanelElementType.Led:
-      return (
-        <svg {...commonProps}>
-          <circle cx="18" cy="18" r="9" stroke={color} strokeWidth="2" fill="none" />
-        </svg>
-      );
-    case PanelElementType.Switch:
-    case PanelElementType.Rectangle:
-      return (
-        <svg {...commonProps}>
-          <rect
-            x="9"
-            y="6"
-            width="18"
-            height="24"
-            stroke={color}
-            strokeWidth="2"
-            fill="none"
-            rx="2"
-          />
-        </svg>
-      );
-    case PanelElementType.Oval:
-      return (
-        <svg {...commonProps}>
-          <ellipse cx="18" cy="18" rx="12" ry="7" stroke={color} strokeWidth="2" fill="none" />
-        </svg>
-      );
-    case PanelElementType.Slot:
-      return (
-        <svg {...commonProps}>
-          <rect
-            x="8"
-            y="10"
-            width="20"
-            height="16"
-            stroke={color}
-            strokeWidth="2"
-            fill="none"
-            rx="8"
-            ry="8"
-          />
-        </svg>
-      );
-    case PanelElementType.Triangle:
-      return (
-        <svg {...commonProps}>
-          <polygon points="18,6 28,26 8,26" stroke={color} strokeWidth="2" fill="none" />
-        </svg>
-      );
-    case PanelElementType.Label:
-      return (
-        <svg {...commonProps}>
-          <line x1="8" y1="14" x2="28" y2="14" stroke={color} strokeWidth="2" />
-          <line x1="8" y1="22" x2="24" y2="22" stroke={color} strokeWidth="2" />
-        </svg>
-      );
-    case PanelElementType.Insert:
-      return (
-        <svg {...commonProps}>
-          <circle cx="18" cy="18" r="11" stroke={color} strokeWidth="2" fill="none" />
-          <circle cx="18" cy="18" r="5" stroke={color} strokeWidth="2" fill="none" />
-        </svg>
-      );
-    case PanelElementType.SvgArtwork:
-      return (
-        <img
-          className={styles.svgToolIcon}
-          src={SVG_TOOLBOX_ICON_URL}
-          alt=""
-          width={ICON_SIZE}
-          height={ICON_SIZE}
-          draggable={false}
-        />
-      );
-    default:
-      return (
-        <svg {...commonProps}>
-          <circle cx="18" cy="18" r="9" stroke={color} strokeWidth="2" fill="none" />
-        </svg>
-      );
-  }
 }

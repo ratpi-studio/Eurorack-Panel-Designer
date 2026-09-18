@@ -1,6 +1,7 @@
 import React from "react";
 
 import { findElementAtPoint, getElementBounds } from "@lib/canvas/elementGeometry";
+import { isElementInteractive } from "@lib/elementVisibility";
 import {
   findElementHandleAtPoint,
   getElementFrameRotationDeg,
@@ -334,11 +335,16 @@ export function useCanvasPointer({
     () => new Map(model.elements.map((element) => [element.id, element])),
     [model.elements],
   );
-  const singleSelectedElement = React.useMemo(
-    () =>
-      selectedElementIds.length === 1 ? (elementMap.get(selectedElementIds[0]) ?? null) : null,
-    [elementMap, selectedElementIds],
+  // Hidden and locked elements cannot be picked, moved or resized on the canvas.
+  const interactiveElements = React.useMemo(
+    () => model.elements.filter(isElementInteractive),
+    [model.elements],
   );
+  const singleSelectedElement = React.useMemo(() => {
+    const element =
+      selectedElementIds.length === 1 ? (elementMap.get(selectedElementIds[0]) ?? null) : null;
+    return element && isElementInteractive(element) ? element : null;
+  }, [elementMap, selectedElementIds]);
   const [referenceImageElement, setReferenceImageElement] = React.useState<HTMLImageElement | null>(
     null,
   );
@@ -559,7 +565,7 @@ export function useCanvasPointer({
         return;
       }
 
-      const element = findElementAtPoint(pointPanel, model.elements);
+      const element = findElementAtPoint(pointPanel, interactiveElements);
       if (element) {
         setIsHoveringInteractive(true);
         setCanvasCursor("pointer");
@@ -598,7 +604,7 @@ export function useCanvasPointer({
       displayOptions.showMountingHoles,
       findReferenceControlAtPoint,
       findSelectedElementControlAtPoint,
-      model.elements,
+      interactiveElements,
       mountingHoles,
       referenceImage,
       referenceImageSelected,
@@ -745,7 +751,7 @@ export function useCanvasPointer({
       }
     }
 
-    const element = findElementAtPoint(pointPanel, model.elements);
+    const element = findElementAtPoint(pointPanel, interactiveElements);
     if (element) {
       onClearMountingHoleSelection();
       if (additiveModifier) {
@@ -756,7 +762,10 @@ export function useCanvasPointer({
       }
 
       const moveCandidates = selectedElementSet.has(element.id)
-        ? selectedElementIds.filter((id) => elementMap.has(id))
+        ? selectedElementIds.filter((id) => {
+            const selected = elementMap.get(id);
+            return selected !== undefined && isElementInteractive(selected);
+          })
         : [element.id];
 
       if (!selectedElementSet.has(element.id)) {
@@ -1078,7 +1087,7 @@ export function useCanvasPointer({
         minY: Math.min(selectionRect.start.y, selectionRect.end.y),
         maxY: Math.max(selectionRect.start.y, selectionRect.end.y),
       };
-      const selectedIds = model.elements
+      const selectedIds = interactiveElements
         .filter((element) => {
           const elementBounds = getElementBounds(element);
           return !(
@@ -1113,7 +1122,7 @@ export function useCanvasPointer({
         };
         const pointPanel = screenPointToPanel(pointPx, transform);
         if (pointPanel) {
-          const element = findElementAtPoint(pointPanel, model.elements);
+          const element = findElementAtPoint(pointPanel, interactiveElements);
           if (element) {
             onSelectElement(element.id);
             onClearMountingHoleSelection();

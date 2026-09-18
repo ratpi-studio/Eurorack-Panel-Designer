@@ -2,8 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 
 import {
   getPreferredExportFormat,
+  getPreferredRightPanelTab,
   getPreferredViewMode,
   setPreferredExportFormat,
+  setPreferredRightPanelTab,
   setPreferredViewMode,
 } from "../preferences";
 
@@ -64,6 +66,19 @@ describe("preferences", () => {
       preferredExportFormat: "stl",
       viewMode: "split",
     });
+  });
+
+  it("remembers the open tab of the right panel", () => {
+    expect(getPreferredRightPanelTab()).toBeNull();
+
+    setPreferredViewMode("3d");
+    setPreferredRightPanelTab("components");
+
+    expect(getPreferredRightPanelTab()).toBe("components");
+    expect(getPreferredViewMode()).toBe("3d");
+
+    storage.setItem(PREFERENCES_KEY, JSON.stringify({ rightPanelTab: "layers" }));
+    expect(getPreferredRightPanelTab()).toBeNull();
   });
 
   it("ignores an unknown value without dropping the other preferences", () => {
