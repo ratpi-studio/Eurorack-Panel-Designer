@@ -26,6 +26,7 @@ import {
   saveProject,
   type StoredProject,
 } from "@lib/storage";
+import { reportError } from "@lib/monitoring";
 import { buildOrderPayload, submitOrder } from "@lib/orderEtsy";
 import { deserializePanelModel, serializePanelModel } from "@lib/serialization";
 import { createPanelDimensions } from "@lib/units";
@@ -237,7 +238,8 @@ export function useProjects({
         link.click();
         setStatus(t.projects.messages.pngSuccess, "success");
       })
-      .catch(() => {
+      .catch((error) => {
+        reportError(error, "export-png");
         setStatus(t.projects.messages.pngError, "error");
       });
   }, [renderPanelPng, projectName, setStatus, t.projects.messages]);
@@ -319,6 +321,7 @@ export function useProjects({
         })
         .catch((error) => {
           console.error("Failed to export STL", error);
+          reportError(error, "export-stl");
           setStatus(t.projects.messages.stlError, "error");
         });
     },

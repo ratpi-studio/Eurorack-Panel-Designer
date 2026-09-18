@@ -38,6 +38,8 @@ jobs:
         run: vp build
         env:
           VITE_BASE_PATH: /Eurorack-Panel-Designer/
+          # Only the upstream repository reports to Sentry; forks publishing Pages stay silent.
+          SENTRY_ENVIRONMENT: ${{ github.repository == 'ratpi-studio/Eurorack-Panel-Designer' && 'github-pages' || '' }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

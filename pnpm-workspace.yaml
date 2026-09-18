@@ -1,7 +1,6 @@
 onlyBuiltDependencies:
   - "@sentry/cli"
   - esbuild
-  - simple-git-hooks
 overrides:
   vite@*: "catalog:"
 packageExtensions:

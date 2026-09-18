@@ -4,6 +4,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { STLExporter } from "three/examples/jsm/exporters/STLExporter.js";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 
+import { reportDegradation } from "@lib/monitoring";
 import {
   PanelElementType,
   type InsertElementProperties,
@@ -395,7 +396,8 @@ function strokeBufferToPolygons(
   }
   try {
     return polygonClipping.union(triangles as polygonClipping.MultiPolygon) as SurfaceMultiPolygon;
-  } catch {
+  } catch (error) {
+    reportDegradation(error, "stl-geometry", "surface-union");
     return triangles;
   }
 }
@@ -429,7 +431,8 @@ function strokePathToPolygons(
         6,
         0,
       );
-    } catch {
+    } catch (error) {
+      reportDegradation(error, "stl-geometry", "svg-stroke");
       buffer = null;
     }
     if (!buffer) {
@@ -670,7 +673,9 @@ function multiPolygonToExtrusions({
       artwork as polygonClipping.MultiPolygon,
       panelSurface as polygonClipping.MultiPolygon,
     ) as SurfaceMultiPolygon;
-  } catch {
+  } catch (error) {
+    // The artwork is dropped from the model: report it, users would not notice otherwise.
+    reportDegradation(error, "stl-geometry", "artwork-clip");
     return [];
   }
 
