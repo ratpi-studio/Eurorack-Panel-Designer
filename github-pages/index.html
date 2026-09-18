@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Eurorack Panel Designer has moved</title>
+    <link rel="canonical" href="https://eurorack-panel-designer-oss8.vercel.app/" />
+    <style>
+      body {
+        margin: 0;
+        padding: 32px 16px;
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+        background: #020617;
+        color: #e2e8f0;
+      }
+      main {
+        max-width: 560px;
+        margin: 0 auto;
+      }
+      a {
+        color: #38bdf8;
+      }
+    </style>
+    <script>
+      // The app moved to Vercel. Designs and projects live in this origin's localStorage, so they
+      // are handed over in the URL fragment (never sent to a server) and imported by the app in
+      // src/lib/githubPagesMigration.ts. They are sent on every visit (the import skips what it
+      // already has), so a visit during a deployment is never lost. Keep the keys in sync.
+      (function () {
+        var target = "https://eurorack-panel-designer-oss8.vercel.app";
+        var basePath = "/Eurorack-Panel-Designer";
+        var keys = [
+          "panel-designer-store",
+          "eurorack-panel-projects",
+          "eurorack-panel-preferences",
+        ];
+        // Well below the URL length browsers accept.
+        var maxFragmentChars = 1000000;
+
+        var path =
+          location.pathname.indexOf(basePath) === 0
+            ? location.pathname.slice(basePath.length)
+            : location.pathname;
+        var url = target + (path || "/") + location.search;
+
+        function fragmentFor(data) {
+          return "#github-pages-data=" + encodeURIComponent(JSON.stringify(data));
+        }
+
+        function readData() {
+          var data = null;
+          for (var i = 0; i < keys.length; i++) {
+            var value = localStorage.getItem(keys[i]);
+            if (value) {
+              data = data || {};
+              data[keys[i]] = value;
+            }
+          }
+          return data;
+        }
+
+        function withoutReferenceImage(data) {
+          // Reference images can weigh megabytes: move the design without it.
+          var store = JSON.parse(data["panel-designer-store"]);
+          if (store && store.state) {
+            store.state.referenceImage = null;
+            store.state.referenceImageSelected = false;
+          }
+          data["panel-designer-store"] = JSON.stringify(store);
+          return data;
+        }
+
+        // Only when saved projects are too large for the URL: offer them as files the new site can
+        // import with its "Import JSON" button, then move the rest.
+        function offerDownloads(data) {
+          var projects = [];
+          try {
+            projects = JSON.parse(data["eurorack-panel-projects"] || "[]");
+          } catch (error) {
+            projects = [];
+          }
+          var rest = {};
+          for (var key in data) {
+            if (key !== "eurorack-panel-projects") {
+              rest[key] = data[key];
+            }
+          }
+          var restFragment = fragmentFor(rest);
+          var continueUrl = url + (restFragment.length <= maxFragmentChars ? restFragment : "");
+
+          document.addEventListener("DOMContentLoaded", function () {
+            var content = document.getElementById("content");
+            content.textContent = "";
+            var intro = document.createElement("p");
+            intro.textContent =
+              "Eurorack Panel Designer has moved. Your saved projects are too large to be moved " +
+              "automatically: download each one, then load it on the new site with the Import JSON button.";
+            content.appendChild(intro);
+            var list = document.createElement("ul");
+            for (var i = 0; i < projects.length; i++) {
+              var project = projects[i];
+              if (!project || !project.payload) {
+                continue;
+              }
+              var name = String(project.name || "Untitled project");
+              var link = document.createElement("a");
+              link.href = URL.createObjectURL(
+                new Blob([JSON.stringify(project.payload)], { type: "application/json" }),
+              );
+              link.download = name + ".json";
+              link.textContent = name;
+              var item = document.createElement("li");
+              item.appendChild(link);
+              list.appendChild(item);
+            }
+            content.appendChild(list);
+            var next = document.createElement("a");
+            next.href = continueUrl;
+            next.textContent = "Continue to the new site";
+            content.appendChild(next);
+          });
+        }
+
+        var data = null;
+        try {
+          data = readData();
+        } catch (error) {
+          data = null;
+        }
+        if (!data) {
+          location.replace(url + location.hash);
+          return;
+        }
+        try {
+          var fragment = fragmentFor(data);
+          if (fragment.length > maxFragmentChars && data["panel-designer-store"]) {
+            fragment = fragmentFor(withoutReferenceImage(data));
+          }
+          if (fragment.length > maxFragmentChars) {
+            offerDownloads(data);
+            return;
+          }
+          location.replace(url + fragment);
+        } catch (error) {
+          location.replace(url);
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <main id="content">
+      <p>
+        Eurorack Panel Designer has moved to
+        <a href="https://eurorack-panel-designer-oss8.vercel.app/"
+          >eurorack-panel-designer-oss8.vercel.app</a
+        >.
+      </p>
+    </main>
+  </body>
+</html>

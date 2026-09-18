@@ -25,21 +25,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup Vite+
-        uses: voidzero-dev/setup-vp@v1.20.0
-        with:
-          node-version: "24"
-          cache: true
-
-      - name: Install dependencies
-        run: vp install
-
-      - name: Build
-        run: vp build
-        env:
-          VITE_BASE_PATH: /Eurorack-Panel-Designer/
-          # Only the upstream repository reports to Sentry; forks publishing Pages stay silent.
-          SENTRY_ENVIRONMENT: ${{ github.repository == 'ratpi-studio/Eurorack-Panel-Designer' && 'github-pages' || '' }}
+      # The app lives on Vercel. Pages only serves a page that redirects there and hands over the
+      # designs saved in this origin's localStorage. 404.html covers old deep links.
+      - name: Prepare redirect site
+        run: |
+          mkdir -p _site
+          cp github-pages/index.html _site/index.html
+          cp github-pages/index.html _site/404.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -47,7 +39,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: ./_site
 
       - name: Deploy to GitHub Pages
         id: deployment

@@ -5,6 +5,7 @@ export type MonitoredFlow =
   | "autosave"
   | "export-png"
   | "export-stl"
+  | "github-pages-import"
   | "save-project"
   | "stl-geometry";
 

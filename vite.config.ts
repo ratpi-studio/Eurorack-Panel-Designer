@@ -105,7 +105,7 @@ const env = loadEnv(activeMode, process.cwd(), "");
 const basePath = env.VITE_BASE_PATH || "/";
 
 // Sentry only reports from official deployments: Vercel builds of this repository, or builds that
-// set SENTRY_ENVIRONMENT (GitHub Pages workflow). Local and fork builds leave it disabled.
+// set SENTRY_ENVIRONMENT explicitly. Local and fork builds leave it disabled.
 const vercelTargetEnv = process.env.VERCEL_TARGET_ENV ?? process.env.VERCEL_ENV;
 const isVercelFork =
   Boolean(process.env.VERCEL_GIT_REPO_OWNER) &&
