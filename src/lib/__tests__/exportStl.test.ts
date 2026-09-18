@@ -20,6 +20,7 @@ function createEmptyPanel(): PanelModel {
       showMountingHoles: true,
       snapToGrid: true,
       gridSizeMm: 5,
+      showDimensions: true,
     },
     mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG },
     elementHoleConfig: { ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG },

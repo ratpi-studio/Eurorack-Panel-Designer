@@ -193,14 +193,14 @@ export function useCanvasRender({
         showMountingHoles: displayOptions.showMountingHoles,
         gridSizeMm: displayOptions.gridSizeMm,
         palette: derived.palette,
-        elementFillColors: derived.elementFillColors,
-        elementStrokeColor: derived.elementStrokeColor,
+        elementStyles: derived.elementStyles,
         fontFamily: themeValues.font.body,
         selectionAnimation,
         ghostElement,
         svgArtworkImages: svgArtworkImageMap,
         clearanceLines,
         showGhostDistances: Boolean(ghostElement && placementType),
+        showDimensions: model.options.showDimensions,
       });
 
       if (typeof window !== "undefined") {
@@ -239,6 +239,7 @@ export function useCanvasRender({
     model.dimensions.heightMm,
     model.panelColor,
     model.designColor,
+    model.options.showDimensions,
     placementType,
     svgArtworkImageMap,
   ]);

@@ -123,6 +123,7 @@ export interface PanelOptions {
   showMountingHoles: boolean;
   snapToGrid: boolean;
   gridSizeMm: number;
+  showDimensions: boolean;
 }
 
 export interface ElementMountingHoleConfig {
@@ -152,8 +153,15 @@ export interface PanelModel {
 
 export type PanelModelInput = Omit<
   PanelModel,
-  "mountingHoleConfig" | "elementHoleConfig" | "clearance" | "panelColor" | "designColor"
+  | "options"
+  | "mountingHoleConfig"
+  | "elementHoleConfig"
+  | "clearance"
+  | "panelColor"
+  | "designColor"
 > & {
+  // Saves made before the dimensions overlay existed have no `showDimensions`.
+  options: Omit<PanelOptions, "showDimensions"> & Partial<Pick<PanelOptions, "showDimensions">>;
   mountingHoleConfig?: MountingHoleConfig;
   elementHoleConfig?: ElementMountingHoleConfig;
   clearance?: ClearanceConfig;
@@ -177,6 +185,10 @@ export function normalizePanelModel(model: PanelModelInput): PanelModel {
     }) ?? [];
   return {
     ...model,
+    options: {
+      ...DEFAULT_PANEL_OPTIONS,
+      ...model.options,
+    },
     mountingHoleConfig: {
       ...DEFAULT_MOUNTING_HOLE_CONFIG,
       ...overrides,
@@ -221,6 +233,7 @@ export const DEFAULT_PANEL_OPTIONS: PanelOptions = {
   showMountingHoles: true,
   snapToGrid: true,
   gridSizeMm: 5,
+  showDimensions: true,
 };
 
 export const DEFAULT_MOUNTING_HOLE_CONFIG: MountingHoleConfig = {

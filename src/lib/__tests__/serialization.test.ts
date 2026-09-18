@@ -6,6 +6,7 @@ import {
   DEFAULT_MOUNTING_HOLE_CONFIG,
   DEFAULT_PANEL_OPTIONS,
   PanelElementType,
+  SERIALIZATION_VERSION,
   type PanelModel,
 } from "../panelTypes";
 import {
@@ -83,7 +84,33 @@ describe("serialization helpers", () => {
     expect(deserializePanelModel(serializePanelModel(model))).toEqual(model);
   });
 
+  it("shows dimensions for saves made before the option existed", () => {
+    const legacyOptions = {
+      showGrid: false,
+      showMountingHoles: true,
+      snapToGrid: true,
+      gridSizeMm: 2,
+    };
+    const payload = JSON.stringify({
+      version: SERIALIZATION_VERSION,
+      model: { ...sampleModel, options: legacyOptions },
+    });
+
+    expect(deserializePanelModel(payload).options).toEqual({
+      ...legacyOptions,
+      showDimensions: true,
+    });
+  });
+
   it("rejects malformed payloads", () => {
+    expect(() =>
+      parseSerializedPanel(
+        JSON.stringify({
+          version: SERIALIZATION_VERSION,
+          model: { ...sampleModel, options: { ...sampleModel.options, showDimensions: "yes" } },
+        }),
+      ),
+    ).toThrow(SerializationError);
     expect(() => parseSerializedPanel("{}")).toThrow(SerializationError);
     expect(() =>
       parseSerializedPanel(

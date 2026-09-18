@@ -84,8 +84,7 @@ export async function buildPanelPngDataUrl(
     showMountingHoles: model.options.showMountingHoles,
     gridSizeMm: model.options.gridSizeMm,
     palette: derived.palette,
-    elementFillColors: derived.elementFillColors,
-    elementStrokeColor: derived.elementStrokeColor,
+    elementStyles: derived.elementStyles,
     fontFamily: themeValues.font.body,
     svgArtworkImages,
   });

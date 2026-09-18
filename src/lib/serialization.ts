@@ -112,17 +112,18 @@ function isPanelModel(value: unknown): value is PanelModel {
   return hasMounting && hasElement && hasClearance;
 }
 
-function isPanelOptions(value: unknown): value is PanelOptions {
+function isPanelOptions(value: unknown): value is PanelModelInput["options"] {
   if (typeof value !== "object" || value === null) {
     return false;
   }
 
-  const options = value as PanelOptions;
+  const options = value as Partial<PanelOptions>;
   return (
     typeof options.showGrid === "boolean" &&
     typeof options.showMountingHoles === "boolean" &&
     typeof options.snapToGrid === "boolean" &&
-    typeof options.gridSizeMm === "number"
+    typeof options.gridSizeMm === "number" &&
+    (options.showDimensions === undefined || typeof options.showDimensions === "boolean")
   );
 }
 

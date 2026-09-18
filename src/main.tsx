@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import * as Sentry from "@sentry/react";
 import { inject } from "@vercel/analytics";
 
+import { enUS } from "@i18n/en_US";
 import { App } from "./App";
 
 import "@styles/globals.css.ts";
@@ -11,9 +12,7 @@ const SENTRY_DSN =
   "https://05489173dd52acef4232f82e99d559a2@o4509397199486976.ingest.de.sentry.io/4510476688359504";
 const release = import.meta.env.VITE_SENTRY_RELEASE;
 
-const ErrorFallback = () => (
-  <div role="alert">Une erreur inattendue est survenue. Veuillez recharger la page.</div>
-);
+const ErrorFallback = () => <div role="alert">{enUS.app.errorFallback}</div>;
 
 async function bootstrap() {
   // Initialize Vercel Web Analytics

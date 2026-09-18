@@ -243,12 +243,18 @@ export function PanelCanvas({
     [canvasSize.y],
   );
 
+  const pointerText = pointerPanelPos
+    ? ` · X ${pointerPanelPos.x.toFixed(1)} mm · Y ${pointerPanelPos.y.toFixed(1)} mm`
+    : "";
   const hudText = `${model.dimensions.widthHp} HP · ${model.dimensions.widthMm.toFixed(
     1,
-  )} x ${model.dimensions.heightMm.toFixed(1)} mm · Zoom ${(zoom * 100).toFixed(0)}%`;
+  )} x ${model.dimensions.heightMm.toFixed(1)} mm · Zoom ${(zoom * 100).toFixed(0)}%${pointerText}`;
 
+  // Browser translation rewraps text nodes in <font> elements, and React crashes if it later
+  // has to remove one. Keep this subtree static: one HUD text node, selection rect always
+  // mounted, translation disabled.
   return (
-    <div ref={containerRef} className={styles.root} style={canvasStyle}>
+    <div ref={containerRef} className={styles.root} style={canvasStyle} translate="no">
       <canvas
         ref={canvasRef}
         className={canvasClassName}
@@ -260,23 +266,21 @@ export function PanelCanvas({
         onPointerLeave={handlePointerLeave}
         onContextMenu={handleContextMenu}
       />
-      {selectionOverlay ? (
-        <div
-          className={styles.selectionRect}
-          style={{
-            left: `${selectionOverlay.left}px`,
-            top: `${selectionOverlay.top}px`,
-            width: `${selectionOverlay.width}px`,
-            height: `${selectionOverlay.height}px`,
-          }}
-        />
-      ) : null}
-      <div className={styles.hud}>
-        {hudText}
-        {pointerPanelPos
-          ? ` · X ${pointerPanelPos.x.toFixed(1)} mm · Y ${pointerPanelPos.y.toFixed(1)} mm`
-          : ""}
-      </div>
+      <div
+        className={styles.selectionRect}
+        hidden={!selectionOverlay}
+        style={
+          selectionOverlay
+            ? {
+                left: `${selectionOverlay.left}px`,
+                top: `${selectionOverlay.top}px`,
+                width: `${selectionOverlay.width}px`,
+                height: `${selectionOverlay.height}px`,
+              }
+            : undefined
+        }
+      />
+      <div className={styles.hud}>{hudText}</div>
     </div>
   );
 }

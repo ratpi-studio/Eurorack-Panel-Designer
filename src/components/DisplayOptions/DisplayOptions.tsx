@@ -75,6 +75,14 @@ export function DisplayOptions({
           />
           <span>{t.display.holes}</span>
         </label>
+        <label className={styles.option}>
+          <input
+            type="checkbox"
+            checked={options.showDimensions}
+            onChange={handleToggle("showDimensions")}
+          />
+          <span>{t.display.dimensions}</span>
+        </label>
       </div>
       <label className={styles.sliderField}>
         <span className={styles.label}>{t.display.gridSpacing}</span>

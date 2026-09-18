@@ -58,6 +58,8 @@ Single-page web app to sketch Eurorack front panels. The canvas mirrors a real 3
 
 - Adjust panel width through either the mm or HP input; the other unit updates instantly and the canvas resizes.
 - Pick an element in the palette, click on the canvas to place it, then drag to reposition. Use the right-hand panel to fine-tune coordinates, rotation, or dimensions.
+- Placed cut-outs are tinted with their palette color and show their measurements (diameter inside round holes, width × height inside other shapes); the selected element gets dimension lines along its sides. Toggle them with **Dimensions** in the Display panel. Exports keep using the panel and design colors.
+- Drag the handles around the selected element to resize it: round holes grow around their center, other shapes keep the opposite side in place, and text scales its font size. Sizes snap to 0.5 mm steps unless `Shift` is held.
 - Keep `Shift` pressed to temporarily disable snapping, `Esc` to cancel placement, `⌘/Ctrl + Z` and `⌘/Ctrl + Shift + Z` for undo/redo.
 - Shift-click elements or drag a marquee on the canvas to build a multi-selection, then drag anywhere on the canvas to move the entire group or press Delete to remove it in one go.
 - Save named projects to the browser, export/import JSON for backups, render the canvas as PNG/SVG, export KiCad Edge.Cuts, or export a clean STL: choose STL in the export dropdown, set thickness in mm, and use the live 3D preview to inspect the mesh before downloading.

@@ -1,0 +1,18 @@
+onlyBuiltDependencies:
+  - "@sentry/cli"
+  - esbuild
+  - simple-git-hooks
+overrides:
+  vite@*: "catalog:"
+packageExtensions:
+  "@vercel/analytics@*":
+    peerDependencies:
+      vite: npm:@voidzero-dev/vite-plus-core@latest
+catalog:
+  vite: npm:@voidzero-dev/vite-plus-core@0.3.3
+  vite-plus: 0.3.3
+peerDependencyRules:
+  allowAny:
+    - vite
+  allowedVersions:
+    vite: "*"
