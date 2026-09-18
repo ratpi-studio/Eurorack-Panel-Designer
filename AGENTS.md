@@ -56,7 +56,7 @@ Prefer Vite+ commands when working in the repository:
 - `src/styles/`
   - Shared theme tokens and global styles via `vanilla-extract`.
 - `scripts/`
-  - Small maintenance scripts, currently including the Sentry release bump helper.
+  - Small maintenance scripts, such as the SVG library manifest generator.
 
 ## 4. Code conventions
 
@@ -131,3 +131,11 @@ Prefer Vite+ commands when working in the repository:
   - another frontend framework
   - another state manager unless the architecture is intentionally changed
   - another styling system
+
+## 10. Monitoring
+
+- Sentry is initialized in `src/instrument.ts`, which `src/main.tsx` imports first.
+- It only reports from official deployments: `vite.config.ts` sets the environment at build time (`vercel-<env>` on Vercel, `SENTRY_ENVIRONMENT` elsewhere). Local dev servers, local builds, and forks stay silent.
+- Releases are named after the commit SHA; there is no release file to bump.
+- When a user-facing flow catches an error to show its own message, also report it with `reportError` from `@lib/monitoring` (`reportDegradation` for fallbacks that return a degraded result).
+- Session replay only records sessions that hit an error, and keeps form inputs masked.

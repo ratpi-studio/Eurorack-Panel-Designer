@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -8,7 +8,6 @@ import { defineConfig, loadEnv, type Plugin } from "vite-plus";
 import { vanillaExtractPlugin } from "@vanilla-extract/vite-plugin";
 
 const configDir = path.dirname(fileURLToPath(import.meta.url));
-const sentryEnvFile = path.resolve(configDir, ".env.sentry");
 
 const changelogVirtualId = "virtual:changelog";
 const resolvedChangelogVirtualId = `\0${changelogVirtualId}`;
@@ -101,52 +100,26 @@ function changelogPlugin(): Plugin {
   };
 }
 
-const readLocalSentryEnv = () => {
-  if (!existsSync(sentryEnvFile)) {
-    return {};
-  }
-
-  const data = readFileSync(sentryEnvFile, "utf8");
-  return data.split(/\r?\n/).reduce<Record<string, string>>((acc, rawLine) => {
-    const line = rawLine.trim();
-
-    if (!line || line.startsWith("#")) {
-      return acc;
-    }
-
-    const [key, ...rest] = line.split("=");
-    if (!key) {
-      return acc;
-    }
-
-    acc[key] = rest.join("=").trim();
-    return acc;
-  }, {});
-};
-
-const localSentryEnv = readLocalSentryEnv();
-Object.entries(localSentryEnv).forEach(([key, value]) => {
-  if (value && !process.env[key]) {
-    process.env[key] = value;
-  }
-});
-
 const activeMode = process.env.MODE ?? process.env.NODE_ENV ?? "development";
 const env = loadEnv(activeMode, process.cwd(), "");
 const basePath = env.VITE_BASE_PATH || "/";
-const releaseName = env.VITE_SENTRY_RELEASE || env.SENTRY_RELEASE || localSentryEnv.SENTRY_RELEASE;
 
-if (releaseName) {
-  if (!env.VITE_SENTRY_RELEASE) {
-    env.VITE_SENTRY_RELEASE = releaseName;
-    process.env.VITE_SENTRY_RELEASE = releaseName;
-  }
+// Sentry only reports from official deployments: Vercel builds of this repository, or builds that
+// set SENTRY_ENVIRONMENT (GitHub Pages workflow). Local and fork builds leave it disabled.
+const vercelTargetEnv = process.env.VERCEL_TARGET_ENV ?? process.env.VERCEL_ENV;
+const isVercelFork =
+  Boolean(process.env.VERCEL_GIT_REPO_OWNER) &&
+  process.env.VERCEL_GIT_REPO_OWNER !== "ratpi-studio";
+const sentryEnvironment =
+  env.SENTRY_ENVIRONMENT || (vercelTargetEnv && !isVercelFork ? `vercel-${vercelTargetEnv}` : "");
+// Named after the commit. On Vercel production, the Sentry plugin attaches commits and a deploy to it.
+const sentryRelease =
+  env.SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA || "";
 
-  if (!env.SENTRY_RELEASE) {
-    env.SENTRY_RELEASE = releaseName;
-    process.env.SENTRY_RELEASE = releaseName;
-  }
-}
+process.env.VITE_SENTRY_ENVIRONMENT = sentryEnvironment;
+process.env.VITE_SENTRY_RELEASE = sentryRelease;
+// The tunnel is a Vercel Function (api/sentry-tunnel.ts), so only Vercel builds can use it.
+process.env.VITE_SENTRY_TUNNEL = vercelTargetEnv ? "/api/sentry-tunnel" : "";
 
 const useSentry = Boolean(env.SENTRY_AUTH_TOKEN && env.SENTRY_ORG && env.SENTRY_PROJECT);
 
@@ -181,7 +154,7 @@ export default defineConfig({
             authToken: env.SENTRY_AUTH_TOKEN,
             telemetry: false,
             release: {
-              ...(releaseName ? { name: releaseName } : {}),
+              ...(sentryRelease ? { name: sentryRelease } : {}),
               inject: true,
             },
             sourcemaps: {
