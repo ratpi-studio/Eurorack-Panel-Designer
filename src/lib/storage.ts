@@ -9,7 +9,7 @@ export interface StoredProject {
   updatedAt: number;
 }
 
-function getStorage(): Storage | null {
+export function getStorage(): Storage | null {
   if (typeof window !== "undefined" && window.localStorage) {
     return window.localStorage;
   }
@@ -119,4 +119,38 @@ export function deleteProject(name: string): StoredProject[] {
   );
   persist(projects);
   return projects;
+}
+
+/**
+ * Adds projects saved under another address (the former GitHub Pages site). Every version is kept:
+ * an incoming project whose name is taken gets `nameSuffix`, and projects already imported are
+ * skipped. Returns how many projects were added.
+ */
+export function importProjects(incoming: unknown, nameSuffix: string): number {
+  if (!getStorage()) {
+    return 0;
+  }
+  const projects = readProjects();
+  const hasName = (name: string) =>
+    projects.some((project) => project.name.toLowerCase() === name.toLowerCase());
+
+  let added = 0;
+  for (const project of hydrateProjects(incoming)) {
+    const renamed = `${project.name} ${nameSuffix}`;
+    const alreadyImported = projects.some(
+      (existing) =>
+        existing.updatedAt === project.updatedAt &&
+        [project.name, renamed].some((name) => existing.name.toLowerCase() === name.toLowerCase()),
+    );
+    if (alreadyImported) {
+      continue;
+    }
+    projects.push({ ...project, name: hasName(project.name) ? renamed : project.name });
+    added += 1;
+  }
+
+  if (added > 0) {
+    persist(projects);
+  }
+  return added;
 }

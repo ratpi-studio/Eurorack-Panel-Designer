@@ -5,6 +5,12 @@ interface Translations {
     errorFallback: string;
     storageFull: string;
   };
+  githubPagesMigration: {
+    imported: string;
+    failed: string;
+    sessionProjectName: string;
+    projectNameSuffix: string;
+  };
   header: {
     githubLabel: string;
     githubAriaLabel: string;
@@ -224,6 +230,13 @@ export const enUS: Translations = {
     errorFallback: "An unexpected error occurred. Please reload the page.",
     storageFull:
       "Browser storage is full: recent changes will not survive a reload. Delete saved projects you no longer need or remove the reference image.",
+  },
+  githubPagesMigration: {
+    imported: "Your designs from the previous address (GitHub Pages) were moved to this site.",
+    failed:
+      "Some of your designs from the previous address could not be moved. Please report it on GitHub.",
+    sessionProjectName: "Last session on GitHub Pages",
+    projectNameSuffix: "(GitHub Pages)",
   },
   header: {
     githubLabel: "GitHub",

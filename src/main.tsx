@@ -1,4 +1,6 @@
-// Keep this import first: it initializes Sentry before the rest of the app is evaluated.
+// Keep these imports first, in this order: data moved from GitHub Pages must reach localStorage
+// before the store hydrates, then Sentry initializes before the rest of the app is evaluated.
+import { notifyGithubPagesMigration } from "./migrateFromGithubPages";
 import { rootErrorHandlers, sentryEnabled } from "./instrument";
 
 import React from "react";
@@ -23,6 +25,7 @@ async function bootstrap() {
   }
 
   const root = ReactDOM.createRoot(rootElement, rootErrorHandlers);
+  notifyGithubPagesMigration();
 
   if (sentryEnabled) {
     root.render(

@@ -5,6 +5,7 @@
 - Fixed the editor breaking and autosave silently stopping once browser storage was full, typically after importing a large reference image. The design keeps being saved (without the image when it does not fit), and a message explains what happened.
 - Large reference images are now downscaled on import (2048 px max) so they fit in browser storage.
 - Saving a project now shows an error when browser storage is full instead of failing silently.
+- The GitHub Pages address now redirects to eurorack-panel-designer-oss8.vercel.app and brings along the designs and projects saved there.
 - Error reports no longer include IP addresses. When an error occurs, a replay of the session is attached to help fix it; form inputs stay masked.
 
 ## 0.8.0 - 2026-09-18

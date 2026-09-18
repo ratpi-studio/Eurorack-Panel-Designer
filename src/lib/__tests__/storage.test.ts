@@ -8,7 +8,8 @@ import {
   type PanelModel,
 } from "../panelTypes";
 import { createPanelDimensions } from "../units";
-import { deleteProject, listProjects, loadProject, saveProject } from "../storage";
+import { deleteProject, importProjects, listProjects, loadProject, saveProject } from "../storage";
+import { parseSerializedPanel, serializePanelModel } from "../serialization";
 
 class MemoryStorage implements Storage {
   private store = new Map<string, string>();
@@ -78,5 +79,37 @@ describe("storage helpers", () => {
     const afterDelete = deleteProject("Temp");
     expect(afterDelete).toHaveLength(0);
     expect(loadProject("Temp")).toBeNull();
+  });
+});
+
+describe("importProjects", () => {
+  beforeEach(() => {
+    vi.stubGlobal("localStorage", new MemoryStorage());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const payload = parseSerializedPanel(serializePanelModel(sampleModel));
+
+  it("keeps every version when names collide, and can run twice", () => {
+    saveProject("Filter", sampleModel);
+    const incoming = [
+      { name: "Filter", payload, updatedAt: 1 },
+      { name: "Mixer", payload, updatedAt: 2 },
+    ];
+
+    expect(importProjects(incoming, "(GitHub Pages)")).toBe(2);
+    expect(importProjects(incoming, "(GitHub Pages)")).toBe(0);
+
+    const names = listProjects().map((project) => project.name);
+    expect(names.sort()).toEqual(["Filter", "Filter (GitHub Pages)", "Mixer"]);
+  });
+
+  it("ignores invalid entries", () => {
+    expect(importProjects([{ name: "No payload", updatedAt: 1 }, "junk"], "(copy)")).toBe(0);
+    expect(importProjects("not a list", "(copy)")).toBe(0);
+    expect(listProjects()).toHaveLength(0);
   });
 });

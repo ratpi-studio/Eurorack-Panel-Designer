@@ -57,6 +57,8 @@ Prefer Vite+ commands when working in the repository:
   - Shared theme tokens and global styles via `vanilla-extract`.
 - `scripts/`
   - Small maintenance scripts, such as the SVG library manifest generator.
+- `github-pages/`
+  - The page published on GitHub Pages. It redirects to the Vercel deployment and hands over the data saved in that origin's localStorage, which `src/lib/githubPagesMigration.ts` imports. Keep its storage keys in sync with the app.
 
 ## 4. Code conventions
 

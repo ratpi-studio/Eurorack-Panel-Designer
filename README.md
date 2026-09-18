@@ -4,7 +4,7 @@
 ## Deployments
 
 - Vercel: [https://eurorack-panel-designer-oss8.vercel.app/](https://eurorack-panel-designer-oss8.vercel.app/)
-- GitHub Pages: [https://ratpi-studio.github.io/Eurorack-Panel-Designer/](https://ratpi-studio.github.io/Eurorack-Panel-Designer/)
+- GitHub Pages: [https://ratpi-studio.github.io/Eurorack-Panel-Designer/](https://ratpi-studio.github.io/Eurorack-Panel-Designer/) redirects to the Vercel deployment and moves the designs and projects saved there.
 
 # Eurorack Panel Designer
 
