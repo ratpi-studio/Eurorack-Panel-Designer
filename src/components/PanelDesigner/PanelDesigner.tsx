@@ -22,7 +22,7 @@ import {
 import { createPanelDimensions, hpToMm, mmToCm } from "@lib/units";
 import { changelogEntries } from "@lib/changelog";
 import { computeElementMountingHoles } from "@lib/elementMountingHoles";
-import type { ReferenceImage } from "@lib/referenceImage";
+import { shrinkReferenceImage, type ReferenceImage } from "@lib/referenceImage";
 import { computeClearanceLines, applyClearanceLinePosition } from "@lib/clearance";
 import { type ExportFormat } from "@lib/exportPreferences";
 import { usePanelStore } from "@store/panelStore";
@@ -540,9 +540,15 @@ export function PanelDesigner() {
       setMountingHolesSelected(false);
       const reader = new FileReader();
       reader.onload = () => {
-        const dataUrl = reader.result as string;
+        const sourceDataUrl = reader.result as string;
         const img = new Image();
         img.onload = () => {
+          // Full-size photos do not fit in browser storage, which also holds the rest of the design.
+          const {
+            dataUrl,
+            width: pixelWidth,
+            height: pixelHeight,
+          } = shrinkReferenceImage(img, sourceDataUrl);
           const aspect = img.width > 0 && img.height > 0 ? img.width / img.height : 1;
           const maxWidth = panelModel.dimensions.widthMm * 0.8;
           const maxHeight = panelModel.dimensions.heightMm * 0.8;
@@ -563,12 +569,12 @@ export function PanelDesigner() {
             heightMm,
             rotationDeg: 0,
             opacity: 0.35,
-            naturalWidth: img.width,
-            naturalHeight: img.height,
+            naturalWidth: pixelWidth,
+            naturalHeight: pixelHeight,
           });
           selectReferenceImage(true);
         };
-        img.src = dataUrl;
+        img.src = sourceDataUrl;
       };
       reader.readAsDataURL(file);
       event.target.value = "";

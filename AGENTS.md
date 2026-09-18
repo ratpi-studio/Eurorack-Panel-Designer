@@ -87,6 +87,7 @@ Prefer Vite+ commands when working in the repository:
   - exports and geometry helpers
   - relevant tests
 - Browser persistence matters in this project. Backward compatibility or explicit migration is required when saved data formats change.
+- Browser storage is small (about 5 MB per origin, shared by the autosave and saved projects). The store persists through `createPanelStateStorage` (`src/lib/panelStateStorage.ts`), which never throws: when storage is full it keeps saving the design without the reference image and warns the user. Keep large payloads out of the persisted state, or downscale them like reference images.
 
 ## 6. Canvas, geometry, and export guidance
 

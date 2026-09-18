@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import {
   getReferenceImageControlPositions,
+  getScaledImageSize,
   isPointInReferenceImage,
   resizeReferenceImageFromHandle,
   type ReferenceImage,
@@ -64,5 +65,21 @@ describe("reference image geometry", () => {
     expect(resized.heightMm).toBeCloseTo(20);
     expect(resized.positionMm.x).toBeCloseTo(50);
     expect(resized.positionMm.y).toBeCloseTo(55);
+  });
+});
+
+describe("getScaledImageSize", () => {
+  it("keeps images within the limit untouched", () => {
+    expect(getScaledImageSize(1200, 800, 2048)).toEqual({ width: 1200, height: 800 });
+    expect(getScaledImageSize(2048, 100, 2048)).toEqual({ width: 2048, height: 100 });
+  });
+
+  it("scales the longest side down to the limit and keeps the aspect ratio", () => {
+    expect(getScaledImageSize(4032, 3024, 2048)).toEqual({ width: 2048, height: 1536 });
+    expect(getScaledImageSize(3000, 6000, 2048)).toEqual({ width: 1024, height: 2048 });
+  });
+
+  it("never returns an empty dimension", () => {
+    expect(getScaledImageSize(10_000, 1, 2048)).toEqual({ width: 2048, height: 1 });
   });
 });

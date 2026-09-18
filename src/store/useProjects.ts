@@ -11,6 +11,7 @@ import {
   DEFAULT_PANEL_COLOR,
   DEFAULT_PANEL_OPTIONS,
   type MountingHole,
+  type PanelModel,
 } from "@lib/panelTypes";
 import { buildPanelPngDataUrl } from "@lib/canvas/exportPng";
 import {
@@ -130,16 +131,33 @@ export function useProjects({
     [mountingHoles, panelModel],
   );
 
+  const trySaveProject = React.useCallback(
+    (name: string, model: PanelModel): StoredProject[] | null => {
+      try {
+        return saveProject(name, model);
+      } catch (error) {
+        // Usually QuotaExceededError: saved projects share browser storage with the autosave.
+        reportError(error, "save-project");
+        setStatus(t.projects.messages.saveError(name), "error");
+        return null;
+      }
+    },
+    [setStatus, t.projects.messages],
+  );
+
   const handleSaveProject = React.useCallback(() => {
     const trimmedName = projectName.trim() || t.projects.defaultName;
-    const saved = saveProject(trimmedName, panelModel);
+    const saved = trySaveProject(trimmedName, panelModel);
+    if (!saved) {
+      return;
+    }
     markSavedState(trimmedName, serializedModel);
     setProjects(saved);
     setActiveProjectName(trimmedName);
     setLastDeletedProject(null);
     setSelectedSavedName(trimmedName);
     setStatus(t.projects.messages.saveSuccess(trimmedName), "success");
-  }, [markSavedState, panelModel, projectName, serializedModel, setStatus, t]);
+  }, [markSavedState, panelModel, projectName, serializedModel, setStatus, t, trySaveProject]);
 
   const handleLoadProject = React.useCallback(
     (name: string) => {
@@ -356,14 +374,17 @@ export function useProjects({
     }
     const restoredModel = deserializePanelModel(lastDeletedProject.payload);
     const restoredSnapshot = serializePanelModel(restoredModel);
-    const saved = saveProject(lastDeletedProject.name, restoredModel);
+    const saved = trySaveProject(lastDeletedProject.name, restoredModel);
+    if (!saved) {
+      return false;
+    }
     markSavedState(lastDeletedProject.name, restoredSnapshot);
     setProjects(saved);
     setLastDeletedProject(null);
     setSelectedSavedName(lastDeletedProject.name);
     setStatus(t.projects.messages.deleteUndoSuccess(lastDeletedProject.name), "success");
     return true;
-  }, [lastDeletedProject, markSavedState, setStatus, t.projects.messages]);
+  }, [lastDeletedProject, markSavedState, setStatus, t.projects.messages, trySaveProject]);
 
   const handleReset = React.useCallback(() => {
     const resetModel = {
