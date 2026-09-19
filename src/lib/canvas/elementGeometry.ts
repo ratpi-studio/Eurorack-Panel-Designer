@@ -1,3 +1,4 @@
+import { isDesignElement } from "@lib/designLayer";
 import {
   PanelElementType,
   type LabelElementProperties,
@@ -166,18 +167,60 @@ function isPointInsideElement(pointMm: Vector2, element: PanelElement): boolean 
   }
 }
 
-export function findElementAtPoint(
-  pointMm: Vector2,
-  elements: PanelElement[],
-): PanelElement | null {
+function getElementAreaMm2(element: PanelElement): number {
+  const { widthMm, heightMm } = getElementSizeMm(element);
+  return widthMm * heightMm;
+}
+
+/** Negative when a click picks `a` before `b`. */
+function comparePickOrder(a: PanelElement, b: PanelElement): number {
+  const layerOrder = Number(isDesignElement(a)) - Number(isDesignElement(b));
+  return layerOrder !== 0 ? layerOrder : getElementAreaMm2(a) - getElementAreaMm2(b);
+}
+
+/**
+ * The element a click at this point picks. Holes come before the design layer, which is drawn
+ * around them. Then the smallest element wins, so one under a bigger element stays reachable, and
+ * the one placed last breaks ties.
+ */
+function findElementAtPoint(pointMm: Vector2, elements: PanelElement[]): PanelElement | null {
+  let picked: PanelElement | null = null;
   for (let index = elements.length - 1; index >= 0; index -= 1) {
     const element = elements[index];
-    if (isPointInsideElement(pointMm, element)) {
-      return element;
+    if (
+      isPointInsideElement(pointMm, element) &&
+      (!picked || comparePickOrder(element, picked) < 0)
+    ) {
+      picked = element;
     }
   }
 
-  return null;
+  return picked;
+}
+
+interface ElementPickContext {
+  /** A mounting hole is under the point. */
+  isOverMountingHole: boolean;
+  /** A palette element is waiting to be placed. */
+  isPlacing: boolean;
+  selectedIds: ReadonlySet<string>;
+}
+
+/**
+ * The element a click at this point selects on the canvas. The design layer (texts, SVG patterns)
+ * is drawn around the mounting holes too, so they come before it. While placing, it lets the new
+ * element through, except a selected element, so the one just placed can still be moved.
+ */
+export function pickElementAtPoint(
+  pointMm: Vector2,
+  elements: PanelElement[],
+  { isOverMountingHole, isPlacing, selectedIds }: ElementPickContext,
+): PanelElement | null {
+  const element = findElementAtPoint(pointMm, elements);
+  if (!element || !isDesignElement(element)) {
+    return element;
+  }
+  return isOverMountingHole || (isPlacing && !selectedIds.has(element.id)) ? null : element;
 }
 
 export function computeNearestElementDistances(

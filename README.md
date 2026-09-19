@@ -70,6 +70,7 @@ Single-page web app to sketch Eurorack front panels. The canvas mirrors a real 3
 - Over an SVG pattern, text either clears the pattern around it (**Clear the pattern around the text**, with a **Clearance** in mm, 1 mm by default) or merges into it at the same height (**Merge into the pattern**), even where that makes it harder to read.
 - Keep `Shift` pressed to temporarily disable snapping, `Esc` to cancel placement, `⌘/Ctrl + Z` and `⌘/Ctrl + Shift + Z` for undo/redo.
 - Shift-click elements or drag a marquee on the canvas to build a multi-selection, then drag anywhere on the canvas to move the entire group or press Delete to remove it in one go.
+- A click on the canvas picks what you see under the pointer, even under a bigger element: cut-outs first, as they show through texts and SVG patterns, then the smallest element. An SVG pattern that covers the panel is selected wherever nothing else is, and elements placed from the palette land on patterns and texts instead of selecting them.
 - Save named projects to the browser, export/import JSON for backups, render the canvas as PNG/SVG, export KiCad Edge.Cuts, or export a clean STL: choose STL in the export dropdown, set thickness in mm, and use the live 3D preview to inspect the mesh before downloading.
 
 ## Ordering a print on Etsy (optional)

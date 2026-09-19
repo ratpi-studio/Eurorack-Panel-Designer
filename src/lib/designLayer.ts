@@ -7,10 +7,15 @@ import { getLabelKnockoutRing } from "@lib/text/textLayout";
 /**
  * The design layer holds what prints in the design color on the panel front: SVG patterns and
  * texts. Both are clipped to the panel surface, share one relief (`PanelModel.designRelief`), and
- * texts can clear the patterns around them (knockout) or merge with them.
+ * texts can clear the patterns around them (knockout) or merge with them. The other elements are
+ * holes through the panel.
  */
+export function isDesignElement(element: PanelElement): boolean {
+  return isSvgArtworkElement(element) || isLabelElement(element);
+}
+
 export function hasDesignElements(elements: PanelElement[]): boolean {
-  return elements.some((element) => isSvgArtworkElement(element) || isLabelElement(element));
+  return elements.some(isDesignElement);
 }
 
 /** Fonts the texts of a design use, to load before drawing or exporting it. */

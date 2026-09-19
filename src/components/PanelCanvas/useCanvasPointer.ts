@@ -1,6 +1,6 @@
 import React from "react";
 
-import { findElementAtPoint, getElementBounds } from "@lib/canvas/elementGeometry";
+import { getElementBounds, pickElementAtPoint } from "@lib/canvas/elementGeometry";
 import { isElementInteractive } from "@lib/elementVisibility";
 import {
   findElementHandleAtPoint,
@@ -565,15 +565,19 @@ export function useCanvasPointer({
         return;
       }
 
-      const element = findElementAtPoint(pointPanel, interactiveElements);
+      const hole =
+        displayOptions.showMountingHoles && findMountingHoleAtPoint(pointPanel, mountingHoles);
+      const element = pickElementAtPoint(pointPanel, interactiveElements, {
+        isOverMountingHole: Boolean(hole),
+        isPlacing: placementType !== null,
+        selectedIds: selectedElementSet,
+      });
       if (element) {
         setIsHoveringInteractive(true);
         setCanvasCursor("pointer");
         return;
       }
 
-      const hole =
-        displayOptions.showMountingHoles && findMountingHoleAtPoint(pointPanel, mountingHoles);
       if (hole) {
         setIsHoveringInteractive(true);
         setCanvasCursor("pointer");
@@ -606,8 +610,10 @@ export function useCanvasPointer({
       findSelectedElementControlAtPoint,
       interactiveElements,
       mountingHoles,
+      placementType,
       referenceImage,
       referenceImageSelected,
+      selectedElementSet,
       singleSelectedElement,
     ],
   );
@@ -751,7 +757,12 @@ export function useCanvasPointer({
       }
     }
 
-    const element = findElementAtPoint(pointPanel, interactiveElements);
+    const hitHole = findMountingHoleAtPoint(pointPanel, mountingHoles);
+    const element = pickElementAtPoint(pointPanel, interactiveElements, {
+      isOverMountingHole: hitHole !== null,
+      isPlacing: placementType !== null,
+      selectedIds: selectedElementSet,
+    });
     if (element) {
       onClearMountingHoleSelection();
       if (additiveModifier) {
@@ -796,7 +807,6 @@ export function useCanvasPointer({
       return;
     }
 
-    const hitHole = findMountingHoleAtPoint(pointPanel, mountingHoles);
     if (hitHole) {
       pointerModeRef.current = "idle";
       onSelectMountingHoles();
@@ -1122,7 +1132,11 @@ export function useCanvasPointer({
         };
         const pointPanel = screenPointToPanel(pointPx, transform);
         if (pointPanel) {
-          const element = findElementAtPoint(pointPanel, interactiveElements);
+          const element = pickElementAtPoint(pointPanel, interactiveElements, {
+            isOverMountingHole: findMountingHoleAtPoint(pointPanel, mountingHoles) !== null,
+            isPlacing: placementType !== null,
+            selectedIds: selectedElementSet,
+          });
           if (element) {
             onSelectElement(element.id);
             onClearMountingHoleSelection();
