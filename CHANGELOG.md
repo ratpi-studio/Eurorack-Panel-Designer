@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.1 - 2026-09-19
+
+- Clicking on the canvas now picks what you see under the pointer, even when it lies under a bigger element. Cut-outs (jacks, knobs, and the other holes) come first, as they show through texts and SVG patterns, then the smallest element. An SVG pattern over the whole panel no longer hides the elements placed before it: click them to select or drag them, and click where nothing else is to select the pattern. Mounting holes can be clicked through patterns and texts too.
+- With an element picked in the palette, clicking on a text or an SVG pattern now places the element there instead of selecting the pattern. The element you just placed can still be dragged.
+
 ## 0.11.0 - 2026-09-18
 
 - The right panel now has three tabs under the project controls: Display, Properties, and Components. Selecting something on the canvas opens Properties, and the open tab is remembered.

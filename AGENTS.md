@@ -103,6 +103,7 @@ Prefer Vite+ commands when working in the repository:
 
 - Keep unit conversion (`cm`, `mm`, `HP`), mounting hole generation, clearance rules, and geometry helpers testable without React.
 - Canvas interaction logic belongs in the dedicated canvas hooks and `src/lib/canvas/` helpers, not in unrelated UI components.
+- Hover, click, and drag pick elements through `pickElementAtPoint` (`src/lib/canvas/elementGeometry.ts`): cut-outs before the design layer (`isDesignElement`), which is drawn around them, then the smallest element, then the one placed last. The design layer also gives way to mounting holes, and to placing from the palette, except for a selected element.
 - Export logic belongs in `src/lib/` and supporting store hooks, not inline in presentation components.
 - `three` is already part of the project for STL generation / preview. Reuse that stack for 3D-related work instead of adding another rendering solution.
 - Cut-outs that overlap each other or cross the panel edge are merged into single openings in every output (STL, SVG, KiCad, canvas, PNG). `splitOverlappingCutouts` (`src/lib/panelSurface.ts`) finds them; `mergePanelSurface` (`src/lib/mergedPanelSurface.ts`) merges them with `polygon-clipping`. Designs without overlaps keep their exact previous output.
