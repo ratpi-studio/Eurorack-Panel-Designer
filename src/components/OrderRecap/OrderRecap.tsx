@@ -1,3 +1,4 @@
+import { ArrowLeft, Check, Copy, Download, FileBraces, ShoppingBag } from "lucide-react";
 import React from "react";
 
 import { useI18n } from "@i18n/I18nContext";
@@ -135,6 +136,7 @@ function OrderDetails({ record, copy }: { record: OrderRecord; copy: OrderCopy }
             {record.code}
           </span>
           <button type="button" className={styles.copyButton} onClick={copyCode}>
+            {isCopied ? <Check /> : <Copy />}
             {isCopied ? copy.copied : copy.copyCode}
           </button>
         </div>
@@ -188,6 +190,7 @@ function OrderDetails({ record, copy }: { record: OrderRecord; copy: OrderCopy }
                   rel="noopener noreferrer"
                   onClick={copyCode}
                 >
+                  <ShoppingBag size={20} />
                   {copy.buyCta}
                 </a>
               </>
@@ -202,9 +205,11 @@ function OrderDetails({ record, copy }: { record: OrderRecord; copy: OrderCopy }
         <p className={styles.hint}>{copy.filesHint(ORDER_PANEL_THICKNESS_MM)}</p>
         <div className={styles.fileButtons}>
           <button type="button" className={styles.copyButton} onClick={handleDownloadStl}>
+            <Download />
             {copy.downloadStl}
           </button>
           <button type="button" className={styles.copyButton} onClick={handleDownloadJson}>
+            <FileBraces />
             {copy.downloadJson}
           </button>
         </div>
@@ -269,6 +274,7 @@ export function OrderRecap({ id }: OrderRecapProps) {
           </>
         )}
         <a className={styles.editLink} href="/">
+          <ArrowLeft />
           {copy.backToDesigner}
         </a>
       </div>

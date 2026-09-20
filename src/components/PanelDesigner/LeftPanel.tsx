@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import React from "react";
 
 import { ElementPalette } from "@components/ElementPalette/ElementPalette";
@@ -46,6 +47,7 @@ export function LeftPanel({
           <div className={styles.drawerHeader}>
             <div className={styles.cardTitle}>{t.palette.title}</div>
             <button type="button" className={styles.secondaryButton} onClick={onClose}>
+              <X />
               Close
             </button>
           </div>

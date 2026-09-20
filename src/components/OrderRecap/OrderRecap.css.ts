@@ -100,6 +100,10 @@ export const code = style({
 });
 
 export const copyButton = style({
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "6px",
   height: "36px",
   padding: `0 ${vars.spacing.md}`,
   borderRadius: "8px",
@@ -232,6 +236,10 @@ export const error = style({
 });
 
 export const editLink = style({
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "6px",
   textAlign: "center",
   color: vars.color.textSecondary,
   textDecoration: "none",

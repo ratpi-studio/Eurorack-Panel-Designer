@@ -1,3 +1,4 @@
+import type { KnobId, PartId } from "@lib/parts";
 import type { TextFontId } from "@lib/text/textFonts";
 
 interface Translations {
@@ -45,6 +46,7 @@ interface Translations {
     snap: string;
     holes: string;
     dimensions: string;
+    hardware: string;
     gridSpacing: string;
     reset: string;
     panelColor: string;
@@ -142,6 +144,17 @@ interface Translations {
     innerDiameter: string;
     innerDepth: string;
     embedDepth: string;
+    part: string;
+    partOptions: Record<PartId, string>;
+    customHole: string;
+    customRoundHole: string;
+    customRectangularHole: string;
+    partHint: (holeMm: string, hardwareMm: string | null) => string;
+    useRecommendedHole: (holeMm: string) => string;
+    knob: string;
+    noKnob: string;
+    knobOptions: Record<KnobId, string>;
+    crowdedHardware: string;
   };
   referenceImage: {
     title: string;
@@ -255,6 +268,7 @@ interface Translations {
     issueTooWide: (widthHp: number, maxWidthHp: number) => string;
     issueSameFilament: string;
     issueTextPrint: (count: number) => string;
+    issueCrowdedHardware: (count: number) => string;
     issueHiddenElements: (count: number) => string;
     cancel: string;
     submit: string;
@@ -349,6 +363,7 @@ export const enUS: Translations = {
     snap: "Snap to grid",
     holes: "Mounting holes",
     dimensions: "Dimensions",
+    hardware: "Knobs and nuts",
     gridSpacing: "Grid spacing (mm)",
     reset: "Reset view",
     panelColor: "Panel color",
@@ -519,6 +534,35 @@ export const enUS: Translations = {
     innerDiameter: "Inner diameter (mm)",
     innerDepth: "Inner depth (mm)",
     embedDepth: "Embed depth (mm)",
+    part: "Part",
+    partOptions: {
+      thonkiconn: "Thonkiconn · PJ398SM, WQP518MA",
+      alpha9mm: "Alpha 9 mm pot · RD901F",
+      bournsPec11r: "Bourns PEC11R encoder",
+      dailywellSubMiniToggle: "Dailywell sub-mini toggle · 2MS",
+      dailywellMiniToggle: "Dailywell mini toggle · 1MS",
+      led3mm: "3 mm LED",
+      led5mm: "5 mm LED",
+    },
+    customHole: "Custom hole",
+    customRoundHole: "Custom round hole",
+    customRectangularHole: "Custom rectangular hole",
+    partHint: (holeMm: string, hardwareMm: string | null) =>
+      hardwareMm
+        ? `Recommended hole Ø${holeMm} mm, nut or washer Ø${hardwareMm} mm.`
+        : `Recommended hole Ø${holeMm} mm.`,
+    useRecommendedHole: (holeMm: string) => `Use Ø${holeMm} mm`,
+    knob: "Knob",
+    noKnob: "No knob",
+    knobOptions: {
+      thonkTallTrimmerTopper: "Thonk Tall Trimmer Topper",
+      davies1900h: "Davies 1900H clone",
+      roganPt1ps: "Rogan PT-1PS, small",
+      roganPt2ps: "Rogan PT-2PS, medium",
+      roganPt3ps: "Rogan PT-3PS, large",
+    },
+    crowdedHardware:
+      "Too close to another component: a knob, nut or washer overlaps. Move them apart.",
   },
   svgArtwork: {
     title: "Add SVG",
@@ -637,6 +681,8 @@ export const enUS: Translations = {
       count === 1
         ? "A text may not print well: see the warning in its properties."
         : `${count} texts may not print well: see the warnings in their properties.`,
+    issueCrowdedHardware: (count) =>
+      `${count} components are too close together: their knobs, nuts or washers overlap (in red on the panel).`,
     issueHiddenElements: (count) =>
       count === 1
         ? "A hidden component will not be printed. Show it in the Components tab to include it."

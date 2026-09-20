@@ -58,6 +58,8 @@ describe("components list", () => {
       /^[\d.]+ × [\d.]+ mm$/,
     );
     expect(describeElementDetail(element(PanelElementType.Insert))).toMatch(/^Ø[\d.]+ mm$/);
+    // Switches start as toggles, which mount through a round hole.
+    expect(describeElementDetail(element(PanelElementType.Switch))).toMatch(/^Ø[\d.]+ mm$/);
     expect(describeElementDetail(label("VCO"))).toBe("“VCO”");
     expect(describeElementDetail(label("   "))).toBe("");
     expect(describeElementDetail(label("A very long label for a module panel"))).toBe(

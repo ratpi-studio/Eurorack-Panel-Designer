@@ -1,5 +1,6 @@
 import {
   PanelElementType,
+  isCircularElementProperties,
   isLabelElement,
   type LabelElement,
   type MountingHole,
@@ -9,6 +10,7 @@ import {
 import { type ClearanceLines } from "@lib/clearance";
 import { collectKnockoutRings } from "@lib/designLayer";
 import { isElementLocked } from "@lib/elementVisibility";
+import { findCrowdedElements, getFrontOutline } from "@lib/elementParts";
 import { createPanelSurfacePath2D } from "@lib/panelSurface";
 import { isSvgArtworkElement } from "@lib/svgArtwork";
 import { getLabelTextLayout, type LabelTextLayout } from "@lib/text/textLayout";
@@ -58,6 +60,9 @@ export interface PanelCanvasPalette {
   dimensionText: string;
   dimensionHalo: string;
   dimensionLine: string;
+  /** Knobs, nuts and washers that run into another element's. */
+  crowdedHardwareFill: string;
+  crowdedHardwareStroke: string;
 }
 
 export interface ElementStyle {
@@ -98,6 +103,8 @@ interface PanelSceneDrawingOptions {
   showGhostDistances?: boolean;
   /** Editor-only measurement annotations (diameters, side lengths). */
   showDimensions?: boolean;
+  /** Editor-only outlines of the knobs, nuts and washers on the front of the panel. */
+  showHardware?: boolean;
 }
 
 const DIMENSION_FONT_SIZE_PX = 10;
@@ -106,6 +113,10 @@ const DIMENSION_TEXT_PADDING_PX = 2;
 const DIMENSION_LINE_OFFSET_PX = 16;
 const DIMENSION_TICK_PX = 4;
 const DIMENSION_TEXT_GAP_PX = 4;
+const HARDWARE_FILL_ALPHA = 0.35;
+const HARDWARE_DASH_PX = [4, 3];
+const GHOST_ALPHA = 0.4;
+const NO_CROWDED_ELEMENTS: ReadonlySet<string> = new Set();
 
 export function drawPanelScene({
   context,
@@ -130,7 +141,13 @@ export function drawPanelScene({
   panelSizeMm,
   showGhostDistances,
   showDimensions = false,
+  showHardware = false,
 }: PanelSceneDrawingOptions) {
+  // The element being placed counts too, so it shows where it would crowd the others.
+  const crowdedIds = showHardware
+    ? findCrowdedElements(ghostElement ? [...elements, ghostElement] : elements)
+    : NO_CROWDED_ELEMENTS;
+
   drawPanelArea(context, transform, palette);
 
   if (referenceImage && referenceImage.image.complete) {
@@ -170,6 +187,10 @@ export function drawPanelScene({
     fontFamily,
   );
 
+  if (showHardware) {
+    drawFrontHardware(context, elements, crowdedIds, transform, palette, elementStyles);
+  }
+
   const singleSelectedElement =
     selectedElementIds.length === 1
       ? (elements.find((element) => element.id === selectedElementIds[0]) ?? null)
@@ -207,6 +228,13 @@ export function drawPanelScene({
 
   if (ghostElement) {
     drawGhostElement(context, ghostElement, transform, elementStyles, fontFamily);
+
+    if (showHardware) {
+      context.save();
+      context.globalAlpha = GHOST_ALPHA;
+      drawFrontHardware(context, [ghostElement], crowdedIds, transform, palette, elementStyles);
+      context.restore();
+    }
 
     if (showGhostDistances) {
       const distances = computeNearestElementDistances(ghostElement.positionMm, elements);
@@ -570,12 +598,22 @@ function drawElements(
       case PanelElementType.Jack:
       case PanelElementType.Potentiometer:
       case PanelElementType.Led: {
-        drawCircularElement(context, element, transform.scale, style);
+        drawCircularElement(context, element.properties.diameterMm, transform.scale, style);
         break;
       }
       case PanelElementType.Switch:
       case PanelElementType.Rectangle: {
-        drawRectangularElement(context, element, transform.scale, style);
+        if (isCircularElementProperties(element.properties)) {
+          drawCircularElement(context, element.properties.diameterMm, transform.scale, style);
+          break;
+        }
+        drawRectangularElement(
+          context,
+          element.properties.widthMm,
+          element.properties.heightMm,
+          transform.scale,
+          style,
+        );
         break;
       }
       case PanelElementType.Oval: {
@@ -610,7 +648,7 @@ function drawGhostElement(
   fontFamily: string,
 ) {
   context.save();
-  context.globalAlpha = 0.4;
+  context.globalAlpha = GHOST_ALPHA;
   drawElements(
     context,
     [element],
@@ -629,6 +667,51 @@ function drawGhostElement(
     fontFamily,
   );
   context.restore();
+}
+
+/**
+ * Knobs, nuts and washers, dashed in their element's color. The ones that run into another
+ * element are drawn in red, bare holes included.
+ */
+function drawFrontHardware(
+  context: CanvasRenderingContext2D,
+  elements: PanelElement[],
+  crowdedIds: ReadonlySet<string>,
+  transform: CanvasTransform,
+  palette: PanelCanvasPalette,
+  elementStyles: Record<PanelElementType, ElementStyle>,
+) {
+  elements.forEach((element) => {
+    const outline = getFrontOutline(element);
+    const crowded = crowdedIds.has(element.id);
+    if (!outline || (!outline.hasHardware && !crowded)) {
+      return;
+    }
+
+    const center = projectPanelPoint(outline.center, transform);
+    context.save();
+    context.beginPath();
+    context.arc(center.x, center.y, (outline.diameterMm / 2) * transform.scale, 0, Math.PI * 2);
+    if (crowded) {
+      context.fillStyle = palette.crowdedHardwareFill;
+      context.fill();
+      context.strokeStyle = palette.crowdedHardwareStroke;
+      context.lineWidth = 2;
+      context.stroke();
+    } else {
+      const style = elementStyles[element.type];
+      context.save();
+      context.globalAlpha *= HARDWARE_FILL_ALPHA;
+      context.fillStyle = style.fill;
+      context.fill();
+      context.restore();
+      context.strokeStyle = style.stroke;
+      context.lineWidth = 1.25;
+      context.setLineDash(HARDWARE_DASH_PX);
+      context.stroke();
+    }
+    context.restore();
+  });
 }
 
 function drawSvgArtworkElement(
@@ -665,19 +748,11 @@ function drawSvgArtworkElement(
 
 function drawCircularElement(
   context: CanvasRenderingContext2D,
-  element: PanelElement,
+  diameterMm: number,
   scale: number,
   style: ElementStyle,
 ) {
-  if (
-    element.type !== PanelElementType.Jack &&
-    element.type !== PanelElementType.Potentiometer &&
-    element.type !== PanelElementType.Led
-  ) {
-    return;
-  }
-
-  const radius = (element.properties.diameterMm / 2) * scale;
+  const radius = (diameterMm / 2) * scale;
   context.fillStyle = style.fill;
   context.strokeStyle = style.stroke;
   context.lineWidth = 2;
@@ -689,16 +764,13 @@ function drawCircularElement(
 
 function drawRectangularElement(
   context: CanvasRenderingContext2D,
-  element: PanelElement,
+  widthMm: number,
+  heightMm: number,
   scale: number,
   style: ElementStyle,
 ) {
-  if (element.type !== PanelElementType.Switch && element.type !== PanelElementType.Rectangle) {
-    return;
-  }
-
-  const width = element.properties.widthMm * scale;
-  const height = element.properties.heightMm * scale;
+  const width = widthMm * scale;
+  const height = heightMm * scale;
   context.fillStyle = style.fill;
   context.strokeStyle = style.stroke;
   context.lineWidth = 2;

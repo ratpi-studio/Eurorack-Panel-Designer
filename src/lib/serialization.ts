@@ -123,7 +123,8 @@ function isPanelOptions(value: unknown): value is PanelModelInput["options"] {
     typeof options.showMountingHoles === "boolean" &&
     typeof options.snapToGrid === "boolean" &&
     typeof options.gridSizeMm === "number" &&
-    (options.showDimensions === undefined || typeof options.showDimensions === "boolean")
+    (options.showDimensions === undefined || typeof options.showDimensions === "boolean") &&
+    (options.showHardware === undefined || typeof options.showHardware === "boolean")
   );
 }
 

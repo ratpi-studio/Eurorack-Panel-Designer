@@ -1,3 +1,4 @@
+import { Upload } from "lucide-react";
 import React from "react";
 
 import { useI18n } from "@i18n/I18nContext";
@@ -151,6 +152,7 @@ export function SvgArtworkModal({ panelSizeMm, onAddArtwork, onClose }: SvgArtwo
           handleFiles(event.dataTransfer.files);
         }}
       >
+        <Upload size={24} />
         {t.svgArtwork.dropLabel}
       </button>
       <input

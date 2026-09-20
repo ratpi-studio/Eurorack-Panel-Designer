@@ -84,7 +84,7 @@ describe("serialization helpers", () => {
     expect(deserializePanelModel(serializePanelModel(model))).toEqual(model);
   });
 
-  it("shows dimensions for saves made before the option existed", () => {
+  it("shows dimensions and hardware for saves made before the options existed", () => {
     const legacyOptions = {
       showGrid: false,
       showMountingHoles: true,
@@ -99,6 +99,7 @@ describe("serialization helpers", () => {
     expect(deserializePanelModel(payload).options).toEqual({
       ...legacyOptions,
       showDimensions: true,
+      showHardware: true,
     });
   });
 
@@ -126,6 +127,96 @@ describe("serialization helpers", () => {
     };
 
     expect(deserializePanelModel(serializePanelModel(model))).toEqual(model);
+  });
+
+  describe("parts", () => {
+    const element = (id: string, type: PanelElementType, properties: Record<string, unknown>) => ({
+      id,
+      type,
+      positionMm: { x: 20, y: 30 },
+      mountingHolesEnabled: false,
+      properties,
+    });
+    const payload = (version: number, elements: unknown[]) =>
+      JSON.stringify({ version, model: { ...sampleModel, elements } });
+
+    it("round-trip with their knob, toggles included", () => {
+      const model = {
+        ...sampleModel,
+        elements: [
+          element("jack-1", PanelElementType.Jack, {
+            diameterMm: 6.2,
+            partId: "thonkiconn",
+            label: "",
+          }),
+          element("knob-1", PanelElementType.Potentiometer, {
+            diameterMm: 7,
+            partId: "alpha9mm",
+            knobId: "roganPt1ps",
+            label: "",
+          }),
+          element("switch-1", PanelElementType.Switch, {
+            diameterMm: 5,
+            partId: "dailywellSubMiniToggle",
+            label: "",
+          }),
+        ],
+      } as unknown as PanelModel;
+
+      expect(deserializePanelModel(serializePanelModel(model))).toEqual(model);
+    });
+
+    it("drop the parts and knobs that do not exist or do not fit the element", () => {
+      const model = deserializePanelModel(
+        payload(SERIALIZATION_VERSION, [
+          element("jack-1", PanelElementType.Jack, { diameterMm: 6, partId: "alpha9mm" }),
+          element("knob-1", PanelElementType.Potentiometer, {
+            diameterMm: 7,
+            partId: "alpha16mm",
+            knobId: "chickenHead",
+          }),
+          element("led-1", PanelElementType.Led, {
+            diameterMm: 3,
+            partId: "led3mm",
+            knobId: "davies1900h",
+          }),
+        ]),
+      );
+
+      expect(model.elements.map((element) => element.properties)).toEqual([
+        { diameterMm: 6 },
+        { diameterMm: 7 },
+        { diameterMm: 3, partId: "led3mm" },
+      ]);
+    });
+
+    it("keep the switches of older saves rectangular, with no part", () => {
+      const model = deserializePanelModel(
+        payload(7, [
+          element("switch-1", PanelElementType.Switch, {
+            widthMm: 8,
+            heightMm: 16,
+            partId: "dailywellMiniToggle",
+          }),
+        ]),
+      );
+
+      expect(model.elements[0].properties).toEqual({ widthMm: 8, heightMm: 16 });
+    });
+
+    it("give a switch with a round hole no rectangle", () => {
+      const model = deserializePanelModel(
+        payload(SERIALIZATION_VERSION, [
+          element("switch-1", PanelElementType.Switch, {
+            diameterMm: 6.35,
+            widthMm: 8,
+            heightMm: 16,
+          }),
+        ]),
+      );
+
+      expect(model.elements[0].properties).toEqual({ diameterMm: 6.35 });
+    });
   });
 
   describe("saves from before 0.10", () => {

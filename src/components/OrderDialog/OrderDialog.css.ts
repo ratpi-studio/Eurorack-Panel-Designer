@@ -159,7 +159,11 @@ export const issues = style({
   gap: vars.spacing.xs,
 });
 
+// The icon stays on the first line of a longer text.
 const issueBase = style({
+  display: "flex",
+  alignItems: "flex-start",
+  gap: vars.spacing.xs,
   padding: vars.spacing.sm,
   borderRadius: "8px",
   fontSize: "13px",

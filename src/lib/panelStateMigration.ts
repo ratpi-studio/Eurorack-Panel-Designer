@@ -6,8 +6,9 @@ import { normalizePanelModel, type PanelModel, type PanelModelInput } from "./pa
  * - v8: panel options gained `showDimensions`.
  * - v9: the relief moved from each SVG artwork to the panel (`designRelief`), and texts gained a
  *   font and a pattern overlap mode.
+ * - v10: panel options gained `showHardware`, and elements can name a real part.
  */
-export const PANEL_STATE_VERSION = 9;
+export const PANEL_STATE_VERSION = 10;
 
 interface PersistedPanelState {
   model?: PanelModel | PanelModelInput | null;

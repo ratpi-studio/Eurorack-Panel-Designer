@@ -1,6 +1,6 @@
 import { formatBoxLabel, formatDiameterLabel } from "@lib/canvas/elementDimensions";
 import { isElementHidden, isElementLocked } from "@lib/elementVisibility";
-import { PanelElementType, type PanelElement } from "@lib/panelTypes";
+import { PanelElementType, isCircularElementProperties, type PanelElement } from "@lib/panelTypes";
 
 /** A row of the components list. */
 export interface ComponentListItem {
@@ -27,6 +27,9 @@ export function describeElementDetail(element: PanelElement): string {
     case PanelElementType.Insert:
       return `${formatDiameterLabel(element.properties.outerDiameterMm)} mm`;
     case PanelElementType.Switch:
+      return isCircularElementProperties(element.properties)
+        ? `${formatDiameterLabel(element.properties.diameterMm)} mm`
+        : `${formatBoxLabel(element.properties.widthMm, element.properties.heightMm)} mm`;
     case PanelElementType.Rectangle:
     case PanelElementType.Oval:
     case PanelElementType.Slot:

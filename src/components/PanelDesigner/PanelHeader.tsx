@@ -1,3 +1,4 @@
+import { ScrollText, ShoppingBag } from "lucide-react";
 import React from "react";
 
 import * as styles from "./PanelDesigner.css";
@@ -62,9 +63,11 @@ export function PanelHeader({ title, changelogLabel, copy, onOpenChangelog }: Pa
             rel="noreferrer"
             aria-label={copy.etsyAriaLabel}
           >
+            <ShoppingBag />
             <span className={styles.etsyWordmark}>{copy.etsyLabel}</span>
           </a>
           <button type="button" className={styles.changelogButton} onClick={onOpenChangelog}>
+            <ScrollText />
             {changelogLabel}
           </button>
         </div>

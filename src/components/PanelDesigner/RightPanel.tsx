@@ -1,3 +1,25 @@
+import {
+  Box,
+  ChevronDown,
+  CircuitBoard,
+  Download,
+  Eye,
+  FileBraces,
+  FileCode,
+  FileImage,
+  FilePlus,
+  FileUp,
+  FolderOpen,
+  ImagePlus,
+  Layers,
+  Pencil,
+  Save,
+  ShoppingCart,
+  SlidersHorizontal,
+  Trash,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import React from "react";
 
 import {
@@ -11,6 +33,8 @@ import { ElementProperties } from "@components/ElementProperties/ElementProperti
 import { MountingHoleSettings } from "@components/MountingHoleSettings/MountingHoleSettings";
 import { ReferenceImageControls } from "@components/ReferenceImageControls/ReferenceImageControls";
 import { describeComponents } from "@lib/componentList";
+import { findCrowdedElements } from "@lib/elementParts";
+import { getVisibleElements } from "@lib/elementVisibility";
 import type { ExportFormat, RightPanelTab } from "@lib/preferences";
 import {
   PanelElementType,
@@ -137,6 +161,14 @@ function ProjectPanel({
   onSelectExportFormat,
   onOrderPrint,
 }: ProjectPanelProps) {
+  const exportMenuItems: Array<{ format: ExportFormat; label: string; Icon: LucideIcon }> = [
+    { format: "svg", label: t.projects.exportSvg, Icon: FileCode },
+    { format: "png", label: t.projects.exportPng, Icon: FileImage },
+    { format: "kicadSvg", label: t.projects.exportKicadSvg, Icon: CircuitBoard },
+    { format: "kicadPcb", label: t.projects.exportKicadPcb, Icon: CircuitBoard },
+    { format: "stl", label: t.projects.exportStl, Icon: Box },
+  ];
+
   return (
     <>
       <div className={styles.projectHeader}>
@@ -182,23 +214,21 @@ function ProjectPanel({
           onClick={isEditingProjectName ? onCommitProjectName : onStartEditingProjectName}
           aria-label={t.projects.editNameLabel}
         >
-          <svg className={styles.editIcon} viewBox="0 0 20 20" role="img" aria-hidden="true">
-            <path
-              d="M15.73 2.29a1 1 0 0 0-1.41 0l-1.73 1.73 3.39 3.39 1.73-1.73a1 1 0 0 0 0-1.41zM2 14.67 3.91 18l3.32-1.91 7.13-7.13-3.39-3.39L2 14.67z"
-              fill="currentColor"
-            />
-          </svg>
+          <Pencil />
         </button>
       </div>
       <div className={styles.buttonRow}>
         <button type="button" className={styles.secondaryButton} onClick={onNewProject}>
+          <FilePlus />
           {t.projects.newProject}
         </button>
         <button type="button" className={styles.primaryButton} onClick={onSaveProject}>
+          <Save />
           {t.projects.save}
         </button>
         <div className={styles.exportSplitButton}>
           <button type="button" className={styles.exportSplitMain} onClick={onExportClick}>
+            <Download />
             {exportButtonLabel}
           </button>
           <button
@@ -207,7 +237,7 @@ function ProjectPanel({
             className={styles.exportSplitToggle}
             onClick={onToggleExportMenu}
           >
-            ▾
+            <ChevronDown />
           </button>
           {isExportMenuOpen ? (
             <div className={styles.exportMenu}>
@@ -219,49 +249,27 @@ function ProjectPanel({
                   onExportJson();
                 }}
               >
+                <FileBraces />
                 {t.projects.exportJson}
               </button>
-              <button
-                type="button"
-                className={styles.exportMenuItem}
-                onClick={() => onSelectExportFormat("svg")}
-              >
-                {t.projects.exportSvg}
-              </button>
-              <button
-                type="button"
-                className={styles.exportMenuItem}
-                onClick={() => onSelectExportFormat("png")}
-              >
-                {t.projects.exportPng}
-              </button>
-              <button
-                type="button"
-                className={styles.exportMenuItem}
-                onClick={() => onSelectExportFormat("kicadSvg")}
-              >
-                {t.projects.exportKicadSvg}
-              </button>
-              <button
-                type="button"
-                className={styles.exportMenuItem}
-                onClick={() => onSelectExportFormat("kicadPcb")}
-              >
-                {t.projects.exportKicadPcb}
-              </button>
-              <button
-                type="button"
-                className={styles.exportMenuItem}
-                onClick={() => onSelectExportFormat("stl")}
-              >
-                {t.projects.exportStl}
-              </button>
+              {exportMenuItems.map(({ format, label, Icon }) => (
+                <button
+                  key={format}
+                  type="button"
+                  className={styles.exportMenuItem}
+                  onClick={() => onSelectExportFormat(format)}
+                >
+                  <Icon />
+                  {label}
+                </button>
+              ))}
             </div>
           ) : null}
         </div>
       </div>
       {onOrderPrint ? (
         <button type="button" className={styles.orderButton} onClick={onOrderPrint}>
+          <ShoppingCart />
           {t.projects.orderPrint}
         </button>
       ) : null}
@@ -287,12 +295,15 @@ function ProjectPanel({
           disabled={!selectedSavedName}
           onClick={onLoadSelected}
         >
+          <FolderOpen />
           {t.projects.load}
         </button>
         <button type="button" className={styles.secondaryButton} onClick={onImportJsonClick}>
+          <FileUp />
           {t.projects.importJson}
         </button>
         <button type="button" className={styles.secondaryButton} onClick={onDeleteOrReset}>
+          <Trash />
           {t.projects.delete}
         </button>
         <button
@@ -300,6 +311,7 @@ function ProjectPanel({
           className={styles.secondaryButton}
           onClick={onImportReferenceImageClick}
         >
+          <ImagePlus />
           {t.properties.importImage}
         </button>
         <input
@@ -378,6 +390,13 @@ function PropertiesTab({
       )?.name ?? null
     );
   }, [panelModel.elements, selectedElement, typeLabels]);
+  // Hidden elements are left out of the panel, so they crowd nothing.
+  const isCrowded = React.useMemo(
+    () =>
+      selectedElement !== null &&
+      findCrowdedElements(getVisibleElements(panelModel.elements)).has(selectedElement.id),
+    [panelModel.elements, selectedElement],
+  );
 
   if (mountingHolesSelected) {
     return (
@@ -406,6 +425,7 @@ function PropertiesTab({
         element={elementForProperties}
         name={elementName}
         selectionCount={selectedElementCount}
+        crowded={isCrowded}
         designColor={panelModel.designColor}
         designRelief={panelModel.designRelief}
         onChangeDesignColor={(designColor) => onColorsChange({ designColor })}
@@ -443,6 +463,12 @@ interface RightPanelTabsProps {
   componentCount: number;
   onChangeTab: (tab: RightPanelTab) => void;
 }
+
+const TAB_ICONS: Record<RightPanelTab, LucideIcon> = {
+  display: Eye,
+  properties: SlidersHorizontal,
+  components: Layers,
+};
 
 function RightPanelTabs({ t, activeTab, componentCount, onChangeTab }: RightPanelTabsProps) {
   const tabRefs = React.useRef<Partial<Record<RightPanelTab, HTMLButtonElement | null>>>({});
@@ -483,6 +509,7 @@ function RightPanelTabs({ t, activeTab, componentCount, onChangeTab }: RightPane
     >
       {TAB_ORDER.map((tab) => {
         const isActive = tab === activeTab;
+        const Icon = TAB_ICONS[tab];
         return (
           <button
             key={tab}
@@ -498,10 +525,13 @@ function RightPanelTabs({ t, activeTab, componentCount, onChangeTab }: RightPane
             className={styles.tab[isActive ? "active" : "idle"]}
             onClick={() => onChangeTab(tab)}
           >
-            {labels[tab]}
-            {tab === "components" && componentCount > 0 ? (
-              <span className={styles.tabCount}>{componentCount}</span>
-            ) : null}
+            <Icon />
+            <span className={styles.tabLabel}>
+              {labels[tab]}
+              {tab === "components" && componentCount > 0 ? (
+                <span className={styles.tabCount}>{componentCount}</span>
+              ) : null}
+            </span>
           </button>
         );
       })}
@@ -534,6 +564,7 @@ export function RightPanel({
           <div className={styles.drawerHeader}>
             <div className={styles.cardTitle}>{projectPanel.resolvedProjectName}</div>
             <button type="button" className={styles.secondaryButton} onClick={onClose}>
+              <X />
               Close
             </button>
           </div>

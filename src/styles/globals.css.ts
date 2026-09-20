@@ -44,3 +44,8 @@ globalStyle("p", {
   margin: 0,
   color: vars.color.textSecondary,
 });
+
+// Icons sit next to their label in flex buttons: they keep their size when the label is long.
+globalStyle(".lucide", {
+  flexShrink: 0,
+});

@@ -1,3 +1,4 @@
+import { Check, Download, ExternalLink, PanelLeft, PanelRight, X } from "lucide-react";
 import React from "react";
 
 import { PanelCanvas } from "@components/PanelCanvas/PanelCanvas";
@@ -1083,6 +1084,7 @@ export function PanelDesigner() {
                       setShowRightPanel(false);
                     }}
                   >
+                    <PanelLeft />
                     Tools
                   </button>
                   <button
@@ -1093,6 +1095,7 @@ export function PanelDesigner() {
                       setShowLeftPanel(false);
                     }}
                   >
+                    <PanelRight />
                     Properties
                   </button>
                 </div>
@@ -1271,6 +1274,7 @@ export function PanelDesigner() {
                 className={styles.secondaryButton}
                 onClick={handleCancelStlExport}
               >
+                <X />
                 {t.projects.stlDialog.cancel}
               </button>
               <button
@@ -1278,6 +1282,7 @@ export function PanelDesigner() {
                 className={styles.primaryButton}
                 onClick={handleConfirmStlExport}
               >
+                <Download />
                 {t.projects.stlDialog.confirm}
               </button>
             </div>
@@ -1322,6 +1327,7 @@ export function PanelDesigner() {
                 className={styles.secondaryButton}
                 onClick={() => setIsSvgArtworkModalOpen(false)}
               >
+                <X />
                 {t.svgArtwork.cancel}
               </button>
             </div>
@@ -1339,9 +1345,11 @@ export function PanelDesigner() {
             <p className={styles.modalDescription}>{confirmDialog.message}</p>
             <div className={styles.modalActions}>
               <button type="button" className={styles.secondaryButton} onClick={handleConfirmNo}>
+                <X />
                 {t.projects.messages.confirmNo}
               </button>
               <button type="button" className={styles.primaryButton} onClick={handleConfirmYes}>
+                <Check />
                 {t.projects.messages.confirmYes}
               </button>
             </div>
@@ -1387,10 +1395,12 @@ export function PanelDesigner() {
                 rel="noreferrer"
               >
                 {t.changelog.viewFull}
+                <ExternalLink size={14} />
               </a>
             </div>
             <div className={styles.modalActions}>
               <button type="button" className={styles.secondaryButton} onClick={closeChangelog}>
+                <X />
                 {t.changelog.close}
               </button>
             </div>

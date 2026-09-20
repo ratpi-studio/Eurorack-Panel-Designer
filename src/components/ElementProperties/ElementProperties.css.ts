@@ -54,6 +54,9 @@ export const subtitle = style({
 });
 
 export const removeButton = style({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "6px",
   border: "none",
   backgroundColor: "#ef4444",
   color: "#0f172a",
@@ -125,6 +128,37 @@ export const hint = style({
   color: vars.color.textSecondary,
 });
 
+export const partHint = style([
+  hint,
+  {
+    gridColumn: "span 2",
+    display: "flex",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: vars.spacing.sm,
+    marginTop: `-${vars.spacing.xs}`,
+  },
+]);
+
+export const inlineButton = style({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "4px",
+  border: `1px solid ${vars.color.border}`,
+  backgroundColor: "transparent",
+  color: vars.color.accent,
+  fontSize: "12px",
+  fontWeight: 600,
+  borderRadius: "6px",
+  padding: "2px 8px",
+  cursor: "pointer",
+  selectors: {
+    "&:hover": {
+      borderColor: vars.color.accent,
+    },
+  },
+});
+
 export const sectionHeader = style({
   gridColumn: "span 2",
   display: "flex",
@@ -156,6 +190,17 @@ export const warnings = style({
   color: "#fde68a",
   fontSize: "12px",
   lineHeight: 1.4,
+});
+
+// A warning with its icon, which stays on the first line of a longer text.
+export const warning = style({
+  display: "flex",
+  alignItems: "flex-start",
+  gap: "6px",
+});
+
+export const warningIcon = style({
+  marginTop: "1px",
 });
 
 export const empty = style({

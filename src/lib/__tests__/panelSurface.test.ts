@@ -91,3 +91,35 @@ describe("splitOverlappingCutouts", () => {
     expect(split([jack("a", 10, 20), jack("empty", 10, 20, 0)]).overlapping).toEqual([]);
   });
 });
+
+describe("buildPanelCutouts", () => {
+  it("cuts switches with a round hole as circles, the others as rectangles", () => {
+    const toggle: PanelElement = {
+      id: "toggle",
+      type: PanelElementType.Switch,
+      positionMm: { x: 20, y: 50 },
+      properties: { diameterMm: 5 },
+    };
+    const slide: PanelElement = {
+      id: "slide",
+      type: PanelElementType.Switch,
+      positionMm: { x: 20, y: 80 },
+      properties: { widthMm: 4, heightMm: 8 },
+    };
+
+    const [round, rectangular] = buildPanelCutouts({
+      mountingHoles: [],
+      elements: [toggle, slide],
+    });
+
+    expect(round.ring.every(([x, y]) => Math.abs(Math.hypot(x - 20, y - 50) - 2.5) < 1e-9)).toBe(
+      true,
+    );
+    expect(rectangular.ring).toEqual([
+      [18, 76],
+      [22, 76],
+      [22, 84],
+      [18, 84],
+    ]);
+  });
+});

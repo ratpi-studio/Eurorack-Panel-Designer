@@ -1,6 +1,6 @@
 {
   "name": "eurorack_panel_designer",
-  "version": "0.11.1",
+  "version": "0.12.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -21,6 +21,7 @@
     "@vercel/analytics": "^1.6.1",
     "@vercel/blob": "^2.8.0",
     "knip": "6.4.0",
+    "lucide-react": "^1.47.0",
     "polygon-clipping": "^0.15.7",
     "react": "19.3.0",
     "react-dom": "19.3.0",

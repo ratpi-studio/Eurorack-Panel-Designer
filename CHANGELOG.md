@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.12.0 - 2026-09-19
+
+- Jacks, knobs, switches, and LEDs can now stand for a real part, picked from the new Part menu in their properties: Thonkiconn jacks, Alpha 9 mm pots, Bourns PEC11R encoders, Dailywell mini and sub-mini toggles, and 3 mm and 5 mm LEDs. The part sets the hole to drill for it, from its datasheet. You can still change the diameter, for instance to leave some play in a 3D print, and "Use Ø… mm" brings back the recommended one.
+- Knobs also get the knob that goes on them: Davies 1900H clone, Rogan PT-1PS, PT-2PS, or PT-3PS, or the Thonk Tall Trimmer Topper.
+- The canvas outlines the knob, nut, or washer of each part, and turns it red when it runs into another component, such as two knobs too close together or a knob over an LED. The properties of the element say so too, and so does the order dialog. Hide the outlines with "Knobs and nuts" in the Display tab; they are only a guide, and the exports leave them out.
+- New elements start as the most common part: Thonkiconn jacks (6 mm hole instead of 8 mm), Alpha 9 mm pots with a Davies knob (7 mm instead of 10 mm), sub-mini toggles (a 5 mm round hole instead of an 8 × 16 mm rectangle), and 3 mm LEDs. Elements already placed keep their size.
+- Switches can have a round hole, as toggles need, or a rectangular one: pick "Custom round hole" or "Custom rectangular hole" in their Part menu. The 3D view and every export cut round switches as circles.
+- The palette gives each element an icon of its own, so jacks, knobs, switches, and LEDs no longer look alike, and describes it on hover. Buttons, tabs, menus, and dialogs have icons too.
+
 ## 0.11.1 - 2026-09-19
 
 - Clicking on the canvas now picks what you see under the pointer, even when it lies under a bigger element. Cut-outs (jacks, knobs, and the other holes) come first, as they show through texts and SVG patterns, then the smallest element. An SVG pattern over the whole panel no longer hides the elements placed before it: click them to select or drag them, and click where nothing else is to select the pattern. Mounting holes can be clicked through patterns and texts too.

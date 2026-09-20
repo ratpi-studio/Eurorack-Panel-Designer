@@ -230,6 +230,7 @@ export function useCanvasRender({
         clearanceLines,
         showGhostDistances: Boolean(ghostElement && placementType),
         showDimensions: model.options.showDimensions,
+        showHardware: model.options.showHardware,
       });
 
       if (typeof window !== "undefined") {
@@ -269,6 +270,7 @@ export function useCanvasRender({
     model.panelColor,
     model.designColor,
     model.options.showDimensions,
+    model.options.showHardware,
     placementType,
     svgArtworkImageMap,
     panelSurfacePath,

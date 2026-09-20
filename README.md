@@ -19,6 +19,7 @@ Single-page web app to sketch Eurorack front panels. The canvas mirrors a real 3
 - Printable text and SVG patterns, raised in the design color: five bundled fonts, and text that clears the pattern around it or merges into it.
 - Automatic conversion between centimeters, millimeters, and HP.
 - Library of panel elements with editable geometry, rotation, and labels.
+- Real parts with the hole to drill for them, from their datasheets (Thonkiconn jacks, Alpha 9 mm pots, Bourns PEC11R encoders, Dailywell toggles, LEDs) and the knob that goes on each knob, outlined on the canvas with their nuts and washers, in red where they run into each other.
 - Generated mounting holes that update with the panel width.
 - Local projects (save/load/delete) plus JSON, PNG, SVG, KiCad Edge.Cuts (SVG or `.kicad_pcb`), and STL exports (vector extrusion, thickness picker, and live 3D preview).
 
@@ -28,6 +29,7 @@ Single-page web app to sketch Eurorack front panels. The canvas mirrors a real 3
 - Strict TypeScript, unit-tested core logic.
 - State managed with [Zustand](https://zustand-demo.pmnd.rs/).
 - Styling via [vanilla-extract](https://vanilla-extract.style/).
+- Icons from [Lucide](https://lucide.dev/).
 
 ## Getting started
 
@@ -60,9 +62,11 @@ Single-page web app to sketch Eurorack front panels. The canvas mirrors a real 3
 
 - Adjust panel width through either the mm or HP input; the other unit updates instantly and the canvas resizes.
 - Pick an element in the palette, click on the canvas to place it, then drag to reposition. Use the right-hand panel to fine-tune coordinates, rotation, or dimensions.
-- The right-hand panel keeps the project controls on top and three tabs below: **Display** (grid, snapping, dimensions, colors, reset view), **Properties** (the selected element, the mounting holes or the reference image), and **Components**. Selecting something on the canvas opens Properties, unless Components is open. The open tab is remembered.
+- The right-hand panel keeps the project controls on top and three tabs below: **Display** (grid, snapping, dimensions, knobs and nuts, colors, reset view), **Properties** (the selected element, the mounting holes or the reference image), and **Components**. Selecting something on the canvas opens Properties, unless Components is open. The open tab is remembered.
 - **Components** lists every placed element. Click a row to select it (Shift or ⌘/Ctrl-click to add it to the selection), double-click its name to rename it, and use its buttons to hide, lock, or delete it. Hidden components stay in the project but are left out of the canvas, the 3D view, every export, and orders; **Show all** brings them back. Locked components cannot be picked or moved on the canvas, but can still be selected and edited from the list.
 - Placed cut-outs are tinted with their palette color and show their measurements (diameter inside round holes, width × height inside other shapes); the selected element gets dimension lines along its sides. Toggle them with **Dimensions** in the Display panel. Exports keep using the panel and design colors.
+- Jacks, knobs, switches, and LEDs stand for a real part, chosen in the **Part** menu of their properties: new ones start as the most common part (Thonkiconn, Alpha 9 mm pot, Dailywell sub-mini toggle, 3 mm LED). A part sets the hole to drill for it, from its datasheet; change the diameter to leave some play, and **Use Ø… mm** brings the recommended one back. **Custom hole** keeps a hole of your own, and switches choose a round or a rectangular one. Knobs also pick the **Knob** that goes on them.
+- The canvas outlines the knob, nut, or washer of each part, dashed in the element's color, and in red when it runs into another component: two knobs too close together, or a knob over an LED. The properties of the element warn about it too, and so does the order dialog. Toggle the outlines with **Knobs and nuts** in the Display panel; the exports leave them out. The part catalog and the sources of its numbers are in `src/lib/parts.ts`.
 - Drag the handles around the selected element to resize it: round holes grow around their center, other shapes keep the opposite side in place, and text scales its font size. Sizes snap to 0.5 mm steps unless `Shift` is held.
 - Switch the render area between **2D**, **3D**, and **2D + 3D** with the buttons above it; the choice is remembered. In 3D, drag to rotate, right-drag to pan, and scroll to zoom. **Reset view** reframes both views. The 3D view shows the STL geometry at the thickness set in the STL export dialog (2 mm by default): cut-outs, mounting holes, text and SVG relief on the front, and inserts on the back. Complex SVG artwork refreshes the 3D view once edits pause, so dragging in 2D stays smooth.
 - Panels print in two colors: the panel color for the body, and the design color for every text and SVG pattern, raised on the front. Text and patterns share one relief, set from the properties of either (**Relief**: thickness, and how deep it sinks into the panel so both colors bond); they are cut away over cut-outs.

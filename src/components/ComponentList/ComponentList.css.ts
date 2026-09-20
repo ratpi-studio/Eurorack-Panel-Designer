@@ -22,6 +22,9 @@ export const summary = style({
 });
 
 export const textButton = style({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "4px",
   border: "none",
   background: "none",
   padding: 0,

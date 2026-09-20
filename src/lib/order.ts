@@ -1,6 +1,7 @@
 import { changelogEntries } from "@lib/changelog";
 import { hasDesignElements } from "@lib/designLayer";
 import { computeElementMountingHoles } from "@lib/elementMountingHoles";
+import { findCrowdedElements } from "@lib/elementParts";
 import { getVisibleElements, isElementHidden, withoutHiddenElements } from "@lib/elementVisibility";
 import { generateMountingHoles } from "@lib/mountingHoles";
 import { ORDER_MAX_WIDTH_HP, isOrderableWidth, type FilamentId } from "@lib/orderCatalog";
@@ -33,6 +34,7 @@ export type OrderIssue =
   | { kind: "tooWide"; widthHp: number; maxWidthHp: number }
   | { kind: "sameFilament" }
   | { kind: "textPrint"; count: number }
+  | { kind: "crowdedHardware"; count: number }
   | { kind: "hiddenElements"; count: number };
 
 /** Failed order request, with the HTTP status (0 when the request did not reach the server). */
@@ -119,6 +121,10 @@ export function listOrderIssues(model: PanelModel, filaments: OrderFilaments): O
   const hardToPrintTexts = countHardToPrintTexts(printedElements);
   if (hardToPrintTexts > 0) {
     issues.push({ kind: "textPrint", count: hardToPrintTexts });
+  }
+  const crowdedElements = findCrowdedElements(printedElements).size;
+  if (crowdedElements > 0) {
+    issues.push({ kind: "crowdedHardware", count: crowdedElements });
   }
   const hiddenElements = model.elements.filter(isElementHidden).length;
   if (hiddenElements > 0) {

@@ -27,6 +27,9 @@ export const description = style({
 });
 
 export const closeButton = style({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "6px",
   alignSelf: "flex-start",
   borderRadius: "6px",
   border: `1px solid ${vars.color.border}`,
@@ -64,6 +67,10 @@ export const shapeGroup = style({
 
 const baseShapeButton = {
   flex: 1,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "6px",
   borderRadius: "6px",
   padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
   border: `1px solid ${vars.color.border}`,

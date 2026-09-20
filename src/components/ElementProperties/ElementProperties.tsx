@@ -1,10 +1,14 @@
+import { RotateCcw, TriangleAlert, Trash } from "lucide-react";
 import React from "react";
 
 import { ColorPickerField, toColorInputValue } from "@components/DisplayOptions/DisplayOptions";
 import { useI18n } from "@i18n/I18nContext";
+import { formatDimensionMm } from "@lib/canvas/elementDimensions";
+import { applyPartChoice, getPartChoice, isPartChoice } from "@lib/elementParts";
 import {
   DEFAULT_DESIGN_COLOR,
   PanelElementType,
+  hasRoundHole,
   type DesignReliefConfig,
   type LabelElementProperties,
   type PanelElement,
@@ -12,6 +16,7 @@ import {
   type TextPatternOverlap,
   type Vector2,
 } from "@lib/panelTypes";
+import { PANEL_KNOBS, getPart, getPartsForType, isKnobId, isPartId } from "@lib/parts";
 import { getSvgArtworkAspectRatio } from "@lib/svgArtwork";
 import { getTextFontsVersion, loadTextFonts, subscribeTextFonts } from "@lib/text/textFontLoader";
 import { TEXT_FONTS, isTextFontId } from "@lib/text/textFonts";
@@ -29,6 +34,8 @@ interface ElementPropertiesProps {
   /** Name of the element in the components list; null for an element being placed. */
   name?: string | null;
   selectionCount: number;
+  /** A knob, nut or washer of this element and of another one overlap. */
+  crowded?: boolean;
   /** Color of every text and SVG pattern, shared by the whole panel. */
   designColor: string;
   /** Relief of every text and SVG pattern, shared by the whole panel. */
@@ -41,6 +48,10 @@ interface ElementPropertiesProps {
   onRemove: () => void;
 }
 
+const NO_KNOB = "none";
+// Hole sizes closer than this to the recommended one count as the same.
+const HOLE_MATCH_TOLERANCE_MM = 0.001;
+
 function sanitizeNumber(value: string): number | null {
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) ? parsed : null;
@@ -50,6 +61,7 @@ export function ElementProperties({
   element,
   name = null,
   selectionCount,
+  crowded = false,
   designColor,
   designRelief,
   onChangePosition,
@@ -83,14 +95,10 @@ export function ElementProperties({
       rotation: (element.rotationDeg ?? 0).toString(),
     };
 
-    const isCircularElement =
-      element.type === PanelElementType.Jack ||
-      element.type === PanelElementType.Potentiometer ||
-      element.type === PanelElementType.Led;
-    if (isCircularElement) {
+    if (hasRoundHole(element)) {
       setInputs({
         ...base,
-        diameter: (element.properties as { diameterMm: number }).diameterMm.toString(),
+        diameter: element.properties.diameterMm.toString(),
       });
       return;
     }
@@ -162,6 +170,7 @@ export function ElementProperties({
           </div>
           <div className={styles.actions}>
             <button type="button" className={styles.removeButton} onClick={onRemove}>
+              <Trash />
               {t.properties.delete}
             </button>
           </div>
@@ -177,6 +186,43 @@ export function ElementProperties({
 
   const { positionMm, rotationDeg = 0, properties } = element;
   const isDraft = element.id === "draft";
+  const roundHoleMm = hasRoundHole(element) ? element.properties.diameterMm : null;
+  const isBoxElement =
+    roundHoleMm === null &&
+    (element.type === PanelElementType.Switch ||
+      element.type === PanelElementType.Rectangle ||
+      element.type === PanelElementType.Oval ||
+      element.type === PanelElementType.Slot ||
+      element.type === PanelElementType.Triangle);
+  const partChoice = getPartChoice(element);
+  const part = partChoice && isPartId(partChoice) ? getPart(partChoice) : null;
+  const knobId =
+    element.type === PanelElementType.Potentiometer ? (element.properties.knobId ?? null) : null;
+
+  const handlePartChange = (value: string) => {
+    if (isPartChoice(value)) {
+      onChangeProperties(applyPartChoice(element, value));
+    }
+  };
+
+  const handleKnobChange = (value: string) => {
+    if (element.type !== PanelElementType.Potentiometer) {
+      return;
+    }
+    const next = { ...element.properties };
+    if (isKnobId(value)) {
+      next.knobId = value;
+    } else {
+      delete next.knobId;
+    }
+    onChangeProperties(next);
+  };
+
+  const handleUseRecommendedHole = () => {
+    if (part && hasRoundHole(element)) {
+      onChangeProperties({ ...element.properties, diameterMm: part.holeDiameterMm });
+    }
+  };
 
   const handlePositionChange = (axis: "x" | "y", value: string) => {
     setInputs((prev) => ({
@@ -287,6 +333,7 @@ export function ElementProperties({
         <div className={styles.actions}>
           {!isDraft ? (
             <button type="button" className={styles.removeButton} onClick={onRemove}>
+              <Trash />
               {t.properties.delete}
             </button>
           ) : null}
@@ -294,6 +341,76 @@ export function ElementProperties({
       </div>
 
       <div className={styles.grid}>
+        {partChoice ? (
+          <label className={styles.fieldWide}>
+            <span className={styles.label}>{t.properties.part}</span>
+            <select
+              className={styles.select}
+              value={partChoice}
+              onChange={(event) => handlePartChange(event.target.value)}
+            >
+              {getPartsForType(element.type).map((option) => (
+                <option key={option.id} value={option.id}>
+                  {t.properties.partOptions[option.id]}
+                </option>
+              ))}
+              {element.type === PanelElementType.Switch ? (
+                <>
+                  <option value="customRound">{t.properties.customRoundHole}</option>
+                  <option value="customRectangle">{t.properties.customRectangularHole}</option>
+                </>
+              ) : (
+                <option value="custom">{t.properties.customHole}</option>
+              )}
+            </select>
+          </label>
+        ) : null}
+        {part ? (
+          <div className={styles.partHint}>
+            <span>
+              {t.properties.partHint(
+                formatDimensionMm(part.holeDiameterMm),
+                part.hardwareDiameterMm ? formatDimensionMm(part.hardwareDiameterMm) : null,
+              )}
+            </span>
+            {roundHoleMm !== null &&
+            Math.abs(roundHoleMm - part.holeDiameterMm) > HOLE_MATCH_TOLERANCE_MM ? (
+              <button
+                type="button"
+                className={styles.inlineButton}
+                onClick={handleUseRecommendedHole}
+              >
+                <RotateCcw size={12} />
+                {t.properties.useRecommendedHole(formatDimensionMm(part.holeDiameterMm))}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+        {element.type === PanelElementType.Potentiometer ? (
+          <label className={styles.fieldWide}>
+            <span className={styles.label}>{t.properties.knob}</span>
+            <select
+              className={styles.select}
+              value={knobId ?? NO_KNOB}
+              onChange={(event) => handleKnobChange(event.target.value)}
+            >
+              <option value={NO_KNOB}>{t.properties.noKnob}</option>
+              {PANEL_KNOBS.map((knob) => (
+                <option key={knob.id} value={knob.id}>
+                  {`${t.properties.knobOptions[knob.id]} · Ø${formatDimensionMm(knob.diameterMm)} mm`}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        {crowded ? (
+          <ul className={styles.warnings} role="status">
+            <li className={styles.warning}>
+              <TriangleAlert size={14} className={styles.warningIcon} />
+              {t.properties.crowdedHardware}
+            </li>
+          </ul>
+        ) : null}
         <label className={styles.field}>
           <span className={styles.label}>{t.properties.posX}</span>
           <input
@@ -328,9 +445,7 @@ export function ElementProperties({
           />
         </label>
 
-        {(element.type === PanelElementType.Jack ||
-          element.type === PanelElementType.Potentiometer ||
-          element.type === PanelElementType.Led) && (
+        {roundHoleMm !== null && (
           <label className={styles.field}>
             <span className={styles.label}>{t.properties.diameter}</span>
             <input
@@ -338,19 +453,13 @@ export function ElementProperties({
               type="number"
               min={0}
               step={0.5}
-              value={
-                inputs.diameter ?? (properties as { diameterMm: number }).diameterMm.toString()
-              }
+              value={inputs.diameter ?? roundHoleMm.toString()}
               onChange={(event) => handlePropertyChange("diameterMm", event.target.value)}
             />
           </label>
         )}
 
-        {(element.type === PanelElementType.Switch ||
-          element.type === PanelElementType.Rectangle ||
-          element.type === PanelElementType.Oval ||
-          element.type === PanelElementType.Slot ||
-          element.type === PanelElementType.Triangle) && (
+        {isBoxElement && (
           <>
             <label className={styles.field}>
               <span className={styles.label}>{t.properties.width}</span>
@@ -505,7 +614,10 @@ export function ElementProperties({
             {textWarnings.length ? (
               <ul className={styles.warnings} role="status">
                 {textWarnings.map((warning) => (
-                  <li key={warning}>{warning}</li>
+                  <li key={warning} className={styles.warning}>
+                    <TriangleAlert size={14} className={styles.warningIcon} />
+                    {warning}
+                  </li>
                 ))}
               </ul>
             ) : null}
