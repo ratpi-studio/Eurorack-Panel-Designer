@@ -1,3 +1,4 @@
+import { Ruler } from "lucide-react";
 import React from "react";
 
 import { useI18n } from "@i18n/I18nContext";
@@ -7,6 +8,7 @@ import * as styles from "./PanelControls.css";
 interface PanelControlsProps {
   widthMm: number;
   widthHp: number;
+  heightMm: number;
   onChangeWidthMm: (widthMm: number) => void;
   onChangeWidthHp: (widthHp: number) => void;
 }
@@ -23,6 +25,7 @@ function sanitizeInput(value: string): number {
 export function PanelControls({
   widthMm,
   widthHp,
+  heightMm,
   onChangeWidthMm,
   onChangeWidthHp,
 }: PanelControlsProps) {
@@ -102,6 +105,10 @@ export function PanelControls({
         />
         <span className={styles.hint}>{t.controls.widthMmHint}</span>
       </div>
+      <p className={styles.note}>
+        <Ruler />
+        {t.controls.heightNote(heightMm)}
+      </p>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import {
   SERIALIZATION_VERSION,
   type PanelModel,
 } from "../panelTypes";
+import { panelDimensionsFromHp } from "../units";
 import {
   deserializePanelModel,
   parseSerializedPanel,
@@ -18,12 +19,7 @@ import {
 } from "../serialization";
 
 const sampleModel: PanelModel = {
-  dimensions: {
-    widthCm: 10,
-    widthMm: 101.6,
-    widthHp: 20,
-    heightMm: 128.5,
-  },
+  dimensions: panelDimensionsFromHp(20),
   elements: [
     {
       id: "el-1",
@@ -82,6 +78,20 @@ describe("serialization helpers", () => {
     };
 
     expect(deserializePanelModel(serializePanelModel(model))).toEqual(model);
+  });
+
+  it("brings panels saved at the exact HP pitch back to the width they are cut at", () => {
+    const saved = {
+      ...sampleModel,
+      dimensions: { widthCm: 10.16, widthMm: 101.6, widthHp: 20, heightMm: 128.5 },
+    };
+
+    const { dimensions } = deserializePanelModel(serializePanelModel(saved));
+
+    expect(dimensions.widthMm).toBe(101.3);
+    expect(dimensions.widthHp).toBe(20);
+    expect(dimensions.widthCm).toBeCloseTo(10.13);
+    expect(dimensions.heightMm).toBe(128.5);
   });
 
   it("shows dimensions and hardware for saves made before the options existed", () => {

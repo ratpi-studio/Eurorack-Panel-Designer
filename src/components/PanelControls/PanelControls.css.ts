@@ -52,3 +52,13 @@ export const hint = style({
   fontSize: "12px",
   color: vars.color.textSecondary,
 });
+
+export const note = style({
+  display: "flex",
+  alignItems: "center",
+  gap: vars.spacing.xs,
+  flexBasis: "100%",
+  margin: 0,
+  fontSize: "12px",
+  color: vars.color.textSecondary,
+});
