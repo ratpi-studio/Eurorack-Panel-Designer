@@ -17,10 +17,10 @@ Single-page web app to sketch Eurorack front panels. The canvas mirrors a real 3
 - Canvas-driven editor with zoom, pan, snapping, and optional grid.
 - Live 3D view of the panel as exported to STL: show the 2D editor, the 3D view, or both side by side. The 3D model follows every edit and uses the panel and design colors.
 - Printable text and SVG patterns, raised in the design color: five bundled fonts, and text that clears the pattern around it or merges into it.
-- Automatic conversion between centimeters, millimeters, and HP.
+- Automatic conversion between centimeters, millimeters, and HP, with panels cut at the width Doepfer publishes (a 6 HP panel is 30.00 mm, not 30.48 mm) and the 3U height of 128.5 mm.
 - Library of panel elements with editable geometry, rotation, and labels.
 - Real parts with the hole to drill for them, from their datasheets (Thonkiconn jacks, Alpha 9 mm pots, Bourns PEC11R encoders, Dailywell toggles, LEDs) and the knob that goes on each knob, outlined on the canvas with their nuts and washers, in red where they run into each other.
-- Generated mounting holes that update with the panel width.
+- Generated mounting holes that update with the panel width, on the 5.08 mm grid of the rails: first column 7.5 mm from the left edge, the others a whole number of HP from it.
 - Local projects (save/load/delete) plus JSON, PNG, SVG, KiCad Edge.Cuts (SVG or `.kicad_pcb`), and STL exports (vector extrusion, thickness picker, and live 3D preview).
 
 ## Tech stack
@@ -60,7 +60,8 @@ Single-page web app to sketch Eurorack front panels. The canvas mirrors a real 3
 
 ## Usage tips
 
-- Adjust panel width through either the mm or HP input; the other unit updates instantly and the canvas resizes.
+- Adjust panel width through either the mm or HP input; the other unit updates instantly and the canvas resizes. Panels are a few tenths of a millimeter narrower than their HP pitch, as Doepfer's A-100 construction details list them, so modules can be screwed side by side; the widths that table leaves out are cut `PANEL_WIDTH_CLEARANCE_MM` (0.35 mm) under the grid. The height is always 128.5 mm (3U).
+- Mounting holes follow the rails rather than the panel edges: the first column sits 7.5 mm from the left edge, every other column a whole number of HP from it, and the rows 3 mm from the top and bottom. Panels wider than the spacing (10 HP) take a column in between, and one always lands near the right edge. Their diameter is 3.4 mm by default, a little over the 3.2 mm of the Doepfer drawing, so an M3 screw still passes through a 3D print.
 - Pick an element in the palette, click on the canvas to place it, then drag to reposition. Use the right-hand panel to fine-tune coordinates, rotation, or dimensions.
 - The right-hand panel keeps the project controls on top and three tabs below: **Display** (grid, snapping, dimensions, knobs and nuts, colors, reset view), **Properties** (the selected element, the mounting holes or the reference image), and **Components**. Selecting something on the canvas opens Properties, unless Components is open. The open tab is remembered.
 - **Components** lists every placed element. Click a row to select it (Shift or ⌘/Ctrl-click to add it to the selection), double-click its name to rename it, and use its buttons to hide, lock, or delete it. Hidden components stay in the project but are left out of the canvas, the 3D view, every export, and orders; **Show all** brings them back. Locked components cannot be picked or moved on the canvas, but can still be selected and edited from the list.

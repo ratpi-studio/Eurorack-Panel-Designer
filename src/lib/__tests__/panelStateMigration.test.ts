@@ -49,8 +49,22 @@ const legacyModel = {
 } as unknown as PanelModel;
 
 describe("migratePersistedPanelState", () => {
-  it("is at version 10, where panel options gained the hardware overlay", () => {
-    expect(PANEL_STATE_VERSION).toBe(10);
+  it("is at version 11, where panels took the width they are cut at", () => {
+    expect(PANEL_STATE_VERSION).toBe(11);
+  });
+
+  it("brings 0.12 autosaves back to the width the panel is cut at", () => {
+    const state = {
+      model: {
+        ...createInitialModel(),
+        dimensions: { widthCm: 3.048, widthMm: 30.48, widthHp: 6, heightMm: 128.5 },
+      },
+    };
+
+    const migrated = migratePersistedPanelState(state, 10, createInitialModel);
+
+    expect(migrated?.model?.dimensions.widthMm).toBe(30);
+    expect(migrated?.model?.dimensions.widthHp).toBe(6);
   });
 
   it("shows the hardware of 0.11 autosaves", () => {

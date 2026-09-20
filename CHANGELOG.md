@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.1 - 2026-09-20
+
+- Panels are now as wide as they should be cut. A panel used to be exactly its width in HP times 5.08 mm, the pitch of the rack grid, which leaves nothing to assemble modules side by side: a 6 HP panel came out at 30.48 mm instead of the 30.00 mm Doepfer publishes. Panels now follow the widths of the A-100 construction details, and the widths that table leaves out are cut 0.35 mm under the grid. Designs saved before open at their corrected width, and their elements keep their position.
+- Mounting holes now land where a rail can take them. Their first column is 7.5 mm from the left edge of the panel and every other column a whole number of HP from it, as the A-100 front panel drawing has it, so the screws meet the threads of the rails whatever the width. Before, the columns were placed from each edge and ended up a fraction of an HP off. Wide panels take a column every 10 HP and always one at each end, instead of a pair of columns every 10 HP: a 42 HP panel goes from 18 holes to 10, and a panel of 11, 21 or 31 HP no longer gets a hole 2 mm from its right edge.
+- The width box now says that panels are 128.5 mm high (3U), which no screen mentioned before.
+
 ## 0.12.0 - 2026-09-19
 
 - Jacks, knobs, switches, and LEDs can now stand for a real part, picked from the new Part menu in their properties: Thonkiconn jacks, Alpha 9 mm pots, Bourns PEC11R encoders, Dailywell mini and sub-mini toggles, and 3 mm and 5 mm LEDs. The part sets the hole to drill for it, from its datasheet. You can still change the diameter, for instance to leave some play in a 3D print, and "Use Ø… mm" brings back the recommended one.

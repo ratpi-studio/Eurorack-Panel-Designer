@@ -8,7 +8,6 @@ import {
   DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   DEFAULT_PANEL_OPTIONS,
-  DEFAULT_MM_PER_HP,
   PanelElementType,
   type PanelElement,
   type PanelModel,
@@ -66,7 +65,7 @@ function crossingLines(lines: EdgeCutLine[]): Array<[number, number]> {
 
 function createSampleModel(): PanelModel {
   return {
-    dimensions: createPanelDimensions(2, DEFAULT_MM_PER_HP, 50),
+    dimensions: createPanelDimensions(2, 50),
     elements: [
       {
         id: "jack-1",

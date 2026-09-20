@@ -27,7 +27,7 @@ import {
 } from "@lib/panelTypes";
 import { getVisibleElements } from "@lib/elementVisibility";
 import { isOrderingEnabled } from "@lib/order";
-import { createPanelDimensions, hpToMm, mmToCm } from "@lib/units";
+import { createPanelDimensions, mmToCm, panelDimensionsFromHp } from "@lib/units";
 import { changelogEntries } from "@lib/changelog";
 import { computeElementMountingHoles } from "@lib/elementMountingHoles";
 import { shrinkReferenceImage, type ReferenceImage } from "@lib/referenceImage";
@@ -188,7 +188,7 @@ export function PanelDesigner() {
     (widthMm: number) => {
       updateModel((prev) => ({
         ...prev,
-        dimensions: createPanelDimensions(mmToCm(widthMm)),
+        dimensions: createPanelDimensions(mmToCm(widthMm), prev.dimensions.heightMm),
       }));
       clearSelection();
     },
@@ -197,19 +197,10 @@ export function PanelDesigner() {
 
   const handleSetWidthFromHp = React.useCallback(
     (widthHp: number) => {
-      updateModel((prev) => {
-        const currentMmPerHp =
-          prev.dimensions.widthHp > 0
-            ? prev.dimensions.widthMm / prev.dimensions.widthHp
-            : undefined;
-        const widthMm = hpToMm(widthHp, currentMmPerHp);
-        const widthCm = mmToCm(widthMm);
-
-        return {
-          ...prev,
-          dimensions: createPanelDimensions(widthCm, currentMmPerHp),
-        };
-      });
+      updateModel((prev) => ({
+        ...prev,
+        dimensions: panelDimensionsFromHp(widthHp, prev.dimensions.heightMm),
+      }));
       clearSelection();
     },
     [clearSelection, updateModel],

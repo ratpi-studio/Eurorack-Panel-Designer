@@ -40,6 +40,7 @@ interface Translations {
     widthMmLabel: string;
     widthHpHint: string;
     widthMmHint: string;
+    heightNote: (heightMm: number) => string;
   };
   display: {
     grid: string;
@@ -356,7 +357,8 @@ export const enUS: Translations = {
     widthHpLabel: "Width (HP)",
     widthMmLabel: "Width (mm)",
     widthHpHint: "Eurorack units (1 HP = 5.08 mm)",
-    widthMmHint: "Total panel width in millimeters",
+    widthMmHint: "Width to cut, a bit under the HP grid (Doepfer)",
+    heightNote: (heightMm: number) => `Height ${Number(heightMm.toFixed(2))} mm (3U), fixed`,
   },
   display: {
     grid: "Grid",

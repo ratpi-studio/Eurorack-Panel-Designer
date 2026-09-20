@@ -1,15 +1,23 @@
 import {
+  DEFAULT_MM_PER_HP,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   type MountingHole,
   type MountingHoleConfig,
 } from "./panelTypes";
-import { hpToMm } from "./units";
 
 interface MountingHoleInput {
   widthHp: number;
   widthMm: number;
   heightMm: number;
   config?: Partial<MountingHoleConfig>;
+}
+
+interface ColumnInput {
+  widthMm: number;
+  config: MountingHoleConfig;
+  horizontalFootprint: number;
+  minCenter: number;
+  maxCenter: number;
 }
 
 export const MIN_MOUNTING_HOLE_SPACING_MM = 8;
@@ -21,6 +29,51 @@ function clamp(value: number, min: number, max: number): number {
     return min;
   }
   return Math.min(Math.max(value, min), max);
+}
+
+/** The one column a panel too narrow for a pair gets: on the grid when it fits, centered if not. */
+function singleColumnX({ widthMm, config, minCenter, maxCenter }: ColumnInput): number {
+  const offsetMm = config.horizontalOffsetMm;
+  if (offsetMm >= minCenter && offsetMm <= maxCenter) {
+    return offsetMm;
+  }
+
+  return clamp(widthMm / 2, minCenter, maxCenter);
+}
+
+/**
+ * Where the columns of mounting holes go. Holes are screwed into the rails, whose threads follow
+ * the 5.08 mm grid, so the first column sits `horizontalOffsetMm` from the left edge of the panel
+ * and every other one a whole number of HP from it. The last column lands as close to the same
+ * offset from the right edge as the grid allows, and wide panels take an extra column every
+ * `spacingHp` HP in between, unless it would crowd the last one.
+ * Source: https://doepfer.de/a100_man/a100m_e.htm, front panel drawing.
+ */
+function buildColumnXs(input: ColumnInput): number[] {
+  const { config, horizontalFootprint, minCenter, maxCenter, widthMm } = input;
+  const offsetMm = config.horizontalOffsetMm;
+  const steps = Math.round((widthMm - offsetMm * 2) / DEFAULT_MM_PER_HP);
+  const minSeparationMm = Math.max(
+    config.diameterMm,
+    horizontalFootprint,
+    MIN_MOUNTING_HOLE_SPACING_MM,
+  );
+
+  if (steps <= 0 || steps * DEFAULT_MM_PER_HP < minSeparationMm) {
+    return [singleColumnX(input)];
+  }
+
+  const spacingSteps = Math.max(MIN_SPACING_HP, Math.round(config.spacingHp));
+  const columnXs: number[] = [];
+
+  for (let step = 0; step < steps; step += spacingSteps) {
+    if ((steps - step) * DEFAULT_MM_PER_HP >= minSeparationMm) {
+      columnXs.push(offsetMm + step * DEFAULT_MM_PER_HP);
+    }
+  }
+  columnXs.push(offsetMm + steps * DEFAULT_MM_PER_HP);
+
+  return columnXs.map((x) => clamp(x, minCenter, maxCenter));
 }
 
 export function generateMountingHoles({
@@ -53,66 +106,29 @@ export function generateMountingHoles({
 
   const minCenter = horizontalFootprint + HIT_MARGIN_MM;
   const maxCenter = Math.max(widthMm - horizontalFootprint - HIT_MARGIN_MM, minCenter);
-
-  const mmPerHp = widthMm / widthHp;
-  const spacingHp = Math.max(MIN_SPACING_HP, resolvedConfig.spacingHp);
-  const holes: MountingHole[] = [];
   const topY = resolvedConfig.verticalOffsetMm;
   const bottomY = heightMm - resolvedConfig.verticalOffsetMm;
 
-  for (let hpOffset = 0; hpOffset < widthHp; hpOffset += spacingHp) {
-    const startHp = hpOffset;
-    const endHp = Math.min(widthHp, hpOffset + spacingHp);
-    const startMm = hpToMm(startHp, mmPerHp);
-    const endMm = hpToMm(endHp, mmPerHp);
-    const segmentWidth = Math.max(endMm - startMm, 0);
-    if (segmentWidth <= 0) {
-      continue;
-    }
+  const columnXs = buildColumnXs({
+    widthMm,
+    config: resolvedConfig,
+    horizontalFootprint,
+    minCenter,
+    maxCenter,
+  });
 
-    const segmentMin = Math.max(startMm + horizontalFootprint, minCenter);
-    const segmentMax = Math.min(endMm - horizontalFootprint, maxCenter);
-    const baseOffset = resolvedConfig.horizontalOffsetMm;
-    let columnXs: number[];
-
-    if (segmentMax <= segmentMin) {
-      const center = clamp((startMm + endMm) / 2, minCenter, maxCenter);
-      columnXs = [center];
-    } else {
-      const leftX = clamp(startMm + baseOffset, segmentMin, segmentMax);
-      const rightX = clamp(endMm - baseOffset, segmentMin, segmentMax);
-      const separation = Math.abs(rightX - leftX);
-      const minSeparation = Math.max(
-        resolvedConfig.diameterMm,
-        horizontalFootprint,
-        MIN_MOUNTING_HOLE_SPACING_MM,
-      );
-
-      if (separation < minSeparation) {
-        const center = clamp((segmentMin + segmentMax) / 2, segmentMin, segmentMax);
-        columnXs = [center];
-      } else {
-        columnXs = [leftX, rightX];
-      }
-    }
-
-    columnXs.forEach((x) => {
-      holes.push(
-        {
-          center: { x, y: topY },
-          diameterMm: resolvedConfig.diameterMm,
-          shape: resolvedConfig.shape,
-          slotLengthMm,
-        },
-        {
-          center: { x, y: bottomY },
-          diameterMm: resolvedConfig.diameterMm,
-          shape: resolvedConfig.shape,
-          slotLengthMm,
-        },
-      );
-    });
-  }
-
-  return holes;
+  return columnXs.flatMap((x) => [
+    {
+      center: { x, y: topY },
+      diameterMm: resolvedConfig.diameterMm,
+      shape: resolvedConfig.shape,
+      slotLengthMm,
+    },
+    {
+      center: { x, y: bottomY },
+      diameterMm: resolvedConfig.diameterMm,
+      shape: resolvedConfig.shape,
+      slotLengthMm,
+    },
+  ]);
 }

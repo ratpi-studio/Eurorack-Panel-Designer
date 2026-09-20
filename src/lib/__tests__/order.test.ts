@@ -24,15 +24,11 @@ import {
   type PanelModel,
 } from "@lib/panelTypes";
 import { serializePanelModel } from "@lib/serialization";
+import { panelDimensionsFromHp } from "@lib/units";
 
 function createPanel(widthHp: number, elements: PanelElement[] = []): PanelModel {
   return {
-    dimensions: {
-      widthCm: (widthHp * 5.08) / 10,
-      widthMm: widthHp * 5.08,
-      widthHp,
-      heightMm: 128.5,
-    },
+    dimensions: panelDimensionsFromHp(widthHp),
     elements,
     options: { ...DEFAULT_PANEL_OPTIONS },
     mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG },

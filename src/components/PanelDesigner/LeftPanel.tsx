@@ -56,6 +56,7 @@ export function LeftPanel({
           <PanelControls
             widthMm={panelModel.dimensions.widthMm}
             widthHp={panelModel.dimensions.widthHp}
+            heightMm={panelModel.dimensions.heightMm}
             onChangeWidthMm={onChangeWidthMm}
             onChangeWidthHp={onChangeWidthHp}
           />
