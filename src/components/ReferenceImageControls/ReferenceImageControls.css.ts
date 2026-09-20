@@ -28,6 +28,9 @@ export const actions = style({
 });
 
 export const secondary = style({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "6px",
   border: `1px solid ${vars.color.border}`,
   backgroundColor: vars.color.surface,
   color: vars.color.textPrimary,
@@ -43,6 +46,9 @@ export const secondary = style({
 });
 
 export const danger = style({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "6px",
   border: "none",
   backgroundColor: "#ef4444",
   color: "#0f172a",

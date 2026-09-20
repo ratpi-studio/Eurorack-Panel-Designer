@@ -6,6 +6,7 @@ import { buildMergedPanelSurfacePathData } from "@lib/mergedPanelSurface";
 import { reportDegradation } from "@lib/monitoring";
 import {
   PanelElementType,
+  hasRoundHole,
   isLabelElement,
   type LabelElement,
   type MountingHole,
@@ -51,14 +52,12 @@ function elementToSvg(element: PanelElement, stroke: string): string {
   const strokeWidth = 0.6;
   const transform = rotationTransform(element);
 
+  if (hasRoundHole(element)) {
+    const r = element.properties.diameterMm / 2;
+    return `<circle cx="${element.positionMm.x}" cy="${element.positionMm.y}" r="${r}" stroke="${stroke}" stroke-width="${strokeWidth}" fill="none" />`;
+  }
+
   switch (element.type) {
-    case PanelElementType.Jack:
-    case PanelElementType.Potentiometer:
-    case PanelElementType.Led: {
-      const props = element.properties as { diameterMm: number };
-      const r = props.diameterMm / 2;
-      return `<circle cx="${element.positionMm.x}" cy="${element.positionMm.y}" r="${r}" stroke="${stroke}" stroke-width="${strokeWidth}" fill="none" />`;
-    }
     case PanelElementType.Switch: {
       const props = element.properties as { widthMm: number; heightMm: number };
       const x = element.positionMm.x - props.widthMm / 2;

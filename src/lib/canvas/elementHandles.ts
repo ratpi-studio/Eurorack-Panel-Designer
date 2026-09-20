@@ -1,4 +1,10 @@
-import { PanelElementType, type PanelElement, type Vector2 } from "@lib/panelTypes";
+import {
+  PanelElementType,
+  isCircularElementProperties,
+  type PanelElement,
+  type RectangularElementProperties,
+  type Vector2,
+} from "@lib/panelTypes";
 import {
   getReferenceImageHandleDirection,
   REFERENCE_IMAGE_HANDLE_HIT_RADIUS_PX,
@@ -56,6 +62,8 @@ export function getElementResizeMode(element: PanelElement): ElementResizeMode {
     case PanelElementType.Led:
     case PanelElementType.Insert:
       return "diameter";
+    case PanelElementType.Switch:
+      return isCircularElementProperties(element.properties) ? "diameter" : "box";
     case PanelElementType.Label:
       return "font";
     case PanelElementType.SvgArtwork:
@@ -192,33 +200,25 @@ export function resizeElementFromHandle(
       );
       return { ...element, properties: { ...element.properties, outerDiameterMm } };
     }
-    case PanelElementType.Switch:
+    case PanelElementType.Switch: {
+      if (isCircularElementProperties(element.properties)) {
+        const diameterMm = resizeDiameter(
+          element.properties.diameterMm,
+          direction,
+          localDelta,
+          sizeStepMm,
+          MIN_ELEMENT_SIZE_MM,
+        );
+        return { ...element, properties: { ...element.properties, diameterMm } };
+      }
+      const box = { positionMm: element.positionMm, properties: element.properties };
+      return { ...element, ...resizeBox(box, direction, localDelta, sizeStepMm, rotationRad) };
+    }
     case PanelElementType.Rectangle:
     case PanelElementType.Oval:
     case PanelElementType.Slot:
-    case PanelElementType.Triangle: {
-      const { widthMm, heightMm } = element.properties;
-      const nextWidthMm =
-        direction.x === 0
-          ? widthMm
-          : quantizeSize(widthMm + direction.x * localDelta.x, sizeStepMm, MIN_ELEMENT_SIZE_MM);
-      const nextHeightMm =
-        direction.y === 0
-          ? heightMm
-          : quantizeSize(heightMm + direction.y * localDelta.y, sizeStepMm, MIN_ELEMENT_SIZE_MM);
-      return {
-        ...element,
-        positionMm: shiftPosition(
-          element.positionMm,
-          {
-            x: (direction.x * (nextWidthMm - widthMm)) / 2,
-            y: (direction.y * (nextHeightMm - heightMm)) / 2,
-          },
-          rotationRad,
-        ),
-        properties: { ...element.properties, widthMm: nextWidthMm, heightMm: nextHeightMm },
-      };
-    }
+    case PanelElementType.Triangle:
+      return { ...element, ...resizeBox(element, direction, localDelta, sizeStepMm, rotationRad) };
     case PanelElementType.Label: {
       const startSize = getLabelSizeMm(element.properties);
       // Project the dragged corner on the frame diagonal to get a uniform scale factor.
@@ -258,6 +258,41 @@ export function resizeElementFromHandle(
     default:
       return element;
   }
+}
+
+interface ResizableBox {
+  positionMm: Vector2;
+  properties: RectangularElementProperties;
+}
+
+/** The side (or corner) opposite to the handle stays in place, even when the box is rotated. */
+function resizeBox(
+  { positionMm, properties }: ResizableBox,
+  direction: Vector2,
+  localDelta: Vector2,
+  sizeStepMm: number | undefined,
+  rotationRad: number,
+): ResizableBox {
+  const { widthMm, heightMm } = properties;
+  const nextWidthMm =
+    direction.x === 0
+      ? widthMm
+      : quantizeSize(widthMm + direction.x * localDelta.x, sizeStepMm, MIN_ELEMENT_SIZE_MM);
+  const nextHeightMm =
+    direction.y === 0
+      ? heightMm
+      : quantizeSize(heightMm + direction.y * localDelta.y, sizeStepMm, MIN_ELEMENT_SIZE_MM);
+  return {
+    positionMm: shiftPosition(
+      positionMm,
+      {
+        x: (direction.x * (nextWidthMm - widthMm)) / 2,
+        y: (direction.y * (nextHeightMm - heightMm)) / 2,
+      },
+      rotationRad,
+    ),
+    properties: { ...properties, widthMm: nextWidthMm, heightMm: nextHeightMm },
+  };
 }
 
 function resizeDiameter(

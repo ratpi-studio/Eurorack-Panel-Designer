@@ -1,5 +1,7 @@
+import { Circle, X } from "lucide-react";
 import React from "react";
 
+import { SlotIcon } from "@components/ElementTypeIcon/elementIcons";
 import { useI18n } from "@i18n/I18nContext";
 import { type MountingHoleConfig } from "@lib/panelTypes";
 
@@ -59,6 +61,7 @@ export function MountingHoleSettings({ config, onChange, onClose }: MountingHole
           <p className={styles.description}>{t.mountingHoles.description}</p>
         </div>
         <button type="button" className={styles.closeButton} onClick={onClose}>
+          <X />
           {t.mountingHoles.close}
         </button>
       </div>
@@ -70,6 +73,7 @@ export function MountingHoleSettings({ config, onChange, onClose }: MountingHole
             className={config.shape === "circle" ? styles.shapeButtonActive : styles.shapeButton}
             onClick={() => handleShapeChange("circle")}
           >
+            <Circle size={14} />
             {t.mountingHoles.typeCircle}
           </button>
           <button
@@ -77,6 +81,7 @@ export function MountingHoleSettings({ config, onChange, onClose }: MountingHole
             className={config.shape === "slot" ? styles.shapeButtonActive : styles.shapeButton}
             onClick={() => handleShapeChange("slot")}
           >
+            <SlotIcon size={14} />
             {t.mountingHoles.typeSlot}
           </button>
         </div>

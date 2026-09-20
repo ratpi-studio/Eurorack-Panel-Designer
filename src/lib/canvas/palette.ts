@@ -56,6 +56,8 @@ export const canvasPalette: ExtendedPalette = {
   dimensionText: "#f8fafc",
   dimensionHalo: "rgba(3, 7, 18, 0.85)",
   dimensionLine: "rgba(248, 250, 252, 0.75)",
+  crowdedHardwareFill: "rgba(239, 68, 68, 0.25)",
+  crowdedHardwareStroke: "#ef4444",
 };
 
 export const exportPalette: PanelCanvasPalette = {
@@ -73,6 +75,8 @@ export const exportPalette: PanelCanvasPalette = {
   dimensionText: canvasPalette.dimensionText,
   dimensionHalo: canvasPalette.dimensionHalo,
   dimensionLine: canvasPalette.dimensionLine,
+  crowdedHardwareFill: canvasPalette.crowdedHardwareFill,
+  crowdedHardwareStroke: canvasPalette.crowdedHardwareStroke,
 };
 
 /** Turns a `#rgb` / `#rrggbb` color into `rgba()`; other formats are returned unchanged. */

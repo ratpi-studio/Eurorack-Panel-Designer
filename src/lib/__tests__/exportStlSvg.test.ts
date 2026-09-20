@@ -35,6 +35,7 @@ function createPanel(widthHp = 8): PanelModel {
       snapToGrid: true,
       gridSizeMm: 5,
       showDimensions: true,
+      showHardware: true,
     },
     mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG },
     elementHoleConfig: { ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG },

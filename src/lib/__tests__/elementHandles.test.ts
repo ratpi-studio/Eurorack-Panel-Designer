@@ -135,7 +135,7 @@ describe("resizeElementFromHandle", () => {
   const snapped = { snap: true };
 
   it("grows round elements around their center", () => {
-    const jack = createElement(PanelElementType.Jack);
+    const jack = createElement(PanelElementType.Jack, { properties: { diameterMm: 8 } });
 
     const fromEdge = resizeElementFromHandle(jack, "right", { x: 2, y: 5 }, free);
     expect(fromEdge.properties).toMatchObject({ diameterMm: 12 });
@@ -146,7 +146,7 @@ describe("resizeElementFromHandle", () => {
   });
 
   it("snaps and clamps diameters", () => {
-    const jack = createElement(PanelElementType.Jack);
+    const jack = createElement(PanelElementType.Jack, { properties: { diameterMm: 8 } });
 
     expect(
       resizeElementFromHandle(jack, "right", { x: 0.3, y: 0 }, snapped).properties,
@@ -159,6 +159,16 @@ describe("resizeElementFromHandle", () => {
     expect(resizeElementFromHandle(jack, "left", { x: 10, y: 0 }, free).properties).toMatchObject({
       diameterMm: 0.5,
     });
+  });
+
+  it("resizes switches with a round hole by their diameter, around their center", () => {
+    const toggle = createElement(PanelElementType.Switch, { rotationDeg: 30 });
+
+    expect(getElementResizeMode(toggle)).toBe("diameter");
+    expect(getElementFrameRotationDeg(toggle)).toBe(0);
+    const resized = resizeElementFromHandle(toggle, "right", { x: 1, y: 0 }, free);
+    expect(resized.properties).toMatchObject({ diameterMm: 7 });
+    expect(resized.positionMm).toEqual({ x: 50, y: 50 });
   });
 
   it("never shrinks an insert below its inner hole", () => {

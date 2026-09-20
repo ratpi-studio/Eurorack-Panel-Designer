@@ -1,3 +1,4 @@
+import { Scan } from "lucide-react";
 import React from "react";
 
 import { useI18n } from "@i18n/I18nContext";
@@ -82,6 +83,14 @@ export function DisplayOptions({
           />
           <span>{t.display.dimensions}</span>
         </label>
+        <label className={styles.option}>
+          <input
+            type="checkbox"
+            checked={options.showHardware}
+            onChange={handleToggle("showHardware")}
+          />
+          <span>{t.display.hardware}</span>
+        </label>
       </div>
       <label className={styles.sliderField}>
         <span className={styles.label}>{t.display.gridSpacing}</span>
@@ -105,6 +114,7 @@ export function DisplayOptions({
         onChange={(color) => onColorsChange({ designColor: color })}
       />
       <button type="button" className={styles.resetButton} onClick={onResetView}>
+        <Scan />
         {t.display.reset}
       </button>
     </div>

@@ -1,3 +1,4 @@
+import { Replace, Trash } from "lucide-react";
 import React from "react";
 
 import { useI18n } from "@i18n/I18nContext";
@@ -31,9 +32,11 @@ export function ReferenceImageControls({
         <div className={styles.title}>{t.referenceImage.title}</div>
         <div className={styles.actions}>
           <button type="button" className={styles.secondary} onClick={onReplace}>
+            <Replace />
             {t.referenceImage.replace}
           </button>
           <button type="button" className={styles.danger} onClick={onRemove}>
+            <Trash />
             {t.referenceImage.remove}
           </button>
         </div>

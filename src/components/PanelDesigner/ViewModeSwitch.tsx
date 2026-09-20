@@ -1,3 +1,5 @@
+import { Box, Columns2, Square, type LucideIcon } from "lucide-react";
+
 import type { ViewMode } from "@lib/preferences";
 import type { ReturnTypeUseI18n } from "./types";
 import * as styles from "./PanelDesigner.css";
@@ -9,15 +11,15 @@ interface ViewModeSwitchProps {
 }
 
 export function ViewModeSwitch({ t, value, onChange }: ViewModeSwitchProps) {
-  const options: Array<{ mode: ViewMode; label: string }> = [
-    { mode: "2d", label: t.view3d.mode2d },
-    { mode: "3d", label: t.view3d.mode3d },
-    { mode: "split", label: t.view3d.modeSplit },
+  const options: Array<{ mode: ViewMode; label: string; Icon: LucideIcon }> = [
+    { mode: "2d", label: t.view3d.mode2d, Icon: Square },
+    { mode: "3d", label: t.view3d.mode3d, Icon: Box },
+    { mode: "split", label: t.view3d.modeSplit, Icon: Columns2 },
   ];
 
   return (
     <div className={styles.viewModeSwitch} role="group" aria-label={t.view3d.modeLabel}>
-      {options.map(({ mode, label }) => (
+      {options.map(({ mode, label, Icon }) => (
         <button
           key={mode}
           type="button"
@@ -25,6 +27,7 @@ export function ViewModeSwitch({ t, value, onChange }: ViewModeSwitchProps) {
           aria-pressed={value === mode}
           onClick={() => onChange(mode)}
         >
+          <Icon size={14} />
           {label}
         </button>
       ))}

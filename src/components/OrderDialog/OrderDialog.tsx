@@ -1,3 +1,4 @@
+import { OctagonX, Ticket, TriangleAlert, X } from "lucide-react";
 import React from "react";
 
 import * as designerStyles from "@components/PanelDesigner/PanelDesigner.css";
@@ -66,6 +67,8 @@ function describeIssue(issue: OrderIssue, copy: OrderCopy): string {
       return copy.issueSameFilament;
     case "textPrint":
       return copy.issueTextPrint(issue.count);
+    case "crowdedHardware":
+      return copy.issueCrowdedHardware(issue.count);
     case "hiddenElements":
       return copy.issueHiddenElements(issue.count);
   }
@@ -243,6 +246,7 @@ export function OrderDialog({ model, onClose }: OrderDialogProps) {
                     key={issue.kind}
                     className={styles.issue[isBlockingIssue(issue) ? "blocking" : "warning"]}
                   >
+                    {isBlockingIssue(issue) ? <OctagonX /> : <TriangleAlert />}
                     {describeIssue(issue, copy)}
                   </li>
                 ))}
@@ -270,6 +274,7 @@ export function OrderDialog({ model, onClose }: OrderDialogProps) {
             onClick={onClose}
             disabled={isSubmitting}
           >
+            <X />
             {copy.cancel}
           </button>
           <button
@@ -278,6 +283,7 @@ export function OrderDialog({ model, onClose }: OrderDialogProps) {
             onClick={handleSubmit}
             disabled={isBlocked || isSubmitting}
           >
+            <Ticket />
             {isSubmitting ? copy.submitting : copy.submit}
           </button>
         </div>

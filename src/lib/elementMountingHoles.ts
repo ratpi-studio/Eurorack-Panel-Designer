@@ -1,18 +1,16 @@
 import {
   PanelElementType,
+  hasRoundHole,
   type ElementMountingHoleConfig,
   type MountingHole,
   type PanelElement,
 } from "./panelTypes";
 
 function getElementExtent(element: PanelElement): number | null {
+  if (hasRoundHole(element)) {
+    return element.properties.diameterMm / 2;
+  }
   switch (element.type) {
-    case PanelElementType.Jack:
-    case PanelElementType.Potentiometer:
-    case PanelElementType.Led: {
-      const props = element.properties as { diameterMm: number };
-      return props.diameterMm / 2;
-    }
     case PanelElementType.Switch:
     case PanelElementType.Rectangle:
     case PanelElementType.Slot:

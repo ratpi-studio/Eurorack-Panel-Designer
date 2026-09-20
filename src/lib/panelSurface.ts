@@ -1,5 +1,6 @@
 import {
   PanelElementType,
+  isCircularElementProperties,
   type InsertElementProperties,
   type MountingHole,
   type PanelElement,
@@ -126,6 +127,9 @@ function elementCutoutRing(element: PanelElement): SurfaceRing | null {
       return circleRing(element.positionMm, element.properties.diameterMm / 2);
     case PanelElementType.Switch:
     case PanelElementType.Rectangle:
+      if (isCircularElementProperties(element.properties)) {
+        return circleRing(element.positionMm, element.properties.diameterMm / 2);
+      }
       return translateRing(
         rectRing(element.properties.widthMm, element.properties.heightMm),
         element.positionMm,

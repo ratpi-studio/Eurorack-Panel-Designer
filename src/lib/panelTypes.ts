@@ -1,3 +1,4 @@
+import { isKnobId, isPartForType, type KnobId, type PartId } from "./parts";
 import { DEFAULT_TEXT_FONT_ID, isTextFontId, type TextFontId } from "./text/textFonts";
 
 export interface Vector2 {
@@ -47,12 +48,25 @@ interface PanelElementPropertiesBase {
 
 export interface CircularElementProperties extends PanelElementPropertiesBase {
   diameterMm: number;
+  /** Real component the hole is for (see `parts.ts`); its hardware shows on the canvas. */
+  partId?: PartId;
 }
 
 export interface RectangularElementProperties extends PanelElementPropertiesBase {
   widthMm: number;
   heightMm: number;
 }
+
+/** A potentiometer or an encoder, with the knob that goes on it. */
+export interface KnobElementProperties extends CircularElementProperties {
+  knobId?: KnobId;
+}
+
+/**
+ * Toggles mount through a round hole (`diameterMm`), other switches through a rectangular one.
+ * Switches saved before 0.12 are all rectangular.
+ */
+export type SwitchElementProperties = CircularElementProperties | RectangularElementProperties;
 
 /**
  * Where a text lies over an SVG pattern: `knockout` clears the pattern around the text (its
@@ -105,8 +119,8 @@ interface LegacyArtworkRelief {
 
 export type PanelElementPropertiesMap = {
   [PanelElementType.Jack]: CircularElementProperties;
-  [PanelElementType.Potentiometer]: CircularElementProperties;
-  [PanelElementType.Switch]: RectangularElementProperties;
+  [PanelElementType.Potentiometer]: KnobElementProperties;
+  [PanelElementType.Switch]: SwitchElementProperties;
   [PanelElementType.Led]: CircularElementProperties;
   [PanelElementType.Label]: LabelElementProperties;
   [PanelElementType.Rectangle]: RectangularElementProperties;
@@ -142,6 +156,27 @@ export function isLabelElement(element: PanelElement): element is LabelElement {
   return element.type === PanelElementType.Label;
 }
 
+/** An element whose hole is a circle of `diameterMm`. */
+export type RoundHoleElement =
+  | PanelElementForType<PanelElementType.Jack>
+  | PanelElementForType<PanelElementType.Potentiometer>
+  | PanelElementForType<PanelElementType.Led>
+  | (PanelElementForType<PanelElementType.Switch> & { properties: CircularElementProperties });
+
+/** Jacks, knobs, LEDs, and switches with a round hole, such as toggles. */
+export function hasRoundHole(element: PanelElement): element is RoundHoleElement {
+  switch (element.type) {
+    case PanelElementType.Jack:
+    case PanelElementType.Potentiometer:
+    case PanelElementType.Led:
+      return true;
+    case PanelElementType.Switch:
+      return isCircularElementProperties(element.properties);
+    default:
+      return false;
+  }
+}
+
 export interface PanelDimensions {
   widthCm: number;
   widthMm: number;
@@ -155,6 +190,8 @@ export interface PanelOptions {
   snapToGrid: boolean;
   gridSizeMm: number;
   showDimensions: boolean;
+  /** Editor-only outline of the knobs, nuts and washers on the front of the panel. */
+  showHardware: boolean;
 }
 
 export interface ElementMountingHoleConfig {
@@ -204,8 +241,9 @@ export type PanelModelInput = Omit<
   | "designColor"
   | "designRelief"
 > & {
-  // Saves made before the dimensions overlay existed have no `showDimensions`.
-  options: Omit<PanelOptions, "showDimensions"> & Partial<Pick<PanelOptions, "showDimensions">>;
+  // Saves made before the dimension and hardware overlays existed have no option for them.
+  options: Omit<PanelOptions, "showDimensions" | "showHardware"> &
+    Partial<Pick<PanelOptions, "showDimensions" | "showHardware">>;
   mountingHoleConfig?: MountingHoleConfig;
   elementHoleConfig?: ElementMountingHoleConfig;
   clearance?: ClearanceConfig;
@@ -346,6 +384,7 @@ export const DEFAULT_PANEL_OPTIONS: PanelOptions = {
   snapToGrid: true,
   gridSizeMm: 5,
   showDimensions: true,
+  showHardware: true,
 };
 
 export const DEFAULT_MOUNTING_HOLE_CONFIG: MountingHoleConfig = {
@@ -405,9 +444,11 @@ export interface SerializedPanel {
 
 // v7: the relief moved from each SVG artwork to the panel (`designRelief`), and text elements
 // gained a font and a pattern overlap mode.
-export const SERIALIZATION_VERSION = 7;
+// v8: jacks, knobs, switches and LEDs can name a real part (`partId`), knobs the knob that goes on
+// them (`knobId`), and switches can have a round hole (`diameterMm`).
+export const SERIALIZATION_VERSION = 8;
 
-function isCircularElementProperties(
+export function isCircularElementProperties(
   properties: PanelElement["properties"],
 ): properties is CircularElementProperties {
   return "diameterMm" in properties;
@@ -502,6 +543,44 @@ function normalizeSvgArtworkProperties(
   return next;
 }
 
+/** Keeps the part and the knob only when they exist and fit the element type. */
+function sanitizePartReferences(
+  type: PanelElementType,
+  properties: CircularElementProperties,
+): KnobElementProperties {
+  const next: KnobElementProperties = { ...properties };
+  if (next.partId !== undefined && !isPartForType(next.partId, type)) {
+    delete next.partId;
+  }
+  if (
+    next.knobId !== undefined &&
+    (type !== PanelElementType.Potentiometer || !isKnobId(next.knobId))
+  ) {
+    delete next.knobId;
+  }
+  return next;
+}
+
+/** A switch with a round hole keeps no size of a rectangular one. */
+function toRoundSwitchProperties(properties: CircularElementProperties): CircularElementProperties {
+  const next: CircularElementProperties & Partial<RectangularElementProperties> =
+    sanitizePartReferences(PanelElementType.Switch, properties);
+  delete next.widthMm;
+  delete next.heightMm;
+  return next;
+}
+
+/** Every switch part has a round hole: a rectangular switch stands for none. */
+function toRectangularSwitchProperties(
+  properties: RectangularElementProperties,
+): RectangularElementProperties {
+  const next: RectangularElementProperties & Pick<CircularElementProperties, "partId"> = {
+    ...properties,
+  };
+  delete next.partId;
+  return next;
+}
+
 export function sanitizePropertiesForType<TType extends PanelElementType>(
   type: TType,
   properties?: PanelElement["properties"] | null,
@@ -515,10 +594,17 @@ export function sanitizePropertiesForType<TType extends PanelElementType>(
     case PanelElementType.Potentiometer:
     case PanelElementType.Led:
       if (isCircularElementProperties(properties)) {
-        return { ...properties } as PanelElementPropertiesMap[TType];
+        return sanitizePartReferences(type, properties) as PanelElementPropertiesMap[TType];
       }
       return null;
     case PanelElementType.Switch:
+      if (isCircularElementProperties(properties)) {
+        return toRoundSwitchProperties(properties) as PanelElementPropertiesMap[TType];
+      }
+      if (isRectangularElementProperties(properties)) {
+        return toRectangularSwitchProperties(properties) as PanelElementPropertiesMap[TType];
+      }
+      return null;
     case PanelElementType.Rectangle:
     case PanelElementType.Oval:
     case PanelElementType.Slot:

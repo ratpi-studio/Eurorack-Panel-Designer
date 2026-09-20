@@ -128,6 +128,18 @@ describe("order helpers", () => {
     ]);
   });
 
+  it("warns about components too close together, without blocking the order", () => {
+    const knob = (x: number) => createPanelElement(PanelElementType.Potentiometer, { x, y: 40 });
+
+    const issues = listOrderIssues(createPanel(12, [knob(15), knob(25), knob(45)]), {
+      panel: "black",
+      details: "white",
+    });
+
+    expect(issues).toEqual([{ kind: "crowdedHardware", count: 2 }]);
+    expect(issues.some(isBlockingIssue)).toBe(false);
+  });
+
   it("warns about texts that may not print well", () => {
     const tiny = label();
     if (tiny.type === PanelElementType.Label) {

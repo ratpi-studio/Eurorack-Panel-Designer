@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import React from "react";
 
 import { ElementTypeIcon } from "@components/ElementTypeIcon/ElementTypeIcon";
@@ -12,7 +13,7 @@ interface ElementPaletteProps {
   onOpenSvgArtwork: () => void;
 }
 
-const ICON_SIZE = 36;
+const ICON_SIZE = 28;
 
 export function ElementPalette({ activeType, onSelect, onOpenSvgArtwork }: ElementPaletteProps) {
   const t = useI18n();
@@ -80,6 +81,7 @@ export function ElementPalette({ activeType, onSelect, onOpenSvgArtwork }: Eleme
           <div className={styles.subtitle}>{t.palette.subtitle}</div>
         </div>
         <button type="button" className={styles.clearButton} onClick={() => onSelect(null)}>
+          <X size={14} />
           {t.palette.clear}
         </button>
       </div>
@@ -92,6 +94,8 @@ export function ElementPalette({ activeType, onSelect, onOpenSvgArtwork }: Eleme
               key={item.type}
               type="button"
               className={isActive ? styles.cardActive : styles.card}
+              title={item.description}
+              aria-pressed={isSvgArtwork ? undefined : isActive}
               onClick={() => {
                 if (isSvgArtwork) {
                   onOpenSvgArtwork();

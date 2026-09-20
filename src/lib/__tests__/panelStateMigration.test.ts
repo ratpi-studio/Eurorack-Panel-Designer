@@ -49,8 +49,17 @@ const legacyModel = {
 } as unknown as PanelModel;
 
 describe("migratePersistedPanelState", () => {
-  it("is at version 9, where texts gained fonts", () => {
-    expect(PANEL_STATE_VERSION).toBe(9);
+  it("is at version 10, where panel options gained the hardware overlay", () => {
+    expect(PANEL_STATE_VERSION).toBe(10);
+  });
+
+  it("shows the hardware of 0.11 autosaves", () => {
+    const { showHardware: _, ...options } = DEFAULT_PANEL_OPTIONS;
+    const state = { model: { ...createInitialModel(), options } as unknown as PanelModel };
+
+    const migrated = migratePersistedPanelState(state, 9, createInitialModel);
+
+    expect(migrated?.model?.options.showHardware).toBe(true);
   });
 
   it("moves the relief of 0.9 autosaves to the panel and gives texts a font", () => {

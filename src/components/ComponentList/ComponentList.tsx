@@ -1,3 +1,4 @@
+import { Eye, EyeOff, Lock, LockOpen, Trash } from "lucide-react";
 import React from "react";
 
 import { ElementTypeIcon } from "@components/ElementTypeIcon/ElementTypeIcon";
@@ -22,48 +23,6 @@ export interface ComponentListProps {
 }
 
 const ICON_SIZE_PX = 18;
-
-const actionIconProps = {
-  width: 16,
-  height: 16,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: 2,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  "aria-hidden": true,
-} as const;
-
-function VisibilityIcon({ hidden }: { hidden: boolean }) {
-  return (
-    <svg {...actionIconProps}>
-      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
-      <circle cx="12" cy="12" r="3" />
-      {hidden ? <line x1="3" y1="3" x2="21" y2="21" /> : null}
-    </svg>
-  );
-}
-
-function LockIcon({ locked }: { locked: boolean }) {
-  return (
-    <svg {...actionIconProps}>
-      <rect x="5" y="11" width="14" height="10" rx="2" />
-      <path d={locked ? "M8 11V7a4 4 0 0 1 8 0v4" : "M8 11V7a4 4 0 0 1 7.5-2"} />
-    </svg>
-  );
-}
-
-function DeleteIcon() {
-  return (
-    <svg {...actionIconProps}>
-      <path d="M4 7h16" />
-      <path d="M10 11v6M14 11v6" />
-      <path d="M6 7l1 13h10l1-13" />
-      <path d="M9 7V4h6v3" />
-    </svg>
-  );
-}
 
 /** Localized names of the element types, as the palette shows them. */
 export function useElementTypeLabels(): Record<PanelElementType, string> {
@@ -122,6 +81,7 @@ export function ComponentList({
         <span className={styles.summary}>{copy.summary(items.length, hiddenCount)}</span>
         {hiddenCount > 0 ? (
           <button type="button" className={styles.textButton} onClick={onShowAll}>
+            <Eye size={14} />
             {copy.showAll}
           </button>
         ) : null}
@@ -192,7 +152,7 @@ export function ComponentList({
                     title={item.hidden ? copy.show(item.name) : copy.hide(item.name)}
                     onClick={() => onToggleHidden(item.id)}
                   >
-                    <VisibilityIcon hidden={item.hidden} />
+                    {item.hidden ? <EyeOff /> : <Eye />}
                   </button>
                   <button
                     type="button"
@@ -202,7 +162,7 @@ export function ComponentList({
                     title={item.locked ? copy.unlock(item.name) : copy.lock(item.name)}
                     onClick={() => onToggleLocked(item.id)}
                   >
-                    <LockIcon locked={item.locked} />
+                    {item.locked ? <Lock /> : <LockOpen />}
                   </button>
                   <button
                     type="button"
@@ -211,7 +171,7 @@ export function ComponentList({
                     title={copy.remove(item.name)}
                     onClick={() => onRemove(item.id)}
                   >
-                    <DeleteIcon />
+                    <Trash />
                   </button>
                 </div>
               </li>

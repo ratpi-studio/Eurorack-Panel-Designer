@@ -1,4 +1,9 @@
-import { PanelElementType, type PanelElement, type Vector2 } from "@lib/panelTypes";
+import {
+  PanelElementType,
+  isCircularElementProperties,
+  type PanelElement,
+  type Vector2,
+} from "@lib/panelTypes";
 
 type ElementDimensions =
   | { kind: "diameter"; diameterMm: number }
@@ -22,6 +27,14 @@ export function getElementDimensions(element: PanelElement): ElementDimensions |
     case PanelElementType.Insert:
       return { kind: "diameter", diameterMm: element.properties.outerDiameterMm };
     case PanelElementType.Switch:
+      if (isCircularElementProperties(element.properties)) {
+        return { kind: "diameter", diameterMm: element.properties.diameterMm };
+      }
+      return {
+        kind: "box",
+        widthMm: element.properties.widthMm,
+        heightMm: element.properties.heightMm,
+      };
     case PanelElementType.Rectangle:
     case PanelElementType.Oval:
     case PanelElementType.Slot:
@@ -70,6 +83,11 @@ export function getInlineLabelPlacement(
         : null;
     case PanelElementType.Switch:
     case PanelElementType.Rectangle: {
+      if (isCircularElementProperties(element.properties)) {
+        return fitsInCircle(element.properties.diameterMm / 2, halfTextMm)
+          ? { offsetMm: CENTERED, vertical: false }
+          : null;
+      }
       const { widthMm, heightMm } = element.properties;
       return placeInSymmetricShape(
         halfTextMm,

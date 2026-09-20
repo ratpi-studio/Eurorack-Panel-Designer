@@ -36,6 +36,9 @@ export const subtitle = style({
 });
 
 export const clearButton = style({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "4px",
   border: `1px solid ${vars.color.border}`,
   backgroundColor: "transparent",
   borderRadius: "8px",
@@ -80,10 +83,13 @@ export const card = style({
   },
 });
 
+// The element being placed stands out: its label and its frame turn to the accent color.
 export const cardActive = style([
   card,
   {
     color: vars.color.accent,
+    borderColor: vars.color.accent,
+    backgroundColor: "rgba(56, 189, 248, 0.08)",
   },
 ]);
 

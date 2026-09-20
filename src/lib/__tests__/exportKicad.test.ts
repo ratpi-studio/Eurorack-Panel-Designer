@@ -166,6 +166,28 @@ describe("buildKicadEdgeCutsSvg", () => {
     expect(svg).toContain(`M 40 58 H 50 A 2 2 0 0 1 50 62 H 40 A 2 2 0 0 1 40 58 Z`);
     expect(svg).toContain(`M 55 66 L 60 74 L 50 74 Z`);
   });
+
+  it("cuts switches with a round hole, such as toggles, as circles", () => {
+    const model: PanelModel = {
+      ...createSampleModel(),
+      elements: [
+        {
+          id: "toggle-1",
+          type: PanelElementType.Switch,
+          positionMm: { x: 10, y: 30 },
+          properties: { diameterMm: 6.35, partId: "dailywellMiniToggle" },
+        },
+      ],
+    };
+
+    const svg = buildKicadEdgeCutsSvg(model, []);
+
+    expect(svg).toContain(
+      `<circle cx="10" cy="30" r="3.175" stroke="black" stroke-width="0.1" fill="none" />`,
+    );
+    // The board outline is the only rectangle.
+    expect(svg.match(/<rect /g)).toHaveLength(1);
+  });
 });
 
 describe("buildKicadPcbFile", () => {

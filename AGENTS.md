@@ -24,6 +24,7 @@ Keep changes aligned with that product shape: practical, canvas-first, DIY-frien
 - State: `zustand` for the main editor store, with dedicated hooks around history and project workflows
 - Styling: `vanilla-extract` only
 - Notifications: `react-hot-toast`
+- Icons: `lucide-react`
 - 3D/STL preview and geometry helpers: `three`
 - Monitoring / analytics: `@sentry/react` and `@vercel/analytics`
 - Tests: `Vitest`
@@ -53,6 +54,7 @@ Prefer Vite+ commands when working in the repository:
   - Non-React model logic, geometry, unit conversion, serialization, storage helpers, export builders, and canvas drawing helpers.
   - `src/lib/canvas/` contains drawing and transform logic used by the canvas and PNG export path.
   - `src/lib/view3d/` contains the live 3D view: a `three` scene that renders the STL geometry from `exportStl.ts`, and camera framing math.
+  - `parts.ts` is the catalog of real parts (the hole to drill for them, the nut or washer they show on the front) and of knobs, with the sources of their numbers. `elementParts.ts` applies a part to an element (`applyPartChoice`) and outlines the hardware on the front (`getFrontOutline`, `findCrowdedElements`).
   - `src/lib/text/` contains the text pipeline: the curated fonts (`textFonts.ts`, files and licenses in `public/fonts/`), on-demand font loading (`textFontLoader.ts`), the layout every output draws from (`textLayout.ts`), and the polygons the STL extrudes (`textPolygons.ts`).
 - `src/i18n/`
   - User-facing copy lives here. The app currently ships with `en_US.ts`.
@@ -82,12 +84,15 @@ Prefer Vite+ commands when working in the repository:
 - Move calculations, geometry, serialization, and export logic out of components and into `src/lib/`.
 - Keep new user-facing copy in the i18n layer instead of hardcoding strings in components.
 - Use `vanilla-extract` `.css.ts` files for styling. Do not introduce Tailwind, CSS modules, or CSS-in-JS.
+- Take icons from `lucide-react`, imported by name so only the icons used are bundled. `LucideProvider` in `App.tsx` sizes them to 16 px; pass `size` only to depart from it. An icon next to a label stays decorative (Lucide hides it from screen readers); an icon-only button needs an `aria-label`. Panel parts Lucide lacks (jack, knob, toggle, LED, insert, oval, slot) are drawn in `src/components/ElementTypeIcon/elementIcons.ts` with `createLucideIcon`, on Lucide's 24 px grid.
 
 ## 5. State and model rules
 
 - `PanelModel` and related types in `src/lib/panelTypes.ts` are the source of truth for the editor data model.
 - The canvas must remain a projection of store state, not an independent source of truth.
 - Elements can be `hidden` or `locked`. Both stay in the model and in saves. Hidden elements are left out of everything that draws or builds the panel (canvas, 3D view, PNG/SVG/KiCad/STL exports, orders): go through `getVisibleElements` / `withoutHiddenElements` (`src/lib/elementVisibility.ts`) in any new output. Locked elements are only left out of canvas picking, moving, and resizing (`isElementInteractive`).
+- Jacks, knobs, switches and LEDs can stand for a real part (`partId`), and knobs name the knob that goes on them (`knobId`). Normalization drops the ids that do not exist or do not fit the element type. The part only sets the hole when it is picked: the element keeps its own `diameterMm`, which users may change.
+- Switches have a round hole (`diameterMm`, for toggles) or a rectangular one (`widthMm` × `heightMm`), so a switch is not always a box. Where a geometry depends on the hole shape, go through `hasRoundHole` (or `isCircularElementProperties` on the properties) rather than the element type.
 - When changing the panel schema or element model, update all affected layers together:
   - `src/lib/panelTypes.ts`
   - normalization logic
@@ -111,6 +116,8 @@ Prefer Vite+ commands when working in the repository:
 - Leave chunking to Rolldown: do not add `manualChunks` or `codeSplitting` groups. In 0.10.0, manual vendor chunks and Rolldown's runtime helpers imported each other in a cycle, and every page load crashed in production while the dev server worked. `chunkCycleGuardPlugin` in `vite.config.ts` now fails the build on any cycle between chunks. After touching the build setup, load the production build (`vp build`, then `vp preview`), not only the dev server.
 - Panels print in two colors: the panel body, and the design layer (SVG patterns and texts) raised on the front in `designColor`. The design layer shares one relief, `PanelModel.designRelief`: never give a pattern or a text a height of its own. `designLayer.ts` holds the helpers every output shares; the STL merges the layer into one extrusion (`buildDesignLayerPolygons`).
 - Every output draws text from the same outlines: `getLabelTextLayout` (canvas and PNG through `Path2D`, SVG as paths, STL through `textPolygons`), so they match. Text over an SVG pattern either clears it (the knockout zone is the text's ink bounds grown by the padding, see `getLabelKnockoutRing`) or merges with it. Fonts load on demand with `loadTextFonts`: await it before a synchronous export builder, and re-render on `subscribeTextFonts` in live views. opentype.js (from `three/examples/jsm/libs`) is only loaded with `import()`, so it stays out of the startup bundle.
+- New parts and knobs need numbers from a datasheet or the seller's page: add them to `PANEL_PARTS` or `PANEL_KNOBS` with their source in the comment of `parts.ts`, and a label in `properties.partOptions` or `properties.knobOptions`. `parts.ts` only imports types from `panelTypes.ts`, which imports it: keep it that way to avoid a module cycle.
+- The knob, nut and washer outlines are an editor overlay (`showHardware`), like the dimensions: never draw them in an export.
 - New fonts must print well at small sizes and carry an SIL OFL or Apache 2.0 license: add the file and its license under `public/fonts/<folder>/`, an entry in `TEXT_FONTS` (with its measured stem width), and a label in `properties.fontOptions`.
 - If you add a new element type, wire it through the full pipeline:
   - element type definitions

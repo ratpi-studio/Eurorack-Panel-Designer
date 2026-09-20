@@ -59,6 +59,10 @@ export const input = style({
 });
 
 export const resetButton = style({
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "6px",
   marginTop: vars.spacing.xs,
   border: "none",
   backgroundColor: vars.color.accent,

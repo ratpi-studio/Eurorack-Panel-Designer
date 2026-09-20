@@ -104,6 +104,7 @@ export const etsyLink = style({
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
+  gap: "6px",
   height: headerActionHeight,
   boxSizing: "border-box",
   padding: headerActionPadding,
@@ -243,7 +244,12 @@ export const buttonRow = style({
   gap: vars.spacing.sm,
 });
 
+// Buttons line up an icon and their label.
 const baseButton = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "6px",
   borderRadius: "6px",
   padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
   border: "none",
@@ -253,9 +259,6 @@ const baseButton = {
 
 export const changelogButton = style({
   ...baseButton,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
   boxSizing: "border-box",
   backgroundColor: "#0b1426",
   color: vars.color.textPrimary,
@@ -300,14 +303,6 @@ export const iconButton = style({
   color: vars.color.textPrimary,
   border: `1px solid ${vars.color.border}`,
   padding: vars.spacing.xs,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-});
-
-export const editIcon = style({
-  width: "16px",
-  height: "16px",
 });
 
 export const exportSplitButton = style({
@@ -354,6 +349,8 @@ export const exportMenu = style({
 
 export const exportMenuItem = style({
   ...baseButton,
+  justifyContent: "flex-start",
+  gap: vars.spacing.sm,
   borderRadius: 0,
   width: "100%",
   textAlign: "left",
@@ -687,6 +684,9 @@ export const changelogHighlights = style({
 });
 
 export const changelogLink = style({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "4px",
   color: vars.color.accent,
   fontWeight: 600,
   textDecoration: "none",
@@ -707,13 +707,15 @@ export const tabList = style({
   border: `1px solid ${vars.color.border}`,
 });
 
+// The icon sits above the label: side by side, the three tabs overflow the 320 px column.
 const tabBase = style({
   flex: 1,
   display: "inline-flex",
+  flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  gap: vars.spacing.xs,
-  padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
+  gap: "2px",
+  padding: `6px ${vars.spacing.xs}`,
   border: "none",
   borderRadius: "6px",
   background: "none",
@@ -743,6 +745,12 @@ export const tab = styleVariants({
       boxShadow: `inset 0 -2px 0 ${vars.color.accent}`,
     },
   ],
+});
+
+export const tabLabel = style({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: vars.spacing.xs,
 });
 
 export const tabCount = style({

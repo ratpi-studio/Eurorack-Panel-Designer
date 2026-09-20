@@ -1,3 +1,4 @@
+import { LucideProvider } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 
 import { OrderRecap } from "@components/OrderRecap/OrderRecap";
@@ -22,36 +23,41 @@ function resolveOrderId(): string | null {
   }
 }
 
+// Icons sit next to 13-14 px labels in buttons, tabs and menus.
+const ICON_SIZE_PX = 16;
+
 export function App() {
   const orderId = resolveOrderId();
 
   return (
     <I18nProvider>
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          style: {
-            background: "#0b1426",
-            color: "#e2e8f0",
-            border: "1px solid #1e293b",
-          },
-          success: {
+      <LucideProvider size={ICON_SIZE_PX}>
+        <Toaster
+          position="top-right"
+          toastOptions={{
             style: {
               background: "#0b1426",
               color: "#e2e8f0",
-              border: "1px solid #0ea5e9",
+              border: "1px solid #1e293b",
             },
-          },
-          error: {
-            style: {
-              background: "#0b1426",
-              color: "#fecdd3",
-              border: "1px solid #b91c1c",
+            success: {
+              style: {
+                background: "#0b1426",
+                color: "#e2e8f0",
+                border: "1px solid #0ea5e9",
+              },
             },
-          },
-        }}
-      />
-      {orderId ? <OrderRecap id={orderId} /> : <PanelDesigner />}
+            error: {
+              style: {
+                background: "#0b1426",
+                color: "#fecdd3",
+                border: "1px solid #b91c1c",
+              },
+            },
+          }}
+        />
+        {orderId ? <OrderRecap id={orderId} /> : <PanelDesigner />}
+      </LucideProvider>
     </I18nProvider>
   );
 }

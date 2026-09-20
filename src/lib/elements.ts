@@ -4,12 +4,14 @@ import {
   PanelElementType,
   type CircularElementProperties,
   type InsertElementProperties,
+  type KnobElementProperties,
   type LabelElementProperties,
   type PanelElement,
   type RectangularElementProperties,
   type SvgArtworkElementProperties,
   type Vector2,
 } from "@lib/panelTypes";
+import { DEFAULT_KNOB_ID, DEFAULT_PART_IDS, getPart, type PartId } from "@lib/parts";
 import { DEFAULT_SVG_ARTWORK_COLOR } from "@lib/svgArtwork";
 import { DEFAULT_TEXT_FONT_ID } from "@lib/text/textFonts";
 
@@ -21,21 +23,19 @@ function generateElementId(): string {
   return `element-${Date.now()}-${Math.round(Math.random() * 1_000_000)}`;
 }
 
-const DEFAULT_CIRCULAR: CircularElementProperties = {
-  diameterMm: 8,
-  label: "",
+/** A new jack, knob, switch or LED stands for the most common part of its type, with its hole. */
+function partProperties(partId: PartId): CircularElementProperties {
+  return { diameterMm: getPart(partId).holeDiameterMm, partId, label: "" };
+}
+
+const DEFAULT_JACK = partProperties(DEFAULT_PART_IDS.jack);
+
+const DEFAULT_POTENTIOMETER: KnobElementProperties = {
+  ...partProperties(DEFAULT_PART_IDS.potentiometer),
+  knobId: DEFAULT_KNOB_ID,
 };
 
-const DEFAULT_POTENTIOMETER: CircularElementProperties = {
-  diameterMm: 10,
-  label: "",
-};
-
-const DEFAULT_SWITCH: RectangularElementProperties = {
-  widthMm: 8,
-  heightMm: 16,
-  label: "",
-};
+const DEFAULT_SWITCH = partProperties(DEFAULT_PART_IDS.switch);
 
 const DEFAULT_RECTANGLE: RectangularElementProperties = {
   widthMm: 12,
@@ -61,10 +61,7 @@ const DEFAULT_TRIANGLE: RectangularElementProperties = {
   label: "",
 };
 
-const DEFAULT_LED: CircularElementProperties = {
-  diameterMm: 3,
-  label: "",
-};
+const DEFAULT_LED = partProperties(DEFAULT_PART_IDS.led);
 
 const DEFAULT_INSERT: InsertElementProperties = {
   outerDiameterMm: 5.3,
@@ -101,7 +98,7 @@ export function createPanelElement(type: PanelElementType, positionMm: Vector2):
         type,
         positionMm,
         mountingHolesEnabled: false,
-        properties: { ...DEFAULT_CIRCULAR },
+        properties: { ...DEFAULT_JACK },
       };
     case PanelElementType.Potentiometer:
       return {

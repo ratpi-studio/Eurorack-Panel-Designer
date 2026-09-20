@@ -2,8 +2,8 @@ import { mergePanelSurface } from "@lib/mergedPanelSurface";
 import { elementPointToPanel, type SurfaceRing } from "@lib/panelSurface";
 import {
   PanelElementType,
+  hasRoundHole,
   type MountingHole,
-  type PanelElement,
   type PanelModel,
   type Vector2,
 } from "@lib/panelTypes";
@@ -126,7 +126,7 @@ function collectCircularCutouts(
       continue;
     }
 
-    if (hasCircularCutout(element)) {
+    if (hasRoundHole(element)) {
       const radius = element.properties.diameterMm / 2;
       if (radius > 0) {
         holes.push({
@@ -145,7 +145,8 @@ function collectSizedCutouts(model: PanelModel, types: PanelElementType[]): Size
   const holes: SizedCutout[] = [];
 
   for (const element of model.elements) {
-    if (!types.includes(element.type)) {
+    // Switches with a round hole, such as toggles, are among the circular cut-outs.
+    if (!types.includes(element.type) || hasRoundHole(element)) {
       continue;
     }
     const props = element.properties as { widthMm: number; heightMm: number };
@@ -204,16 +205,6 @@ function rotationTransform(hole: SizedCutout): string {
 function placeCutoutPoints(hole: SizedCutout, localPoints: Vector2[]): Vector2[] {
   const center = { x: hole.cx, y: hole.cy };
   return localPoints.map((point) => elementPointToPanel(point, center, hole.rotationDeg));
-}
-
-function hasCircularCutout(element: PanelElement): element is PanelElement & {
-  properties: { diameterMm: number };
-} {
-  return (
-    element.type === PanelElementType.Jack ||
-    element.type === PanelElementType.Potentiometer ||
-    element.type === PanelElementType.Led
-  );
 }
 
 export function buildKicadEdgeCutsSvg(model: PanelModel, mountingHoles: MountingHole[]): string {

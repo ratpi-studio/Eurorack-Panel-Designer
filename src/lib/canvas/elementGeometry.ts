@@ -1,6 +1,7 @@
 import { isDesignElement } from "@lib/designLayer";
 import {
   PanelElementType,
+  isCircularElementProperties,
   type LabelElementProperties,
   type PanelElement,
   type Vector2,
@@ -139,6 +140,10 @@ function isPointInsideElement(pointMm: Vector2, element: PanelElement): boolean 
     }
     case PanelElementType.Switch:
     case PanelElementType.Rectangle: {
+      if (isCircularElementProperties(element.properties)) {
+        const radius = element.properties.diameterMm / 2;
+        return localPoint.x ** 2 + localPoint.y ** 2 <= radius ** 2;
+      }
       const halfWidth = element.properties.widthMm / 2;
       const halfHeight = element.properties.heightMm / 2;
       return Math.abs(localPoint.x) <= halfWidth && Math.abs(localPoint.y) <= halfHeight;
@@ -334,6 +339,10 @@ export function getElementBounds(element: PanelElement): ElementBounds {
     case PanelElementType.Rectangle:
     case PanelElementType.Oval:
     case PanelElementType.Slot: {
+      if (isCircularElementProperties(element.properties)) {
+        const diameterMm = element.properties.diameterMm;
+        return getRectBounds(element.positionMm, diameterMm, diameterMm, 0);
+      }
       return getRectBounds(
         element.positionMm,
         element.properties.widthMm,
@@ -389,6 +398,10 @@ export function getElementSizeMm(element: PanelElement): ElementSizeMm {
     case PanelElementType.Label:
       return getLabelSizeMm(element.properties);
     case PanelElementType.Switch:
+      if (isCircularElementProperties(element.properties)) {
+        return { widthMm: element.properties.diameterMm, heightMm: element.properties.diameterMm };
+      }
+      return { widthMm: element.properties.widthMm, heightMm: element.properties.heightMm };
     case PanelElementType.Rectangle:
     case PanelElementType.Oval:
     case PanelElementType.Slot:

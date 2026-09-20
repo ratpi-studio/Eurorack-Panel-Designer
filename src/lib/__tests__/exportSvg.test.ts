@@ -127,6 +127,26 @@ describe("buildPanelSvg", () => {
     );
   });
 
+  it("outlines switches with a round hole, such as toggles, as circles", () => {
+    const model = createModel();
+    model.elements = [
+      {
+        id: "toggle-1",
+        type: PanelElementType.Switch,
+        positionMm: { x: 10, y: 30 },
+        rotationDeg: 90,
+        properties: { diameterMm: 5, partId: "dailywellSubMiniToggle", label: "" },
+      },
+    ];
+
+    const svg = buildPanelSvg(model, []);
+
+    expect(svg).toContain(
+      `<circle cx="10" cy="30" r="2.5" stroke="#ff00aa" stroke-width="0.6" fill="none" />`,
+    );
+    expect(svg).not.toContain("<rect x=");
+  });
+
   it("outlines texts in their font, clipped to the panel surface like the relief", () => {
     const model = createModel();
     const text = label("GATE", { x: 10, y: 90 }, { fontSizePt: 9 });

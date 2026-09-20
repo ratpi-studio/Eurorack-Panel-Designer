@@ -26,7 +26,7 @@ function createElement(
 
 describe("getElementDimensions", () => {
   it("measures round elements by their diameter", () => {
-    expect(getElementDimensions(createElement(PanelElementType.Jack))).toEqual({
+    expect(getElementDimensions(createElement(PanelElementType.Jack, { diameterMm: 8 }))).toEqual({
       kind: "diameter",
       diameterMm: 8,
     });
