@@ -38,3 +38,6 @@ tsconfig.tsbuildinfo
 
 .editorconfig
 tsconfig.tsbuildinfo
+
+# Files delivered into this folder by the Claude desktop app.
+Claude outputs/
