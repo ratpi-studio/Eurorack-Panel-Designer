@@ -3,8 +3,9 @@
 
 ## Deployments
 
-- Vercel: [https://eurorack-panel-designer-oss8.vercel.app/](https://eurorack-panel-designer-oss8.vercel.app/)
-- GitHub Pages: [https://ratpi-studio.github.io/Eurorack-Panel-Designer/](https://ratpi-studio.github.io/Eurorack-Panel-Designer/) redirects to the Vercel deployment and moves the designs and projects saved there.
+- Live: [https://www.eurorackpanel.com/](https://www.eurorackpanel.com/) (the apex and the old
+  `eurorack-panel-designer-oss8.vercel.app` address redirect to it).
+- GitHub Pages: [https://ratpi-studio.github.io/Eurorack-Panel-Designer/](https://ratpi-studio.github.io/Eurorack-Panel-Designer/) redirects to the live site and moves the designs and projects saved there.
 
 # Eurorack Panel Designer
 
@@ -31,6 +32,23 @@ Single-page web app to sketch Eurorack front panels. The canvas mirrors a real p
 - State managed with [Zustand](https://zustand-demo.pmnd.rs/).
 - Styling via [vanilla-extract](https://vanilla-extract.style/).
 - Icons from [Lucide](https://lucide.dev/).
+
+## Pages for search engines and AI assistants
+
+The app is a single-page app, and no major AI crawler runs JavaScript, so the build also publishes
+plain HTML that needs none:
+
+- `index.html` carries the description, Open Graph tags and a `SoftwareApplication` JSON-LD block,
+  plus a static summary inside `#root` that React replaces when it mounts.
+- `scripts/seo/` generates the reference pages (`/eurorack-hp-to-mm/`, `/eurorack-panel-dimensions/`,
+  `/eurorack-drill-sizes/`, `/3d-print-eurorack-panel/`, `/kicad-eurorack-panel/`) along with
+  `sitemap.xml`, `robots.txt`, `llms.txt` and `llms-full.txt`. Every measurement on them is read
+  from `src/lib`, so a page cannot quote a number the editor no longer applies.
+- `public/images/og.png` is the link preview card, drawn by `scripts/generate-og-image.py` and
+  committed; the build needs no Python.
+
+Add a page by adding it to `buildContentPages()` in `scripts/seo/pages.ts`: the sitemap, the footer
+links and `llms.txt` follow on their own.
 
 ## Getting started
 

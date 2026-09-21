@@ -3,8 +3,74 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/png" href="images/favicon.png" />
-    <title>Eurorack Panel Designer</title>
+    <link rel="icon" type="image/png" href="/images/favicon.png" />
+    <title>Eurorack Panel Designer — free online front panel editor with STL export</title>
+    <meta
+      name="description"
+      content="Design Eurorack front panels in the browser: real part holes from their datasheets, HP to mm conversion, live 3D preview, and STL, SVG, PNG and KiCad Edge.Cuts exports. Free and open source, no account."
+    />
+    <link rel="canonical" href="https://www.eurorackpanel.com/" />
+    <meta name="theme-color" content="#020617" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Eurorack Panel Designer" />
+    <meta
+      property="og:title"
+      content="Eurorack Panel Designer — free online front panel editor with STL export"
+    />
+    <meta
+      property="og:description"
+      content="Design Eurorack front panels in the browser: real part holes from their datasheets, HP to mm conversion, live 3D preview, and STL, SVG, PNG and KiCad Edge.Cuts exports. Free and open source, no account."
+    />
+    <meta property="og:url" content="https://www.eurorackpanel.com/" />
+    <meta property="og:image" content="https://www.eurorackpanel.com/images/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="A Eurorack front panel laid out in the editor, with jacks, potentiometers and labels."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Eurorack Panel Designer — free online front panel editor with STL export"
+    />
+    <meta
+      name="twitter:description"
+      content="Design Eurorack front panels in the browser: real part holes from their datasheets, HP to mm conversion, live 3D preview, and STL, SVG, PNG and KiCad Edge.Cuts exports. Free and open source, no account."
+    />
+    <meta name="twitter:image" content="https://www.eurorackpanel.com/images/og.png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Eurorack Panel Designer",
+        "url": "https://www.eurorackpanel.com/",
+        "applicationCategory": "DesignApplication",
+        "applicationSubCategory": "CAD",
+        "operatingSystem": "Any, in a web browser",
+        "browserRequirements": "Requires a browser with WebGL for the 3D preview",
+        "description": "Design Eurorack front panels in the browser: real part holes from their datasheets, HP to mm conversion, live 3D preview, and STL, SVG, PNG and KiCad Edge.Cuts exports. Free and open source, no account.",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+        "license": "https://opensource.org/licenses/MIT",
+        "codeRepository": "https://github.com/ratpi-studio/Eurorack-Panel-Designer",
+        "author": {
+          "@type": "Organization",
+          "name": "Ratpi Studio",
+          "url": "https://github.com/ratpi-studio"
+        },
+        "image": "https://www.eurorackpanel.com/images/og.png",
+        "featureList": [
+          "Panel formats: 3U Eurorack 128.5 mm, 1U Intellijel 39.65 mm, 1U Pulp Logic 43.18 mm, 2U, 4U, custom",
+          "Widths in HP or millimeters, cut at the widths Doepfer publishes",
+          "Part holes from datasheets: Thonkiconn jacks, Alpha 9 mm pots, Bourns PEC11R encoders, Dailywell toggles, LEDs",
+          "Mounting holes generated on the 5.08 mm rail grid",
+          "Text in five bundled fonts and SVG patterns, raised for a two-colour 3D print",
+          "Live 3D preview of the exported panel",
+          "Exports: STL, SVG, PNG, JSON and KiCad Edge.Cuts"
+        ]
+      }
+    </script>
     <script data-boot-error-reporter>
       // Reports the first error thrown before Sentry has started, such as a bundle that fails to
       // load or evaluate: Sentry cannot report those, since it never starts. It sends a minimal
@@ -152,7 +218,67 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <!--
+      Served to every visitor and to every crawler: React replaces it the moment it mounts
+      (createRoot clears the children of #root). No major AI crawler runs JavaScript, so without
+      this block the page they read is an empty container.
+    -->
+    <div id="root">
+      <div style="min-height: 100vh; background: #020617">
+        <main
+          style="
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 48px 20px;
+            font:
+              16px/1.6 system-ui,
+              -apple-system,
+              &quot;Segoe UI&quot;,
+              sans-serif;
+            color: #e2e8f0;
+            background: #020617;
+          "
+        >
+          <h1 style="font-size: 1.8rem; line-height: 1.25; margin: 0 0 12px">
+            Eurorack Panel Designer
+          </h1>
+          <p style="font-size: 1.1rem; color: #f1f5f9; margin: 0 0 20px">
+            A free, open source editor for Eurorack front panels, running entirely in your browser.
+            Place real parts at the hole their datasheet calls for, see the panel in 3D as it will
+            be printed, and export STL, SVG, PNG or KiCad Edge.Cuts. No account, no upload.
+          </p>
+          <ul style="padding-left: 20px; margin: 0 0 24px">
+            <li>
+              Formats: 3U Eurorack (128.5 mm), 1U Intellijel (39.65 mm), 1U Pulp Logic tiles (43.18
+              mm), 2U, 4U, or a custom size.
+            </li>
+            <li>
+              Widths in HP or millimeters, cut at the widths Doepfer publishes: 6 HP is 30.00 mm,
+              not 30.48 mm.
+            </li>
+            <li>
+              Thonkiconn jacks, Alpha 9 mm pots, Bourns PEC11R encoders, Dailywell toggles and LEDs,
+              with their knobs, nuts and washers outlined.
+            </li>
+            <li>Mounting holes generated on the 5.08 mm grid of the rails.</li>
+            <li>Text in five bundled fonts and SVG patterns, raised for a two-colour 3D print.</li>
+          </ul>
+          <p style="color: #94a3b8">
+            Reference tables: <a style="color: #38bdf8" href="/eurorack-hp-to-mm/">HP to mm</a> ·
+            <a style="color: #38bdf8" href="/eurorack-panel-dimensions/">panel dimensions</a> ·
+            <a style="color: #38bdf8" href="/eurorack-drill-sizes/">drill sizes</a> ·
+            <a style="color: #38bdf8" href="/3d-print-eurorack-panel/">3D printing</a> ·
+            <a style="color: #38bdf8" href="/kicad-eurorack-panel/">KiCad export</a>
+          </p>
+          <p style="color: #94a3b8">
+            The editor is loading. It needs JavaScript;
+            <a style="color: #38bdf8" href="https://github.com/ratpi-studio/Eurorack-Panel-Designer"
+              >the source is on GitHub</a
+            >.
+          </p>
+        </main>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
