@@ -23,7 +23,7 @@ function resolveOrderId(): string | null {
   }
 }
 
-// Icons sit next to 13-14 px labels in buttons, tabs and menus.
+// Icons sit next to 13-14 px labels in buttons, tabs and menus
 const ICON_SIZE_PX = 16;
 
 export function App() {
