@@ -5,6 +5,7 @@ import { findCrowdedElements } from "@lib/elementParts";
 import { getVisibleElements, isElementHidden, withoutHiddenElements } from "@lib/elementVisibility";
 import { generateMountingHoles } from "@lib/mountingHoles";
 import { ORDER_MAX_WIDTH_HP, isOrderableWidth, type FilamentId } from "@lib/orderCatalog";
+import { isEurorack3uFormat } from "@lib/panelFormat";
 import {
   isLabelElement,
   type MountingHole,
@@ -31,6 +32,7 @@ export interface OrderRecord {
 }
 
 export type OrderIssue =
+  | { kind: "unsupportedFormat" }
   | { kind: "tooWide"; widthHp: number; maxWidthHp: number }
   | { kind: "sameFilament" }
   | { kind: "textPrint"; count: number }
@@ -102,12 +104,16 @@ function countHardToPrintTexts(elements: PanelModel["elements"]): number {
 }
 
 /**
- * What stops the design from being ordered (`tooWide`), or deserves a second look. Hidden elements
- * are not printed. Characters missing from a font are only known once the font has loaded.
+ * What stops the design from being ordered (`unsupportedFormat`, `tooWide`), or deserves a second
+ * look. The Etsy listing sells 3U Eurorack panels, priced by width. Hidden elements are not
+ * printed. Characters missing from a font are only known once the font has loaded.
  */
 export function listOrderIssues(model: PanelModel, filaments: OrderFilaments): OrderIssue[] {
   const issues: OrderIssue[] = [];
   const printedElements = getVisibleElements(model.elements);
+  if (!isEurorack3uFormat(model.format)) {
+    issues.push({ kind: "unsupportedFormat" });
+  }
   if (!isOrderableWidth(model.dimensions.widthHp)) {
     issues.push({
       kind: "tooWide",
@@ -134,7 +140,7 @@ export function listOrderIssues(model: PanelModel, filaments: OrderFilaments): O
 }
 
 export function isBlockingIssue(issue: OrderIssue): boolean {
-  return issue.kind === "tooWide";
+  return issue.kind === "unsupportedFormat" || issue.kind === "tooWide";
 }
 
 async function readErrorMessage(response: Response): Promise<string> {

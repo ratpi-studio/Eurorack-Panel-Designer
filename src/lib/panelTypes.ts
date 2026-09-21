@@ -1,52 +1,10 @@
+import { normalizePanelFormat, resolvePanelDimensions, type PanelFormat } from "./panelFormat";
 import { isKnobId, isPartForType, type KnobId, type PartId } from "./parts";
 import { DEFAULT_TEXT_FONT_ID, isTextFontId, type TextFontId } from "./text/textFonts";
 
 export interface Vector2 {
   x: number;
   y: number;
-}
-
-export const MM_PER_CM = 10;
-export const DEFAULT_MM_PER_HP = 5.08;
-export const THREE_U_HEIGHT_MM = 128.5;
-
-/**
- * Front panels are cut a few tenths of a millimeter narrower than their HP pitch, so modules can
- * be screwed side by side. Doepfer publishes the widths it uses, and the reduction is not
- * constant (0.08 mm at 1 HP, 0.48 mm at 6 HP), so its table comes first and
- * `PANEL_WIDTH_CLEARANCE_MM` covers the widths it leaves out.
- * Source: https://doepfer.de/a100_man/a100m_e.htm, "A-100 Construction Details", table 1.
- */
-const PUBLISHED_PANEL_WIDTH_MM = new Map<number, number>([
-  [1, 5],
-  [1.5, 7.5],
-  [2, 9.8],
-  [4, 20],
-  [6, 30],
-  [8, 40.3],
-  [10, 50.5],
-  [12, 60.6],
-  [14, 70.8],
-  [16, 80.9],
-  [18, 91.3],
-  [20, 101.3],
-  [21, 106.3],
-  [22, 111.4],
-  [28, 141.9],
-  [42, 213],
-]);
-
-export const PANEL_WIDTH_CLEARANCE_MM = 0.35;
-
-/** Width a front panel of `widthHp` HP is cut at: its pitch on the rack grid, less the clearance. */
-export function panelWidthMmForHp(widthHp: number): number {
-  const published = PUBLISHED_PANEL_WIDTH_MM.get(widthHp);
-  if (published !== undefined) {
-    return published;
-  }
-
-  const pitchMm = widthHp * DEFAULT_MM_PER_HP;
-  return pitchMm > PANEL_WIDTH_CLEARANCE_MM ? pitchMm - PANEL_WIDTH_CLEARANCE_MM : pitchMm;
 }
 
 export enum PanelElementType {
@@ -259,6 +217,8 @@ export interface DesignReliefConfig {
 }
 
 export interface PanelModel {
+  /** The rack row the panel is made for (1U to 4U), or a custom size. */
+  format: PanelFormat;
   dimensions: PanelDimensions;
   elements: PanelElement[];
   options: PanelOptions;
@@ -272,6 +232,7 @@ export interface PanelModel {
 
 export type PanelModelInput = Omit<
   PanelModel,
+  | "format"
   | "options"
   | "mountingHoleConfig"
   | "elementHoleConfig"
@@ -290,49 +251,19 @@ export type PanelModelInput = Omit<
   designColor?: string;
   // Saves made before 0.10 kept the relief on each SVG artwork instead.
   designRelief?: DesignReliefConfig;
+  // Saves made before 0.13 were all 3U, without a format.
+  format?: PanelFormat;
 };
 
 /**
- * Reads the width in HP of a saved panel, falling back on its width in mm for the saves that lost
- * it, so the panel can be measured again from the grid.
+ * Brings a saved model up to date. Its dimensions are measured again from its format: panels saved
+ * before 0.12.1 were exactly `widthHp x 5.08 mm` wide and come back at the width they are cut at,
+ * and saves from before 0.13.0 have no format and become 3U panels, or custom ones when their
+ * height was not 3U. The elements keep their position.
  */
-function readPanelWidthHp(dimensions: PanelDimensions | undefined): number {
-  const widthHp = dimensions?.widthHp;
-  if (typeof widthHp === "number" && Number.isFinite(widthHp) && widthHp > 0) {
-    return widthHp;
-  }
-
-  const widthMm = dimensions?.widthMm;
-  if (typeof widthMm === "number" && Number.isFinite(widthMm) && widthMm > 0) {
-    return Math.max(1, Math.ceil(widthMm / DEFAULT_MM_PER_HP));
-  }
-
-  return 1;
-}
-
-/**
- * Panels saved before 0.12.1 were exactly `widthHp x 5.08 mm`, the pitch of the rack grid, which
- * leaves no room to screw modules side by side. They come back at the width they should be cut
- * at, a few tenths of a millimeter narrower; the elements keep their position.
- */
-function normalizePanelDimensions(dimensions: PanelDimensions | undefined): PanelDimensions {
-  const heightMm = dimensions?.heightMm;
-  const widthHp = readPanelWidthHp(dimensions);
-  const widthMm = panelWidthMmForHp(widthHp);
-
-  return {
-    widthCm: widthMm / MM_PER_CM,
-    widthMm,
-    widthHp,
-    heightMm:
-      typeof heightMm === "number" && Number.isFinite(heightMm) && heightMm > 0
-        ? heightMm
-        : THREE_U_HEIGHT_MM,
-  };
-}
-
 export function normalizePanelModel(model: PanelModelInput): PanelModel {
-  const dimensions = normalizePanelDimensions(model.dimensions);
+  const format = normalizePanelFormat(model.format, model.dimensions?.heightMm);
+  const dimensions = resolvePanelDimensions(format, model.dimensions ?? {});
   const overrides = model.mountingHoleConfig ?? DEFAULT_MOUNTING_HOLE_CONFIG;
   const elementOverrides = model.elementHoleConfig ?? DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG;
   const clearanceOverrides = model.clearance ?? DEFAULT_CLEARANCE_CONFIG;
@@ -348,6 +279,7 @@ export function normalizePanelModel(model: PanelModelInput): PanelModel {
     }) ?? [];
   return {
     ...model,
+    format,
     dimensions,
     options: {
       ...DEFAULT_PANEL_OPTIONS,
@@ -526,7 +458,8 @@ export interface SerializedPanel {
 // gained a font and a pattern overlap mode.
 // v8: jacks, knobs, switches and LEDs can name a real part (`partId`), knobs the knob that goes on
 // them (`knobId`), and switches can have a round hole (`diameterMm`).
-export const SERIALIZATION_VERSION = 8;
+// v9: panels have a format (`format`): 1U to 4U, or a custom size.
+export const SERIALIZATION_VERSION = 9;
 
 export function isCircularElementProperties(
   properties: PanelElement["properties"],

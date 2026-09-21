@@ -21,6 +21,7 @@ import {
   type PanelModel,
   type Vector2,
 } from "@lib/panelTypes";
+import { DEFAULT_PANEL_FORMAT } from "@lib/panelFormat";
 import { reportDegradation } from "@lib/monitoring";
 import { migratePersistedPanelState, PANEL_STATE_VERSION } from "@lib/panelStateMigration";
 import { createPanelStateStorage } from "@lib/panelStateStorage";
@@ -81,6 +82,7 @@ const createInitialModel = (): PanelModel =>
     panelColor: DEFAULT_PANEL_COLOR,
     designColor: DEFAULT_DESIGN_COLOR,
     designRelief: { ...DEFAULT_DESIGN_RELIEF },
+    format: { ...DEFAULT_PANEL_FORMAT },
   });
 
 export const usePanelStore = create<PanelState & PanelActions>()(

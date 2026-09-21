@@ -21,6 +21,7 @@ import {
   type PanelElement,
   type PanelModel,
 } from "@lib/panelTypes";
+import { DEFAULT_PANEL_FORMAT } from "@lib/panelFormat";
 import { getLabelKnockoutRing, getLabelTextLayout } from "@lib/text/textLayout";
 import { buildLabelTextPolygons } from "@lib/text/textPolygons";
 import { createPanelDimensions } from "@lib/units";
@@ -40,6 +41,7 @@ function createModel(elements: PanelElement[], designRelief = DEFAULT_DESIGN_REL
     panelColor: "#1a1a1a",
     designColor: "#ffffff",
     designRelief: { ...designRelief },
+    format: { ...DEFAULT_PANEL_FORMAT },
   };
 }
 

@@ -2,113 +2,243 @@ import { Ruler } from "lucide-react";
 import React from "react";
 
 import { useI18n } from "@i18n/I18nContext";
+import {
+  CUSTOM_SIZE_MAX_MM,
+  CUSTOM_SIZE_MIN_MM,
+  getRackFormatSpec,
+  ONE_U_SPECS,
+  PANEL_RACK_UNITS,
+  type PanelFormat,
+} from "@lib/panelFormat";
 
 import * as styles from "./PanelControls.css";
 
 interface PanelControlsProps {
+  format: PanelFormat;
   widthMm: number;
   widthHp: number;
   heightMm: number;
+  onChangeFormat: (format: PanelFormat) => void;
   onChangeWidthMm: (widthMm: number) => void;
   onChangeWidthHp: (widthHp: number) => void;
+  onChangeHeightMm: (heightMm: number) => void;
 }
 
-function sanitizeInput(value: string): number {
-  const parsed = Number.parseFloat(value);
-  if (Number.isNaN(parsed) || !Number.isFinite(parsed)) {
-    return 0;
-  }
-
-  return parsed;
+function formatMm(value: number): string {
+  return String(Number(value.toFixed(2)));
 }
 
-export function PanelControls({
-  widthMm,
-  widthHp,
-  heightMm,
-  onChangeWidthMm,
-  onChangeWidthHp,
-}: PanelControlsProps) {
-  const t = useI18n();
-  const [widthHpInput, setWidthHpInput] = React.useState(() => widthHp.toString());
-  const [widthMmInput, setWidthMmInput] = React.useState(() => widthMm.toFixed(1));
+function formatHp(value: number): string {
+  return String(value);
+}
 
-  React.useEffect(() => {
-    setWidthHpInput(widthHp.toString());
-  }, [widthHp]);
+interface NumberFieldProps {
+  id: string;
+  label: string;
+  hint: string;
+  value: number;
+  format: (value: number) => string;
+  min: number;
+  step: number;
+  onCommit: (value: number) => void;
+}
 
-  React.useEffect(() => {
-    setWidthMmInput(widthMm.toFixed(1));
-  }, [widthMm]);
+/**
+ * A number input that applies each valid value as it is typed, and shows the panel's own value
+ * again once it loses focus, such as a width rounded to the HP it takes.
+ */
+function NumberField({ id, label, hint, value, format, min, step, onCommit }: NumberFieldProps) {
+  const [draft, setDraft] = React.useState<string | null>(null);
 
-  const handleWidthMmChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = event.target;
-    setWidthMmInput(value);
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const text = event.target.value;
+    setDraft(text);
 
-    if (value.trim() === "") {
-      return;
+    const parsed = Number.parseFloat(text);
+    if (Number.isFinite(parsed) && parsed > 0 && Math.abs(parsed - value) >= 0.001) {
+      onCommit(parsed);
     }
-
-    const nextMm = sanitizeInput(value);
-    if (Number.isNaN(nextMm) || nextMm <= 0 || Math.abs(nextMm - widthMm) < 0.001) {
-      return;
-    }
-
-    onChangeWidthMm(nextMm);
-  };
-
-  const handleWidthHpChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = event.target;
-    setWidthHpInput(value);
-
-    if (value.trim() === "") {
-      return;
-    }
-
-    const nextHp = sanitizeInput(value);
-    if (Number.isNaN(nextHp) || nextHp <= 0 || nextHp === widthHp) {
-      return;
-    }
-
-    onChangeWidthHp(nextHp);
   };
 
   return (
+    <div className={styles.field}>
+      <label className={styles.label} htmlFor={id}>
+        {label}
+      </label>
+      <input
+        id={id}
+        className={styles.input}
+        type="number"
+        min={min}
+        step={step}
+        value={draft ?? format(value)}
+        onChange={handleChange}
+        onBlur={() => setDraft(null)}
+      />
+      <span className={styles.hint}>{hint}</span>
+    </div>
+  );
+}
+
+interface SegmentedControlProps<TValue extends string | number> {
+  name: string;
+  label: string;
+  options: ReadonlyArray<{ value: TValue; label: string }>;
+  value: TValue;
+  disabled: boolean;
+  onChange: (value: TValue) => void;
+}
+
+/** Radio buttons drawn as one bar of choices; the arrow keys move between them. */
+function SegmentedControl<TValue extends string | number>({
+  name,
+  label,
+  options,
+  value,
+  disabled,
+  onChange,
+}: SegmentedControlProps<TValue>) {
+  return (
+    <div className={styles.segmented} role="radiogroup" aria-label={label}>
+      {options.map((option) => (
+        <label key={option.value} className={styles.segment}>
+          <input
+            type="radio"
+            className={styles.segmentInput}
+            name={name}
+            value={String(option.value)}
+            checked={option.value === value}
+            disabled={disabled}
+            onChange={() => onChange(option.value)}
+          />
+          <span className={styles.segmentLabel}>{option.label}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
+export function PanelControls({
+  format,
+  widthMm,
+  widthHp,
+  heightMm,
+  onChangeFormat,
+  onChangeWidthMm,
+  onChangeWidthHp,
+  onChangeHeightMm,
+}: PanelControlsProps) {
+  const t = useI18n();
+  const spec = getRackFormatSpec(format);
+  const rackUnitOptions = PANEL_RACK_UNITS.map((rackUnits) => ({
+    value: rackUnits,
+    label: t.controls.rackUnitsOption(rackUnits),
+  }));
+  const oneUSpecOptions = ONE_U_SPECS.map((oneUSpec) => ({
+    value: oneUSpec,
+    label: t.controls.oneUSpecOptions[oneUSpec],
+  }));
+
+  return (
     <div className={styles.root}>
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="panel-width-hp">
-          {t.controls.widthHpLabel}
-        </label>
-        <input
-          id="panel-width-hp"
-          className={styles.input}
-          type="number"
-          min={0}
-          step={1}
-          value={widthHpInput}
-          onChange={handleWidthHpChange}
+      <div className={styles.formatSection}>
+        <div className={styles.formatHeader}>
+          <span className={styles.label}>{t.controls.formatLabel}</span>
+          <label className={styles.customToggle}>
+            <input
+              type="checkbox"
+              className={styles.checkbox}
+              checked={format.custom}
+              onChange={(event) => onChangeFormat({ ...format, custom: event.target.checked })}
+            />
+            {t.controls.customLabel}
+          </label>
+        </div>
+        <SegmentedControl
+          name="panel-rack-units"
+          label={t.controls.rackUnitsLabel}
+          options={rackUnitOptions}
+          value={format.rackUnits}
+          disabled={format.custom}
+          onChange={(rackUnits) => onChangeFormat({ ...format, rackUnits })}
         />
-        <span className={styles.hint}>{t.controls.widthHpHint}</span>
+        {format.rackUnits === 1 ? (
+          <SegmentedControl
+            name="panel-one-u-spec"
+            label={t.controls.oneUSpecLabel}
+            options={oneUSpecOptions}
+            value={format.oneUSpec}
+            disabled={format.custom}
+            onChange={(oneUSpec) => onChangeFormat({ ...format, oneUSpec })}
+          />
+        ) : null}
       </div>
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="panel-width-mm">
-          {t.controls.widthMmLabel}
-        </label>
-        <input
-          id="panel-width-mm"
-          className={styles.input}
-          type="number"
-          min={0}
-          step={1}
-          value={widthMmInput}
-          onChange={handleWidthMmChange}
-        />
-        <span className={styles.hint}>{t.controls.widthMmHint}</span>
+
+      <div className={styles.fields}>
+        {format.custom ? (
+          <>
+            <NumberField
+              id="panel-width-mm"
+              label={t.controls.widthMmLabel}
+              hint={t.controls.customWidthMmHint}
+              value={widthMm}
+              format={formatMm}
+              min={CUSTOM_SIZE_MIN_MM}
+              step={1}
+              onCommit={onChangeWidthMm}
+            />
+            <NumberField
+              id="panel-height-mm"
+              label={t.controls.heightMmLabel}
+              hint={t.controls.customHeightMmHint(CUSTOM_SIZE_MIN_MM, CUSTOM_SIZE_MAX_MM)}
+              value={heightMm}
+              format={formatMm}
+              min={CUSTOM_SIZE_MIN_MM}
+              step={1}
+              onCommit={onChangeHeightMm}
+            />
+          </>
+        ) : (
+          <>
+            <NumberField
+              id="panel-width-hp"
+              label={t.controls.widthHpLabel}
+              hint={
+                spec.widthStepHp > 1
+                  ? t.controls.tileWidthHpHint(spec.widthStepHp)
+                  : t.controls.widthHpHint
+              }
+              value={widthHp}
+              format={formatHp}
+              min={spec.widthStepHp}
+              step={spec.widthStepHp}
+              onCommit={onChangeWidthHp}
+            />
+            <NumberField
+              id="panel-width-mm"
+              label={t.controls.widthMmLabel}
+              hint={t.controls.widthMmHint}
+              value={widthMm}
+              format={formatMm}
+              min={1}
+              step={1}
+              onCommit={onChangeWidthMm}
+            />
+          </>
+        )}
       </div>
-      <p className={styles.note}>
-        <Ruler />
-        {t.controls.heightNote(heightMm)}
-      </p>
+
+      <div className={styles.notes}>
+        <p className={styles.note}>
+          <Ruler />
+          {format.custom
+            ? t.controls.customNote(widthHp)
+            : t.controls.heightNote(heightMm, t.controls.formatNames[spec.key])}
+        </p>
+        {!format.custom && !spec.published ? (
+          <p className={styles.hint}>{t.controls.derivedHeightNote}</p>
+        ) : null}
+      </div>
     </div>
   );
 }

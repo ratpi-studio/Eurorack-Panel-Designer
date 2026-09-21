@@ -27,7 +27,9 @@ import {
 } from "@lib/panelTypes";
 import { getVisibleElements } from "@lib/elementVisibility";
 import { isOrderingEnabled } from "@lib/order";
-import { createPanelDimensions, mmToCm, panelDimensionsFromHp } from "@lib/units";
+import type { PanelFormat } from "@lib/panelFormat";
+import { setPanelFormat, setPanelHeightMm, setPanelWidthHp, setPanelWidthMm } from "@lib/panelSize";
+
 import { changelogEntries } from "@lib/changelog";
 import { computeElementMountingHoles } from "@lib/elementMountingHoles";
 import { shrinkReferenceImage, type ReferenceImage } from "@lib/referenceImage";
@@ -184,12 +186,17 @@ export function PanelDesigner() {
     [panelModel.clearance, panelModel.dimensions.heightMm],
   );
 
+  const handleSetFormat = React.useCallback(
+    (format: PanelFormat) => {
+      updateModel((prev) => setPanelFormat(prev, format));
+      clearSelection();
+    },
+    [clearSelection, updateModel],
+  );
+
   const handleSetWidthFromMm = React.useCallback(
     (widthMm: number) => {
-      updateModel((prev) => ({
-        ...prev,
-        dimensions: createPanelDimensions(mmToCm(widthMm), prev.dimensions.heightMm),
-      }));
+      updateModel((prev) => setPanelWidthMm(prev, widthMm));
       clearSelection();
     },
     [clearSelection, updateModel],
@@ -197,10 +204,15 @@ export function PanelDesigner() {
 
   const handleSetWidthFromHp = React.useCallback(
     (widthHp: number) => {
-      updateModel((prev) => ({
-        ...prev,
-        dimensions: panelDimensionsFromHp(widthHp, prev.dimensions.heightMm),
-      }));
+      updateModel((prev) => setPanelWidthHp(prev, widthHp));
+      clearSelection();
+    },
+    [clearSelection, updateModel],
+  );
+
+  const handleSetHeightMm = React.useCallback(
+    (heightMm: number) => {
+      updateModel((prev) => setPanelHeightMm(prev, heightMm));
       clearSelection();
     },
     [clearSelection, updateModel],
@@ -1050,12 +1062,20 @@ export function PanelDesigner() {
               isCompact={isCompact}
               showPanel={showLeftPanel}
               onClose={() => setShowLeftPanel(false)}
+              onChangeFormat={(format) => {
+                handleSetFormat(format);
+                resetView();
+              }}
               onChangeWidthMm={(nextMm) => {
                 handleSetWidthFromMm(nextMm);
                 resetView();
               }}
               onChangeWidthHp={(nextHp) => {
                 handleSetWidthFromHp(nextHp);
+                resetView();
+              }}
+              onChangeHeightMm={(nextMm) => {
+                handleSetHeightMm(nextMm);
                 resetView();
               }}
               onSelectPaletteType={handleSelectPaletteType}

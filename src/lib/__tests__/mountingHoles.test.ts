@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import { MIN_MOUNTING_HOLE_SPACING_MM, generateMountingHoles } from "../mountingHoles";
-import { DEFAULT_MM_PER_HP, DEFAULT_MOUNTING_HOLE_CONFIG, type MountingHole } from "../panelTypes";
+import { DEFAULT_MM_PER_HP } from "../panelFormat";
+import { DEFAULT_MOUNTING_HOLE_CONFIG, type MountingHole } from "../panelTypes";
 import { createPanelDimensions, panelDimensionsFromHp } from "../units";
 
 const EVERY_COMMON_WIDTH_HP = [2, 3, 4, 6, 8, 10, 12, 14, 16, 18, 20, 21, 22, 28, 42];

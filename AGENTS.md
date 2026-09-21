@@ -4,7 +4,7 @@ This file documents the conventions that match the project in its current form.
 
 ## 1. Project snapshot
 
-- Single-page web app for designing 3U Eurorack panels around a central canvas.
+- Single-page web app for designing Eurorack panels around a central canvas: 3U by default, 1U (Intellijel or Pulp Logic), 2U, 4U, or a custom size.
 - The app is local-first: editor state is persisted in the browser, projects can be saved locally, and layouts can be imported/exported.
 - Core user flows today include:
   - panel sizing in mm / HP
@@ -91,7 +91,8 @@ Prefer Vite+ commands when working in the repository:
 - `PanelModel` and related types in `src/lib/panelTypes.ts` are the source of truth for the editor data model.
 - The canvas must remain a projection of store state, not an independent source of truth.
 - Elements can be `hidden` or `locked`. Both stay in the model and in saves. Hidden elements are left out of everything that draws or builds the panel (canvas, 3D view, PNG/SVG/KiCad/STL exports, orders): go through `getVisibleElements` / `withoutHiddenElements` (`src/lib/elementVisibility.ts`) in any new output. Locked elements are only left out of canvas picking, moving, and resizing (`isElementInteractive`).
-- A panel is as wide as it is cut, not as wide as its pitch on the rack grid: take its width from `panelWidthMmForHp` (`panelTypes.ts`), through `createPanelDimensions` or `panelDimensionsFromHp`, never from `widthHp * DEFAULT_MM_PER_HP`. `hpToMm` is the grid pitch, which mounting holes and rails follow. Normalization recomputes the width from `widthHp`, so saved designs pick up any change to the table.
+- Panels have a format (`PanelModel.format`): 1U to 4U with a 1U standard, or custom. `src/lib/panelFormat.ts` holds the rack geometry (HP pitch, rack unit, cut widths, format heights, hole offsets, with their sources) and only imports types, so `panelTypes.ts` can import it. Change the size of a design through `src/lib/panelSize.ts` (`setPanelFormat`, `setPanelWidthHp`, `setPanelWidthMm`, `setPanelHeightMm`), and read dimensions from `resolvePanelDimensions`, which normalization also goes through: never set `dimensions` by hand. Only 3U panels can be ordered (`isEurorack3uFormat`).
+- A panel is as wide as it is cut, not as wide as its pitch on the rack grid: take its width from `panelWidthMmForHp` (`panelFormat.ts`), through `resolvePanelDimensions`, `createPanelDimensions` or `panelDimensionsFromHp`, never from `widthHp * DEFAULT_MM_PER_HP`. `hpToMm` is the grid pitch, which mounting holes and rails follow. Normalization recomputes the width from `widthHp`, so saved designs pick up any change to the table.
 - Panel mounting holes sit on the rails, not on the panel: `buildColumnXs` (`mountingHoles.ts`) anchors the first column at `horizontalOffsetMm` from the left edge and puts every other one a whole number of `DEFAULT_MM_PER_HP` from it. Keep any new placement on that grid, and keep the drawing it comes from in the comment.
 - Jacks, knobs, switches and LEDs can stand for a real part (`partId`), and knobs name the knob that goes on them (`knobId`). Normalization drops the ids that do not exist or do not fit the element type. The part only sets the hole when it is picked: the element keeps its own `diameterMm`, which users may change.
 - Switches have a round hole (`diameterMm`, for toggles) or a rectangular one (`widthMm` × `heightMm`), so a switch is not always a box. Where a geometry depends on the hole shape, go through `hasRoundHole` (or `isCircularElementProperties` on the properties) rather than the element type.

@@ -234,9 +234,11 @@ export function PanelCanvas({
   const pointerText = pointerPanelPos
     ? ` · X ${pointerPanelPos.x.toFixed(1)} mm · Y ${pointerPanelPos.y.toFixed(1)} mm`
     : "";
-  const hudText = `${model.dimensions.widthHp} HP · ${model.dimensions.widthMm.toFixed(
-    1,
-  )} x ${model.dimensions.heightMm.toFixed(1)} mm · Zoom ${(zoom * 100).toFixed(0)}%${pointerText}`;
+  // Two decimals at most: panel heights such as 39.65 mm (Intellijel 1U) need them.
+  const sizeText = `${Number(model.dimensions.widthMm.toFixed(2))} x ${Number(
+    model.dimensions.heightMm.toFixed(2),
+  )} mm`;
+  const hudText = `${model.dimensions.widthHp} HP · ${sizeText} · Zoom ${(zoom * 100).toFixed(0)}%${pointerText}`;
 
   // Browser translation rewraps text nodes in <font> elements, and React crashes if it later
   // has to remove one. Keep this subtree static: one HUD text node, selection rect always

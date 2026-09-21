@@ -1,3 +1,4 @@
+import type { OneUSpec, PanelFormatKey } from "@lib/panelFormat";
 import type { KnobId, PartId } from "@lib/parts";
 import type { TextFontId } from "@lib/text/textFonts";
 
@@ -36,11 +37,24 @@ interface Translations {
     hud: (thicknessMm: number) => string;
   };
   controls: {
+    formatLabel: string;
+    rackUnitsLabel: string;
+    rackUnitsOption: (rackUnits: number) => string;
+    oneUSpecLabel: string;
+    oneUSpecOptions: Record<OneUSpec, string>;
+    customLabel: string;
     widthHpLabel: string;
     widthMmLabel: string;
+    heightMmLabel: string;
     widthHpHint: string;
+    tileWidthHpHint: (stepHp: number) => string;
     widthMmHint: string;
-    heightNote: (heightMm: number) => string;
+    customWidthMmHint: string;
+    customHeightMmHint: (minMm: number, maxMm: number) => string;
+    heightNote: (heightMm: number, formatName: string) => string;
+    derivedHeightNote: string;
+    customNote: (widthHp: number) => string;
+    formatNames: Record<Exclude<PanelFormatKey, "custom">, string>;
   };
   display: {
     grid: string;
@@ -266,6 +280,7 @@ interface Translations {
     priceHint: string;
     stepsTitle: string;
     steps: (widthHp: number) => string[];
+    issueUnsupportedFormat: string;
     issueTooWide: (widthHp: number, maxWidthHp: number) => string;
     issueSameFilament: string;
     issueTextPrint: (count: number) => string;
@@ -354,11 +369,34 @@ export const enUS: Translations = {
     hud: (thicknessMm: number) => `${Number(thicknessMm.toFixed(2))} mm thick · Drag to rotate`,
   },
   controls: {
+    formatLabel: "Format",
+    rackUnitsLabel: "Rack units",
+    rackUnitsOption: (rackUnits) => `${rackUnits}U`,
+    oneUSpecLabel: "1U standard",
+    oneUSpecOptions: {
+      intellijel: "Intellijel",
+      pulpLogic: "Pulp Logic",
+    },
+    customLabel: "Custom size",
     widthHpLabel: "Width (HP)",
     widthMmLabel: "Width (mm)",
+    heightMmLabel: "Height (mm)",
     widthHpHint: "Eurorack units (1 HP = 5.08 mm)",
+    tileWidthHpHint: (stepHp) => `Tiles come in multiples of ${stepHp} HP`,
     widthMmHint: "Width to cut, a bit under the HP grid (Doepfer)",
-    heightNote: (heightMm: number) => `Height ${Number(heightMm.toFixed(2))} mm (3U), fixed`,
+    customWidthMmHint: "Any width, in millimeters",
+    customHeightMmHint: (minMm, maxMm) => `Any height from ${minMm} to ${maxMm} mm`,
+    heightNote: (heightMm, formatName) => `Height ${Number(heightMm.toFixed(2))} mm, ${formatName}`,
+    derivedHeightNote:
+      "No brand publishes this height: it is the rack unit less the rail lips, as on 3U.",
+    customNote: (widthHp) => `Takes ${widthHp} HP on the rails`,
+    formatNames: {
+      intellijel1u: "Intellijel 1U",
+      pulpLogic1u: "Pulp Logic 1U tile",
+      rack2u: "2U rails",
+      eurorack3u: "Eurorack 3U",
+      rack4u: "4U rails",
+    },
   },
   display: {
     grid: "Grid",
@@ -675,6 +713,8 @@ export const enUS: Translations = {
       `On Etsy, choose the width ${widthHp} HP.`,
       "Paste the code in the personalization field and complete the purchase.",
     ],
+    issueUnsupportedFormat:
+      "Only 3U Eurorack panels can be ordered for now. Set the format back to 3U in the width box to order this design.",
     issueTooWide: (widthHp, maxWidthHp) =>
       `Panels up to ${maxWidthHp} HP can be ordered. This one is ${widthHp} HP.`,
     issueSameFilament:

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
+import { DEFAULT_PANEL_FORMAT } from "../panelFormat";
 import { migratePersistedPanelState, PANEL_STATE_VERSION } from "../panelStateMigration";
 import {
   DEFAULT_DESIGN_RELIEF,
@@ -49,8 +50,21 @@ const legacyModel = {
 } as unknown as PanelModel;
 
 describe("migratePersistedPanelState", () => {
-  it("is at version 11, where panels took the width they are cut at", () => {
-    expect(PANEL_STATE_VERSION).toBe(11);
+  it("is at version 12, where panels gained a format", () => {
+    expect(PANEL_STATE_VERSION).toBe(12);
+  });
+
+  it("makes 0.12 autosaves 3U panels", () => {
+    const { format: _, ...model } = createInitialModel();
+
+    const migrated = migratePersistedPanelState(
+      { model: model as unknown as PanelModel },
+      11,
+      createInitialModel,
+    );
+
+    expect(migrated?.model?.format).toEqual(DEFAULT_PANEL_FORMAT);
+    expect(migrated?.model?.dimensions.heightMm).toBe(128.5);
   });
 
   it("brings 0.12 autosaves back to the width the panel is cut at", () => {

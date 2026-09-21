@@ -15,6 +15,7 @@ import {
   PanelElementType,
   type PanelModel,
 } from "@lib/panelTypes";
+import { DEFAULT_PANEL_FORMAT } from "@lib/panelFormat";
 import { parseSerializedPanel, serializePanelModel } from "@lib/serialization";
 import { listProjects, loadProject } from "@lib/storage";
 import { createPanelDimensions } from "@lib/units";
@@ -54,6 +55,7 @@ function createModel(jackCount: number): PanelModel {
     panelColor: "#1a1a1a",
     designColor: "#ffffff",
     designRelief: { ...DEFAULT_DESIGN_RELIEF },
+    format: { ...DEFAULT_PANEL_FORMAT },
   };
 }
 

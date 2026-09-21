@@ -10,7 +10,7 @@ import {
   panelDimensionsFromHp,
   sanitizeWidthCm,
 } from "../units";
-import { DEFAULT_MM_PER_HP, panelWidthMmForHp, THREE_U_HEIGHT_MM } from "../panelTypes";
+import { DEFAULT_MM_PER_HP, panelWidthMmForHp, THREE_U_HEIGHT_MM } from "../panelFormat";
 
 const EVERY_WIDTH_HP = Array.from({ length: 42 }, (_, index) => index + 1);
 /** The millimeter field starts at 1 cm, so 1 HP can only be set in HP. */

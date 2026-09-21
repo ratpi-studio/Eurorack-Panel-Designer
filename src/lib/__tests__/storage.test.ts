@@ -8,6 +8,7 @@ import {
   DEFAULT_PANEL_OPTIONS,
   type PanelModel,
 } from "../panelTypes";
+import { DEFAULT_PANEL_FORMAT } from "../panelFormat";
 import { createPanelDimensions } from "../units";
 import { deleteProject, importProjects, listProjects, loadProject, saveProject } from "../storage";
 import { parseSerializedPanel, serializePanelModel } from "../serialization";
@@ -50,6 +51,7 @@ const sampleModel: PanelModel = {
   panelColor: "#1a1a1a",
   designColor: "#ffffff",
   designRelief: { ...DEFAULT_DESIGN_RELIEF },
+  format: { ...DEFAULT_PANEL_FORMAT },
 };
 
 describe("storage helpers", () => {

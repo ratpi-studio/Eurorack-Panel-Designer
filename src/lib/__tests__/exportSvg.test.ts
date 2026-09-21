@@ -13,6 +13,7 @@ import {
   type PanelElement,
   type PanelModel,
 } from "@lib/panelTypes";
+import { DEFAULT_PANEL_FORMAT } from "@lib/panelFormat";
 import { getLabelTextLayout } from "@lib/text/textLayout";
 import { createPanelDimensions } from "@lib/units";
 
@@ -83,6 +84,7 @@ function createModel(): PanelModel {
     panelColor: "#1a1a1a",
     designColor: "#ff00aa",
     designRelief: { ...DEFAULT_DESIGN_RELIEF },
+    format: { ...DEFAULT_PANEL_FORMAT },
   };
 }
 

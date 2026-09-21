@@ -3,6 +3,7 @@ import React from "react";
 
 import { ElementPalette } from "@components/ElementPalette/ElementPalette";
 import { PanelControls } from "@components/PanelControls/PanelControls";
+import type { PanelFormat } from "@lib/panelFormat";
 import { type PanelElementType, type PanelModel } from "@lib/panelTypes";
 import type { ReturnTypeUseI18n } from "./types";
 import * as styles from "./PanelDesigner.css";
@@ -14,8 +15,10 @@ interface LeftPanelProps {
   isCompact: boolean;
   showPanel: boolean;
   onClose: () => void;
+  onChangeFormat: (format: PanelFormat) => void;
   onChangeWidthMm: (nextMm: number) => void;
   onChangeWidthHp: (nextHp: number) => void;
+  onChangeHeightMm: (nextMm: number) => void;
   onSelectPaletteType: (type: PanelElementType | null) => void;
   onOpenSvgArtwork: () => void;
 }
@@ -27,8 +30,10 @@ export function LeftPanel({
   isCompact,
   showPanel,
   onClose,
+  onChangeFormat,
   onChangeWidthHp,
   onChangeWidthMm,
+  onChangeHeightMm,
   onSelectPaletteType,
   onOpenSvgArtwork,
 }: LeftPanelProps) {
@@ -54,11 +59,14 @@ export function LeftPanel({
         ) : null}
         <div className={styles.card}>
           <PanelControls
+            format={panelModel.format}
             widthMm={panelModel.dimensions.widthMm}
             widthHp={panelModel.dimensions.widthHp}
             heightMm={panelModel.dimensions.heightMm}
+            onChangeFormat={onChangeFormat}
             onChangeWidthMm={onChangeWidthMm}
             onChangeWidthHp={onChangeWidthHp}
+            onChangeHeightMm={onChangeHeightMm}
           />
         </div>
         <div className={styles.card}>

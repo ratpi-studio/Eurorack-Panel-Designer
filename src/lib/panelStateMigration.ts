@@ -8,8 +8,9 @@ import { normalizePanelModel, type PanelModel, type PanelModelInput } from "./pa
  *   font and a pattern overlap mode.
  * - v10: panel options gained `showHardware`, and elements can name a real part.
  * - v11: panels are as wide as they are cut, a few tenths of a millimeter under the HP grid.
+ * - v12: panels have a format, 1U to 4U or a custom size; older autosaves are 3U.
  */
-export const PANEL_STATE_VERSION = 11;
+export const PANEL_STATE_VERSION = 12;
 
 interface PersistedPanelState {
   model?: PanelModel | PanelModelInput | null;
