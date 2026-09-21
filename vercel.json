@@ -8,7 +8,7 @@
       "source": "/:path*",
       "has": [{ "type": "host", "value": "eurorack-panel-designer-oss8.vercel.app" }],
       "destination": "https://www.eurorackpanel.com/:path*",
-      "permanent": true
+      "statusCode": 308
     }
   ],
   "rewrites": [{ "source": "/order/:id", "destination": "/" }],
