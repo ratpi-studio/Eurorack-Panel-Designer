@@ -23,7 +23,9 @@ import {
   type PanelElement,
   type PanelModel,
 } from "@lib/panelTypes";
+import { DEFAULT_PANEL_FORMAT } from "@lib/panelFormat";
 import { serializePanelModel } from "@lib/serialization";
+import { setPanelFormat } from "@lib/panelSize";
 import { panelDimensionsFromHp } from "@lib/units";
 
 function createPanel(widthHp: number, elements: PanelElement[] = []): PanelModel {
@@ -37,6 +39,7 @@ function createPanel(widthHp: number, elements: PanelElement[] = []): PanelModel
     panelColor: "#226bbf",
     designColor: "#ffffff",
     designRelief: { ...DEFAULT_DESIGN_RELIEF },
+    format: { ...DEFAULT_PANEL_FORMAT },
   };
 }
 
@@ -81,6 +84,16 @@ describe("order helpers", () => {
     expect(issues).toEqual([{ kind: "tooWide", widthHp: 43, maxWidthHp: 42 }]);
     expect(issues.every(isBlockingIssue)).toBe(true);
     expect(listOrderIssues(createPanel(42), { panel: "black", details: "white" })).toEqual([]);
+  });
+
+  it("only takes 3U Eurorack panels, which the Etsy listing sells", () => {
+    const filaments = { panel: "black", details: "white" } as const;
+    const oneU = setPanelFormat(createPanel(12), { ...DEFAULT_PANEL_FORMAT, rackUnits: 1 });
+    const custom = setPanelFormat(createPanel(12), { ...DEFAULT_PANEL_FORMAT, custom: true });
+
+    expect(listOrderIssues(oneU, filaments)).toEqual([{ kind: "unsupportedFormat" }]);
+    expect(listOrderIssues(custom, filaments)).toEqual([{ kind: "unsupportedFormat" }]);
+    expect(isBlockingIssue({ kind: "unsupportedFormat" })).toBe(true);
   });
 
   it("warns when text and patterns share the panel color", () => {

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.13.0 - 2026-09-21
+
+- Panels can now be 1U, 2U, 3U, or 4U high, picked in the new Format bar of the width box. 3U stays the default, at 128.5 mm.
+- 1U comes in its two standards, which do not fit each other's cases: Intellijel (39.65 mm high) and Pulp Logic tiles (43.18 mm high, in multiples of 6 HP, with their mounting holes 5.08 mm from the edge instead of 7.5 mm). Picking a format moves the mounting holes where its drawing puts them.
+- No brand publishes 2U or 4U panels: they take the rack unit less the rail lips, as 3U does (84.05 mm and 172.95 mm high), and the width box says so.
+- Check "Custom size" to give the panel any width and height in millimeters, from 5 to 1000 mm. Unchecking it brings back the format picked before. Custom panels keep their mounting holes on the rail grid.
+- Changing the format keeps the elements where they are, and the width in HP where the format allows it.
+- Only 3U panels can be ordered on Etsy for now: the order dialog says so for the other formats.
+- The canvas shows panel sizes to two decimals, as 1U heights need them.
+
 ## 0.12.1 - 2026-09-20
 
 - Panels are now as wide as they should be cut. A panel used to be exactly its width in HP times 5.08 mm, the pitch of the rack grid, which leaves nothing to assemble modules side by side: a 6 HP panel came out at 30.48 mm instead of the 30.00 mm Doepfer publishes. Panels now follow the widths of the A-100 construction details, and the widths that table leaves out are cut 0.35 mm under the grid. Designs saved before open at their corrected width, and their elements keep their position.

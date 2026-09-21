@@ -12,6 +12,7 @@ import {
   type PanelElement,
   type PanelModel,
 } from "@lib/panelTypes";
+import { DEFAULT_PANEL_FORMAT } from "@lib/panelFormat";
 import { createPanelDimensions } from "@lib/units";
 
 type Point = [number, number];
@@ -128,6 +129,7 @@ function createSampleModel(): PanelModel {
     panelColor: "#1a1a1a",
     designColor: "#ffffff",
     designRelief: { ...DEFAULT_DESIGN_RELIEF },
+    format: { ...DEFAULT_PANEL_FORMAT },
   };
 }
 

@@ -1,5 +1,5 @@
+import { DEFAULT_MM_PER_HP } from "./panelFormat";
 import {
-  DEFAULT_MM_PER_HP,
   DEFAULT_MOUNTING_HOLE_CONFIG,
   type MountingHole,
   type MountingHoleConfig,

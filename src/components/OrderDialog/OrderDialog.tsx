@@ -61,6 +61,8 @@ function describeOrderError(error: unknown, copy: OrderCopy): string {
 
 function describeIssue(issue: OrderIssue, copy: OrderCopy): string {
   switch (issue.kind) {
+    case "unsupportedFormat":
+      return copy.issueUnsupportedFormat;
     case "tooWide":
       return copy.issueTooWide(issue.widthHp, issue.maxWidthHp);
     case "sameFilament":

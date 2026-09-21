@@ -1,10 +1,5 @@
-import {
-  DEFAULT_MM_PER_HP,
-  MM_PER_CM,
-  panelWidthMmForHp,
-  THREE_U_HEIGHT_MM,
-  type PanelDimensions,
-} from "./panelTypes";
+import { DEFAULT_MM_PER_HP, MM_PER_CM, panelWidthMmForHp, THREE_U_HEIGHT_MM } from "./panelFormat";
+import type { PanelDimensions } from "./panelTypes";
 
 interface PanelWidthComputation {
   widthCm: number;

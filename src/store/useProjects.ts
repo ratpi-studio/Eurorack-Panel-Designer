@@ -12,6 +12,7 @@ import {
   type MountingHole,
   type PanelModel,
 } from "@lib/panelTypes";
+import { DEFAULT_PANEL_FORMAT } from "@lib/panelFormat";
 import { buildPanelPngDataUrl } from "@lib/canvas/exportPng";
 import { collectTextFontIds } from "@lib/designLayer";
 import {
@@ -426,6 +427,7 @@ export function useProjects({
       panelColor: DEFAULT_PANEL_COLOR,
       designColor: DEFAULT_DESIGN_COLOR,
       designRelief: { ...DEFAULT_DESIGN_RELIEF },
+      format: { ...DEFAULT_PANEL_FORMAT },
     };
     setModel(resetModel);
     clearHistory();

@@ -16,6 +16,7 @@ import {
   type PanelElement,
   type PanelModel,
 } from "@lib/panelTypes";
+import { DEFAULT_PANEL_FORMAT } from "@lib/panelFormat";
 
 function panelWith(elements: PanelElement[]): PanelModel {
   return {
@@ -28,6 +29,7 @@ function panelWith(elements: PanelElement[]): PanelModel {
     panelColor: "#000000",
     designColor: "#ffffff",
     designRelief: { ...DEFAULT_DESIGN_RELIEF },
+    format: { ...DEFAULT_PANEL_FORMAT },
   };
 }
 

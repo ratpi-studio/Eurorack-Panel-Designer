@@ -10,6 +10,8 @@ import {
   SERIALIZATION_VERSION,
   type PanelModel,
 } from "../panelTypes";
+import { DEFAULT_PANEL_FORMAT } from "../panelFormat";
+import { setPanelFormat } from "../panelSize";
 import { panelDimensionsFromHp } from "../units";
 import {
   deserializePanelModel,
@@ -38,6 +40,7 @@ const sampleModel: PanelModel = {
   panelColor: "#1a1a1a",
   designColor: "#ffffff",
   designRelief: { ...DEFAULT_DESIGN_RELIEF },
+  format: { ...DEFAULT_PANEL_FORMAT },
 };
 
 describe("serialization helpers", () => {
@@ -92,6 +95,32 @@ describe("serialization helpers", () => {
     expect(dimensions.widthHp).toBe(20);
     expect(dimensions.widthCm).toBeCloseTo(10.13);
     expect(dimensions.heightMm).toBe(128.5);
+  });
+
+  it("round-trips the format of the panel", () => {
+    const tile = setPanelFormat(sampleModel, {
+      rackUnits: 1,
+      oneUSpec: "pulpLogic",
+      custom: false,
+    });
+
+    expect(deserializePanelModel(serializePanelModel(tile))).toEqual(tile);
+  });
+
+  it("opens saves from before formats as 3U panels, or custom ones when not 3U high", () => {
+    const { format: _, ...legacy } = sampleModel;
+    const payload = (heightMm: number) =>
+      JSON.stringify({
+        version: 8,
+        model: { ...legacy, dimensions: { ...legacy.dimensions, heightMm } },
+      });
+
+    expect(deserializePanelModel(payload(128.5)).format).toEqual(DEFAULT_PANEL_FORMAT);
+
+    const custom = deserializePanelModel(payload(60));
+
+    expect(custom.format.custom).toBe(true);
+    expect(custom.dimensions).toMatchObject({ widthMm: 101.3, heightMm: 60 });
   });
 
   it("shows dimensions and hardware for saves made before the options existed", () => {
