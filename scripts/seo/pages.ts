@@ -19,7 +19,14 @@ import { REPO_URL } from "./site";
 /** Widths Doepfer prints in table 1 of the A-100 construction details. */
 const PUBLISHED_HP = new Set([1, 1.5, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 21, 22, 28, 42]);
 
-const TABLE_HP: readonly number[] = [1, 1.5, ...Array.from({ length: 42 }, (_, i) => i + 2)];
+/** Widest panel the table lists. Doepfer publishes up to 42 HP, the widest common panel. */
+const MAX_TABLE_HP = 42;
+
+const TABLE_HP: readonly number[] = [
+  1,
+  1.5,
+  ...Array.from({ length: MAX_TABLE_HP - 1 }, (_, index) => index + 2),
+];
 
 /** Display names and datasheets. A new part or knob fails to compile until it is listed here. */
 const PART_LABELS: Record<PartId, { name: string; kind: string; source: string }> = {
@@ -107,7 +114,7 @@ function hpToMmPage(): ContentPage {
     title: "Eurorack HP to mm: the full conversion table",
     description:
       "1 HP is 5.08 mm on the rack rails, but a Eurorack front panel is cut a little narrower. " +
-      "Full HP to mm table from 1 to 42 HP, with the widths Doepfer publishes.",
+      `Full HP to mm table from 1 to ${MAX_TABLE_HP} HP, with the widths Doepfer publishes.`,
     lead:
       "<strong>1 HP = 5.08 mm</strong> on the rails. A front panel is cut a few tenths narrower " +
       "than its pitch so modules can be screwed side by side, which is why a 6 HP panel is " +
@@ -129,7 +136,7 @@ function hpToMmPage(): ContentPage {
       ]),
     ],
     bodyHtml: `
-<h2>HP to mm, 1 to 42 HP</h2>
+<h2>HP to mm, 1 to ${MAX_TABLE_HP} HP</h2>
 <div class="wide">
 <table>
 <caption>Rail pitch is HP × ${DEFAULT_MM_PER_HP} mm. Panel width is what the panel is actually cut at.</caption>
@@ -217,7 +224,7 @@ drawing, so an M3 screw still passes through a 3D printed panel.</li>
 
 <h2>Widths</h2>
 <p>Width is counted in HP, and a panel is cut a little under its pitch. The
-<a href="/eurorack-hp-to-mm/">HP to mm table</a> gives every width from 1 to 42 HP. Pulp Logic tiles
+<a href="/eurorack-hp-to-mm/">HP to mm table</a> gives every width from 1 to ${MAX_TABLE_HP} HP. Pulp Logic tiles
 are the exception: they come in multiples of 6 HP.</p>
 
 <h2>Sources</h2>
