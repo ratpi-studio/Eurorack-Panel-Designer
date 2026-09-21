@@ -38,14 +38,15 @@ export const logo = style({
   height: "56px",
 });
 
+// Header links that only show an icon are round.
 export const githubLink = style({
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
+  width: headerActionHeight,
   height: headerActionHeight,
   boxSizing: "border-box",
-  gap: vars.spacing.xs,
-  padding: headerActionPadding,
+  padding: 0,
   borderRadius: headerActionBorderRadius,
   border: `1px solid ${vars.color.border}`,
   color: vars.color.textPrimary,
@@ -62,10 +63,6 @@ export const githubLink = style({
 export const githubIcon = style({
   width: "18px",
   height: "18px",
-});
-
-export const githubLabel = style({
-  fontWeight: 600,
 });
 
 export const headerActions = style({
@@ -164,7 +161,10 @@ export const projectNameButton = style({
   flex: 1,
   display: "flex",
   alignItems: "center",
-  padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
+  gap: vars.spacing.sm,
+  minWidth: 0,
+  height: "32px",
+  padding: `0 ${vars.spacing.sm}`,
   borderRadius: "8px",
   border: `1px solid transparent`,
   backgroundColor: "transparent",
@@ -187,35 +187,57 @@ export const projectNameText = style({
   textOverflow: "ellipsis",
 });
 
-export const projectNameContent = style({
-  display: "inline-flex",
-  alignItems: "center",
-  gap: vars.spacing.xs,
-  minWidth: 0,
-});
-
-export const projectNameEditRow = style({
-  display: "inline-flex",
-  alignItems: "center",
-  gap: vars.spacing.xs,
-  width: "100%",
-});
-
-export const dirtyStar = style({
-  color: vars.color.accent,
-  fontWeight: 800,
+export const unsavedDot = style({
   flexShrink: 0,
+  width: "8px",
+  height: "8px",
+  borderRadius: "50%",
+  backgroundColor: vars.color.accent,
 });
 
 export const projectNameInput = style({
   flex: 1,
+  minWidth: 0,
+  height: "32px",
   borderRadius: "8px",
   border: `1px solid ${vars.color.border}`,
   backgroundColor: "#0b1426",
   color: vars.color.textPrimary,
-  padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
+  padding: `0 ${vars.spacing.sm}`,
   fontWeight: 700,
   fontSize: "16px",
+});
+
+// File actions on the left, the export split button on the right.
+export const projectToolbar = style({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  flexWrap: "wrap",
+  gap: vars.spacing.sm,
+});
+
+export const toolbarGroup = style({
+  display: "flex",
+  gap: vars.spacing.xs,
+});
+
+export const savedProjectsRow = style({
+  display: "flex",
+  alignItems: "center",
+  gap: vars.spacing.xs,
+});
+
+export const savedProjectsSelect = style({
+  flex: 1,
+  minWidth: 0,
+  height: "32px",
+  padding: `0 ${vars.spacing.sm}`,
+  borderRadius: "8px",
+  border: `1px solid ${vars.color.border}`,
+  backgroundColor: "#0b1426",
+  color: vars.color.textPrimary,
+  fontSize: "13px",
 });
 
 export const fieldRow = style({
@@ -238,12 +260,6 @@ export const textInput = style({
   padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
 });
 
-export const buttonRow = style({
-  display: "flex",
-  flexWrap: "wrap",
-  gap: vars.spacing.sm,
-});
-
 // Buttons line up an icon and their label.
 const baseButton = {
   display: "inline-flex",
@@ -264,9 +280,9 @@ export const changelogButton = style({
   color: vars.color.textPrimary,
   border: `1px solid ${vars.color.border}`,
   borderRadius: headerActionBorderRadius,
+  width: headerActionHeight,
   height: headerActionHeight,
-  padding: headerActionPadding,
-  fontSize: "14px",
+  padding: 0,
   selectors: {
     "&:hover": {
       backgroundColor: "#101c33",
@@ -297,14 +313,6 @@ export const secondaryButton = style({
   border: `1px solid ${vars.color.border}`,
 });
 
-export const iconButton = style({
-  ...baseButton,
-  backgroundColor: vars.color.surface,
-  color: vars.color.textPrimary,
-  border: `1px solid ${vars.color.border}`,
-  padding: vars.spacing.xs,
-});
-
 export const exportSplitButton = style({
   position: "relative",
   display: "inline-flex",
@@ -312,14 +320,26 @@ export const exportSplitButton = style({
 
 export const exportSplitMain = style({
   ...baseButton,
+  height: "32px",
+  padding: `0 ${vars.spacing.sm}`,
+  borderRadius: "8px",
   backgroundColor: vars.color.accent,
   color: "#0b1426",
+  fontSize: "13px",
   borderTopRightRadius: 0,
   borderBottomRightRadius: 0,
+  selectors: {
+    "&:focus-visible": {
+      outline: `2px solid ${vars.color.accent}`,
+      outlineOffset: "2px",
+    },
+  },
 });
 
 export const exportSplitToggle = style({
   ...baseButton,
+  height: "32px",
+  borderRadius: "8px",
   backgroundColor: vars.color.accent,
   color: "#0b1426",
   borderTopLeftRadius: 0,
@@ -334,9 +354,9 @@ export const exportSplitToggle = style({
 export const exportMenu = style({
   position: "absolute",
   top: "100%",
-  left: 0,
+  right: 0,
   marginTop: 4,
-  minWidth: "160px",
+  minWidth: "200px",
   backgroundColor: vars.color.surface,
   borderRadius: "8px",
   border: `1px solid ${vars.color.border}`,
@@ -433,9 +453,11 @@ export const viewModeSwitch = style({
 
 export const viewModeButton = style({
   ...baseButton,
+  width: "32px",
+  height: "28px",
+  padding: 0,
   backgroundColor: "transparent",
   color: vars.color.textSecondary,
-  fontSize: "13px",
   selectors: {
     "&:hover": {
       color: vars.color.textPrimary,
@@ -707,15 +729,15 @@ export const tabList = style({
   border: `1px solid ${vars.color.border}`,
 });
 
-// The icon sits above the label: side by side, the three tabs overflow the 320 px column.
+// Tabs show their icon, and name themselves in a tooltip.
 const tabBase = style({
   flex: 1,
   display: "inline-flex",
-  flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  gap: "2px",
-  padding: `6px ${vars.spacing.xs}`,
+  gap: "6px",
+  height: "32px",
+  padding: `0 ${vars.spacing.xs}`,
   border: "none",
   borderRadius: "6px",
   background: "none",
@@ -745,12 +767,6 @@ export const tab = styleVariants({
       boxShadow: `inset 0 -2px 0 ${vars.color.accent}`,
     },
   ],
-});
-
-export const tabLabel = style({
-  display: "inline-flex",
-  alignItems: "center",
-  gap: vars.spacing.xs,
 });
 
 export const tabCount = style({

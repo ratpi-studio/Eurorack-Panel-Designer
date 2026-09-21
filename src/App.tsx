@@ -3,6 +3,7 @@ import { Toaster } from "react-hot-toast";
 
 import { OrderRecap } from "@components/OrderRecap/OrderRecap";
 import { PanelDesigner } from "@components/PanelDesigner/PanelDesigner";
+import { TooltipLayer } from "@components/Tooltip/TooltipLayer";
 import { I18nProvider } from "@i18n/I18nContext";
 
 const ORDER_PATH_PREFIX = "/order/";
@@ -23,7 +24,7 @@ function resolveOrderId(): string | null {
   }
 }
 
-// Icons sit next to 13-14 px labels in buttons, tabs and menus
+// Icons fill 32 px icon buttons and sit next to 13-14 px labels in menus and dialogs.
 const ICON_SIZE_PX = 16;
 
 export function App() {
@@ -57,6 +58,7 @@ export function App() {
           }}
         />
         {orderId ? <OrderRecap id={orderId} /> : <PanelDesigner />}
+        <TooltipLayer />
       </LucideProvider>
     </I18nProvider>
   );

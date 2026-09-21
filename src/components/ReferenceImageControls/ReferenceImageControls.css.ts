@@ -27,42 +27,6 @@ export const actions = style({
   gap: vars.spacing.xs,
 });
 
-export const secondary = style({
-  display: "inline-flex",
-  alignItems: "center",
-  gap: "6px",
-  border: `1px solid ${vars.color.border}`,
-  backgroundColor: vars.color.surface,
-  color: vars.color.textPrimary,
-  fontWeight: 600,
-  borderRadius: "8px",
-  padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
-  cursor: "pointer",
-  selectors: {
-    "&:hover": {
-      borderColor: vars.color.accent,
-    },
-  },
-});
-
-export const danger = style({
-  display: "inline-flex",
-  alignItems: "center",
-  gap: "6px",
-  border: "none",
-  backgroundColor: "#ef4444",
-  color: "#0f172a",
-  fontWeight: 600,
-  borderRadius: "8px",
-  padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
-  cursor: "pointer",
-  selectors: {
-    "&:hover": {
-      backgroundColor: "#fb7185",
-    },
-  },
-});
-
 export const grid = style({
   display: "grid",
   gridTemplateColumns: "repeat(2, minmax(0, 1fr))",

@@ -1,6 +1,15 @@
-import { Scan } from "lucide-react";
+import {
+  CircleDashed,
+  CircleDot,
+  Grid3x3,
+  Magnet,
+  RulerDimensionLine,
+  Scan,
+  type LucideIcon,
+} from "lucide-react";
 import React from "react";
 
+import { IconButton } from "@components/IconButton/IconButton";
 import { useI18n } from "@i18n/I18nContext";
 import { DEFAULT_DESIGN_COLOR, DEFAULT_PANEL_COLOR, type PanelOptions } from "@lib/panelTypes";
 
@@ -16,6 +25,13 @@ interface DisplayOptionsProps {
 }
 
 const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
+
+type CanvasToggle =
+  | "showGrid"
+  | "snapToGrid"
+  | "showMountingHoles"
+  | "showDimensions"
+  | "showHardware";
 
 export function toColorInputValue(color: string, fallback: string): string {
   return HEX_COLOR_PATTERN.test(color) ? color : fallback;
@@ -36,8 +52,14 @@ export function DisplayOptions({
     setGridInput(options.gridSizeMm.toString());
   }, [options.gridSizeMm]);
 
-  const handleToggle = (key: keyof PanelOptions) => (event: React.ChangeEvent<HTMLInputElement>) =>
-    onChange({ [key]: event.target.checked });
+  const toggles: Array<{ key: CanvasToggle; label: string; icon: LucideIcon }> = [
+    { key: "showGrid", label: t.display.grid, icon: Grid3x3 },
+    { key: "snapToGrid", label: t.display.snap, icon: Magnet },
+    { key: "showMountingHoles", label: t.display.holes, icon: CircleDot },
+    { key: "showDimensions", label: t.display.dimensions, icon: RulerDimensionLine },
+    // Dashed, as the canvas draws the outlines of knobs and nuts.
+    { key: "showHardware", label: t.display.hardware, icon: CircleDashed },
+  ];
 
   const handleGridSize = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = event.target;
@@ -54,43 +76,19 @@ export function DisplayOptions({
 
   return (
     <div className={styles.root}>
-      <div className={styles.options}>
-        <label className={styles.option}>
-          <input type="checkbox" checked={options.showGrid} onChange={handleToggle("showGrid")} />
-          <span>{t.display.grid}</span>
-        </label>
-        <label className={styles.option}>
-          <input
-            type="checkbox"
-            checked={options.snapToGrid}
-            onChange={handleToggle("snapToGrid")}
-          />
-          <span>{t.display.snap}</span>
-        </label>
-        <label className={styles.option}>
-          <input
-            type="checkbox"
-            checked={options.showMountingHoles}
-            onChange={handleToggle("showMountingHoles")}
-          />
-          <span>{t.display.holes}</span>
-        </label>
-        <label className={styles.option}>
-          <input
-            type="checkbox"
-            checked={options.showDimensions}
-            onChange={handleToggle("showDimensions")}
-          />
-          <span>{t.display.dimensions}</span>
-        </label>
-        <label className={styles.option}>
-          <input
-            type="checkbox"
-            checked={options.showHardware}
-            onChange={handleToggle("showHardware")}
-          />
-          <span>{t.display.hardware}</span>
-        </label>
+      <div className={styles.toolbar}>
+        <div className={styles.toggles} role="group" aria-label={t.display.overlaysLabel}>
+          {toggles.map(({ key, label, icon }) => (
+            <IconButton
+              key={key}
+              label={label}
+              icon={icon}
+              aria-pressed={options[key]}
+              onClick={() => onChange({ [key]: !options[key] })}
+            />
+          ))}
+        </div>
+        <IconButton label={t.display.reset} icon={Scan} onClick={onResetView} />
       </div>
       <label className={styles.sliderField}>
         <span className={styles.label}>{t.display.gridSpacing}</span>
@@ -113,10 +111,6 @@ export function DisplayOptions({
         value={toColorInputValue(designColor, DEFAULT_DESIGN_COLOR)}
         onChange={(color) => onColorsChange({ designColor: color })}
       />
-      <button type="button" className={styles.resetButton} onClick={onResetView}>
-        <Scan />
-        {t.display.reset}
-      </button>
     </div>
   );
 }

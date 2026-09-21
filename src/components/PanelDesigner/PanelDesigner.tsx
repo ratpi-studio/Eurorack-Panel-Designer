@@ -939,6 +939,7 @@ export function PanelDesigner() {
     referenceImageInputRef,
     onImportJson: handleImportJson,
     onReferenceFileChange: handleReferenceFileChange,
+    exportFormat,
     exportButtonLabel,
     isExportMenuOpen,
     onToggleExportMenu: handleToggleExportMenu,
@@ -1096,7 +1097,7 @@ export function PanelDesigner() {
                     }}
                   >
                     <PanelLeft />
-                    Tools
+                    {t.layout.showTools}
                   </button>
                   <button
                     type="button"
@@ -1107,7 +1108,7 @@ export function PanelDesigner() {
                     }}
                   >
                     <PanelRight />
-                    Properties
+                    {t.layout.showProperties}
                   </button>
                 </div>
               ) : null}

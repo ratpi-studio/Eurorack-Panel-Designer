@@ -2,6 +2,7 @@ import { X } from "lucide-react";
 import React from "react";
 
 import { ElementPalette } from "@components/ElementPalette/ElementPalette";
+import { IconButton } from "@components/IconButton/IconButton";
 import { PanelControls } from "@components/PanelControls/PanelControls";
 import type { PanelFormat } from "@lib/panelFormat";
 import { type PanelElementType, type PanelModel } from "@lib/panelTypes";
@@ -51,10 +52,7 @@ export function LeftPanel({
         {isCompact ? (
           <div className={styles.drawerHeader}>
             <div className={styles.cardTitle}>{t.palette.title}</div>
-            <button type="button" className={styles.secondaryButton} onClick={onClose}>
-              <X />
-              Close
-            </button>
+            <IconButton label={t.layout.closePanel} icon={X} variant="ghost" onClick={onClose} />
           </div>
         ) : null}
         <div className={styles.card}>

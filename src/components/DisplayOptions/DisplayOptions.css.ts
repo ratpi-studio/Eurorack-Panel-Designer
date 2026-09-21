@@ -13,18 +13,18 @@ export const root = style({
   boxShadow: "0 12px 30px rgba(2, 6, 23, 0.35)",
 });
 
-export const options = style({
-  display: "flex",
-  gap: vars.spacing.sm,
-  flexWrap: "wrap",
-});
-
-export const option = style({
+export const toolbar = style({
   display: "flex",
   alignItems: "center",
+  justifyContent: "space-between",
+  flexWrap: "wrap",
+  gap: vars.spacing.sm,
+});
+
+export const toggles = style({
+  display: "flex",
+  flexWrap: "wrap",
   gap: vars.spacing.xs,
-  fontSize: "13px",
-  color: vars.color.textPrimary,
 });
 
 export const sliderField = style({
@@ -54,26 +54,6 @@ export const input = style({
     "&:focus": {
       borderColor: vars.color.accent,
       boxShadow: `0 0 0 2px rgba(56, 189, 248, 0.25)`,
-    },
-  },
-});
-
-export const resetButton = style({
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: "6px",
-  marginTop: vars.spacing.xs,
-  border: "none",
-  backgroundColor: vars.color.accent,
-  color: "#0f172a",
-  fontWeight: 700,
-  padding: `10px ${vars.spacing.sm}`,
-  borderRadius: "10px",
-  cursor: "pointer",
-  selectors: {
-    "&:hover": {
-      filter: "brightness(1.05)",
     },
   },
 });

@@ -1,7 +1,9 @@
-import { Eye, EyeOff, Lock, LockOpen, Trash } from "lucide-react";
+import { Eye, EyeOff, Lock, LockOpen, Trash2 } from "lucide-react";
 import React from "react";
 
 import { ElementTypeIcon } from "@components/ElementTypeIcon/ElementTypeIcon";
+import { IconButton } from "@components/IconButton/IconButton";
+import { iconLabelProps } from "@components/Tooltip/TooltipLayer";
 import { useI18n } from "@i18n/I18nContext";
 import { elementTypeColors } from "@lib/canvas/palette";
 import { describeComponents, type ComponentListItem } from "@lib/componentList";
@@ -80,10 +82,7 @@ export function ComponentList({
       <div className={styles.header}>
         <span className={styles.summary}>{copy.summary(items.length, hiddenCount)}</span>
         {hiddenCount > 0 ? (
-          <button type="button" className={styles.textButton} onClick={onShowAll}>
-            <Eye size={14} />
-            {copy.showAll}
-          </button>
+          <IconButton label={copy.showAll} icon={Eye} variant="ghost" onClick={onShowAll} />
         ) : null}
       </div>
       {items.length === 0 ? (
@@ -148,8 +147,7 @@ export function ComponentList({
                     type="button"
                     className={styles.actionButton[item.hidden ? "active" : "idle"]}
                     aria-pressed={item.hidden}
-                    aria-label={item.hidden ? copy.show(item.name) : copy.hide(item.name)}
-                    title={item.hidden ? copy.show(item.name) : copy.hide(item.name)}
+                    {...iconLabelProps(item.hidden ? copy.show(item.name) : copy.hide(item.name))}
                     onClick={() => onToggleHidden(item.id)}
                   >
                     {item.hidden ? <EyeOff /> : <Eye />}
@@ -158,8 +156,7 @@ export function ComponentList({
                     type="button"
                     className={styles.actionButton[item.locked ? "active" : "idle"]}
                     aria-pressed={item.locked}
-                    aria-label={item.locked ? copy.unlock(item.name) : copy.lock(item.name)}
-                    title={item.locked ? copy.unlock(item.name) : copy.lock(item.name)}
+                    {...iconLabelProps(item.locked ? copy.unlock(item.name) : copy.lock(item.name))}
                     onClick={() => onToggleLocked(item.id)}
                   >
                     {item.locked ? <Lock /> : <LockOpen />}
@@ -167,11 +164,10 @@ export function ComponentList({
                   <button
                     type="button"
                     className={styles.actionButton.danger}
-                    aria-label={copy.remove(item.name)}
-                    title={copy.remove(item.name)}
+                    {...iconLabelProps(copy.remove(item.name))}
                     onClick={() => onRemove(item.id)}
                   >
-                    <Trash />
+                    <Trash2 />
                   </button>
                 </div>
               </li>

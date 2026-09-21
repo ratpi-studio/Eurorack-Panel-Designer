@@ -53,24 +53,6 @@ export const subtitle = style({
   color: vars.color.textPrimary,
 });
 
-export const removeButton = style({
-  display: "inline-flex",
-  alignItems: "center",
-  gap: "6px",
-  border: "none",
-  backgroundColor: "#ef4444",
-  color: "#0f172a",
-  fontWeight: 600,
-  borderRadius: "8px",
-  padding: `8px ${vars.spacing.sm}`,
-  cursor: "pointer",
-  selectors: {
-    "&:hover": {
-      backgroundColor: "#fb7185",
-    },
-  },
-});
-
 export const grid = style({
   display: "grid",
   gridTemplateColumns: "repeat(2, minmax(0, 1fr))",

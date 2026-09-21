@@ -3,20 +3,20 @@ import {
   ChevronDown,
   CircuitBoard,
   Download,
-  Eye,
   FileBraces,
   FileCode,
   FileImage,
-  FilePlus,
+  FilePlus2,
   FileUp,
   FolderOpen,
   ImagePlus,
   Layers,
+  MonitorCog,
   Pencil,
   Save,
   ShoppingCart,
   SlidersHorizontal,
-  Trash,
+  Trash2,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -30,8 +30,10 @@ import {
 import { DisplayOptions } from "@components/DisplayOptions/DisplayOptions";
 import { ElementMountingHoles } from "@components/ElementMountingHoles/ElementMountingHoles";
 import { ElementProperties } from "@components/ElementProperties/ElementProperties";
+import { IconButton } from "@components/IconButton/IconButton";
 import { MountingHoleSettings } from "@components/MountingHoleSettings/MountingHoleSettings";
 import { ReferenceImageControls } from "@components/ReferenceImageControls/ReferenceImageControls";
+import { iconLabelProps } from "@components/Tooltip/TooltipLayer";
 import { describeComponents } from "@lib/componentList";
 import { findCrowdedElements } from "@lib/elementParts";
 import { getVisibleElements } from "@lib/elementVisibility";
@@ -74,6 +76,7 @@ interface ProjectPanelProps {
   referenceImageInputRef: React.RefObject<HTMLInputElement | null>;
   onImportJson: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onReferenceFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  exportFormat: ExportFormat;
   exportButtonLabel: string;
   isExportMenuOpen: boolean;
   onToggleExportMenu: () => void;
@@ -82,6 +85,8 @@ interface ProjectPanelProps {
   onSelectExportFormat: (format: ExportFormat) => void;
   /** Opens the order dialog; the button is hidden when ordering is not configured. */
   onOrderPrint?: () => void;
+  /** Closes the drawer the panel sits in on small screens. */
+  onClose?: () => void;
 }
 
 interface PropertiesPanelProps {
@@ -153,6 +158,7 @@ function ProjectPanel({
   referenceImageInputRef,
   onImportJson,
   onReferenceFileChange,
+  exportFormat,
   exportButtonLabel,
   isExportMenuOpen,
   onToggleExportMenu,
@@ -160,7 +166,9 @@ function ProjectPanel({
   onExportJson,
   onSelectExportFormat,
   onOrderPrint,
+  onClose,
 }: ProjectPanelProps) {
+  const exportRef = React.useRef<HTMLDivElement>(null);
   const exportMenuItems: Array<{ format: ExportFormat; label: string; Icon: LucideIcon }> = [
     { format: "svg", label: t.projects.exportSvg, Icon: FileCode },
     { format: "png", label: t.projects.exportPng, Icon: FileImage },
@@ -169,73 +177,100 @@ function ProjectPanel({
     { format: "stl", label: t.projects.exportStl, Icon: Box },
   ];
 
+  // The export menu closes on a click elsewhere or on Escape, like any menu.
+  React.useEffect(() => {
+    if (!isExportMenuOpen) {
+      return undefined;
+    }
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!(event.target instanceof Node) || !exportRef.current?.contains(event.target)) {
+        onToggleExportMenu();
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onToggleExportMenu();
+      }
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isExportMenuOpen, onToggleExportMenu]);
+
   return (
     <>
       <div className={styles.projectHeader}>
         {isEditingProjectName ? (
-          <div className={styles.projectNameEditRow}>
-            <input
-              ref={projectNameInputRef}
-              className={styles.projectNameInput}
-              type="text"
-              value={projectName}
-              onChange={(event) => onProjectNameChange(event.target.value)}
-              onBlur={onCommitProjectName}
-              onKeyDown={onProjectNameKeyDown}
-              aria-label={t.projects.nameLabel}
-              placeholder={t.projects.nameLabel}
-            />
-            {hasUnsavedChanges ? (
-              <span className={styles.dirtyStar} aria-hidden="true">
-                *
-              </span>
-            ) : null}
-          </div>
+          <input
+            ref={projectNameInputRef}
+            className={styles.projectNameInput}
+            type="text"
+            value={projectName}
+            onChange={(event) => onProjectNameChange(event.target.value)}
+            onBlur={onCommitProjectName}
+            onKeyDown={onProjectNameKeyDown}
+            aria-label={t.projects.nameLabel}
+            placeholder={t.projects.nameLabel}
+          />
         ) : (
           <button
             type="button"
             className={styles.projectNameButton}
             onClick={onStartEditingProjectName}
-            title={t.projects.nameLabel}
+            data-tooltip={t.projects.editNameLabel}
           >
-            <span className={styles.projectNameContent}>
-              <span className={styles.projectNameText}>{resolvedProjectName}</span>
-              {hasUnsavedChanges ? (
-                <span className={styles.dirtyStar} aria-hidden="true">
-                  *
-                </span>
-              ) : null}
-            </span>
+            <span className={styles.projectNameText}>{resolvedProjectName}</span>
+            {hasUnsavedChanges ? (
+              <span
+                className={styles.unsavedDot}
+                role="img"
+                aria-label={t.projects.unsavedChanges}
+              />
+            ) : null}
           </button>
         )}
-        <button
-          type="button"
-          className={styles.iconButton}
+        <IconButton
+          label={t.projects.editNameLabel}
+          icon={Pencil}
+          variant="ghost"
           onClick={isEditingProjectName ? onCommitProjectName : onStartEditingProjectName}
-          aria-label={t.projects.editNameLabel}
-        >
-          <Pencil />
-        </button>
+        />
+        {onClose ? (
+          <IconButton label={t.layout.closePanel} icon={X} variant="ghost" onClick={onClose} />
+        ) : null}
       </div>
-      <div className={styles.buttonRow}>
-        <button type="button" className={styles.secondaryButton} onClick={onNewProject}>
-          <FilePlus />
-          {t.projects.newProject}
-        </button>
-        <button type="button" className={styles.primaryButton} onClick={onSaveProject}>
-          <Save />
-          {t.projects.save}
-        </button>
-        <div className={styles.exportSplitButton}>
-          <button type="button" className={styles.exportSplitMain} onClick={onExportClick}>
+
+      <div className={styles.projectToolbar}>
+        <div className={styles.toolbarGroup}>
+          <IconButton label={t.projects.newProject} icon={FilePlus2} onClick={onNewProject} />
+          <IconButton label={t.projects.save} icon={Save} onClick={onSaveProject} />
+          <IconButton label={t.projects.importJson} icon={FileUp} onClick={onImportJsonClick} />
+          <IconButton
+            label={t.projects.importImage}
+            icon={ImagePlus}
+            onClick={onImportReferenceImageClick}
+          />
+        </div>
+        <div ref={exportRef} className={styles.exportSplitButton}>
+          <button
+            type="button"
+            className={styles.exportSplitMain}
+            onClick={onExportClick}
+            {...iconLabelProps(exportButtonLabel)}
+          >
             <Download />
-            {exportButtonLabel}
+            <span>{t.projects.exportFormatShort[exportFormat]}</span>
           </button>
           <button
             type="button"
-            aria-label={t.projects.exportMenuLabel}
             className={styles.exportSplitToggle}
             onClick={onToggleExportMenu}
+            aria-expanded={isExportMenuOpen}
+            aria-haspopup="true"
+            {...iconLabelProps(t.projects.exportMenuLabel)}
           >
             <ChevronDown />
           </button>
@@ -267,68 +302,58 @@ function ProjectPanel({
           ) : null}
         </div>
       </div>
-      {onOrderPrint ? (
-        <button type="button" className={styles.orderButton} onClick={onOrderPrint}>
-          <ShoppingCart />
-          {t.projects.orderPrint}
-        </button>
-      ) : null}
-      <label className={styles.fieldRow}>
-        <span className={styles.label}>{t.projects.savedLabel}</span>
+
+      <div className={styles.savedProjectsRow}>
         <select
-          className={styles.textInput}
+          className={styles.savedProjectsSelect}
+          aria-label={t.projects.savedLabel}
           value={selectedSavedName}
           onChange={(event) => onSelectSavedName(event.target.value)}
         >
-          <option value="">—</option>
+          <option value="">{t.projects.savedPlaceholder}</option>
           {projects.map((project) => (
             <option key={project.name} value={project.name}>
               {project.name}
             </option>
           ))}
         </select>
-      </label>
-      <div className={styles.buttonRow}>
-        <button
-          type="button"
-          className={styles.primaryButton}
+        <IconButton
+          label={t.projects.load}
+          icon={FolderOpen}
           disabled={!selectedSavedName}
           onClick={onLoadSelected}
-        >
-          <FolderOpen />
-          {t.projects.load}
-        </button>
-        <button type="button" className={styles.secondaryButton} onClick={onImportJsonClick}>
-          <FileUp />
-          {t.projects.importJson}
-        </button>
-        <button type="button" className={styles.secondaryButton} onClick={onDeleteOrReset}>
-          <Trash />
-          {t.projects.delete}
-        </button>
-        <button
-          type="button"
-          className={styles.secondaryButton}
-          onClick={onImportReferenceImageClick}
-        >
-          <ImagePlus />
-          {t.properties.importImage}
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="application/json"
-          className={styles.hiddenInput}
-          onChange={onImportJson}
         />
-        <input
-          ref={referenceImageInputRef}
-          type="file"
-          accept="image/*"
-          className={styles.hiddenInput}
-          onChange={onReferenceFileChange}
+        <IconButton
+          label={
+            selectedSavedName ? t.projects.deleteSelected(selectedSavedName) : t.projects.reset
+          }
+          icon={Trash2}
+          variant="danger"
+          onClick={onDeleteOrReset}
         />
       </div>
+
+      {onOrderPrint ? (
+        <button type="button" className={styles.orderButton} onClick={onOrderPrint}>
+          <ShoppingCart />
+          {t.projects.orderPrint}
+        </button>
+      ) : null}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/json"
+        className={styles.hiddenInput}
+        onChange={onImportJson}
+      />
+      <input
+        ref={referenceImageInputRef}
+        type="file"
+        accept="image/*"
+        className={styles.hiddenInput}
+        onChange={onReferenceFileChange}
+      />
     </>
   );
 }
@@ -464,8 +489,9 @@ interface RightPanelTabsProps {
   onChangeTab: (tab: RightPanelTab) => void;
 }
 
+// The display tab avoids the eye icon, which hides and shows components in their list.
 const TAB_ICONS: Record<RightPanelTab, LucideIcon> = {
-  display: Eye,
+  display: MonitorCog,
   properties: SlidersHorizontal,
   components: Layers,
 };
@@ -510,6 +536,7 @@ function RightPanelTabs({ t, activeTab, componentCount, onChangeTab }: RightPane
       {TAB_ORDER.map((tab) => {
         const isActive = tab === activeTab;
         const Icon = TAB_ICONS[tab];
+        const showCount = tab === "components" && componentCount > 0;
         return (
           <button
             key={tab}
@@ -524,14 +551,16 @@ function RightPanelTabs({ t, activeTab, componentCount, onChangeTab }: RightPane
             tabIndex={isActive ? 0 : -1}
             className={styles.tab[isActive ? "active" : "idle"]}
             onClick={() => onChangeTab(tab)}
+            {...iconLabelProps(
+              showCount ? t.rightPanel.componentsWithCount(componentCount) : labels[tab],
+            )}
           >
             <Icon />
-            <span className={styles.tabLabel}>
-              {labels[tab]}
-              {tab === "components" && componentCount > 0 ? (
-                <span className={styles.tabCount}>{componentCount}</span>
-              ) : null}
-            </span>
+            {showCount ? (
+              <span className={styles.tabCount} aria-hidden="true">
+                {componentCount}
+              </span>
+            ) : null}
           </button>
         );
       })}
@@ -560,16 +589,7 @@ export function RightPanel({
   return (
     <aside className={containerClass}>
       <div className={styles.card}>
-        {isCompact ? (
-          <div className={styles.drawerHeader}>
-            <div className={styles.cardTitle}>{projectPanel.resolvedProjectName}</div>
-            <button type="button" className={styles.secondaryButton} onClick={onClose}>
-              <X />
-              Close
-            </button>
-          </div>
-        ) : null}
-        <ProjectPanel {...projectPanel} />
+        <ProjectPanel {...projectPanel} onClose={isCompact ? onClose : undefined} />
       </div>
       <div className={styles.card}>
         <RightPanelTabs
