@@ -21,24 +21,6 @@ export const summary = style({
   color: vars.color.textSecondary,
 });
 
-export const textButton = style({
-  display: "inline-flex",
-  alignItems: "center",
-  gap: "4px",
-  border: "none",
-  background: "none",
-  padding: 0,
-  color: vars.color.accent,
-  fontSize: "12px",
-  fontWeight: 600,
-  cursor: "pointer",
-  selectors: {
-    "&:hover": {
-      textDecoration: "underline",
-    },
-  },
-});
-
 export const list = style({
   listStyle: "none",
   margin: 0,

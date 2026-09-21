@@ -16,7 +16,6 @@ interface Translations {
     projectNameSuffix: string;
   };
   header: {
-    githubLabel: string;
     githubAriaLabel: string;
     supportAriaLabel: string;
     supportImageAlt: string;
@@ -63,6 +62,7 @@ interface Translations {
     dimensions: string;
     hardware: string;
     gridSpacing: string;
+    overlaysLabel: string;
     reset: string;
     panelColor: string;
     designColor: string;
@@ -108,6 +108,12 @@ interface Translations {
     display: string;
     properties: string;
     components: string;
+    componentsWithCount: (count: number) => string;
+  };
+  layout: {
+    showTools: string;
+    showProperties: string;
+    closePanel: string;
   };
   components: {
     listLabel: string;
@@ -126,7 +132,6 @@ interface Translations {
     title: string;
     subtitle: string;
     delete: string;
-    importImage: string;
     empty: string;
     multiSelection: (count: number) => string;
     multiSelectionHint: string;
@@ -216,7 +221,12 @@ interface Translations {
     load: string;
     delete: string;
     importJson: string;
+    importImage: string;
     refresh: string;
+    unsavedChanges: string;
+    savedPlaceholder: string;
+    deleteSelected: (name: string) => string;
+    exportFormatShort: Record<"svg" | "png" | "kicadSvg" | "kicadPcb" | "stl", string>;
     messages: {
       saveSuccess: (name: string) => string;
       saveError: (name: string) => string;
@@ -348,8 +358,7 @@ export const enUS: Translations = {
     projectNameSuffix: "(GitHub Pages)",
   },
   header: {
-    githubLabel: "GitHub",
-    githubAriaLabel: "Open GitHub repository",
+    githubAriaLabel: "Source code on GitHub",
     supportAriaLabel: "Support the project on Ko-fi",
     supportImageAlt: "Buy me a coffee on Ko-fi",
     etsyLabel: "Etsy",
@@ -360,9 +369,9 @@ export const enUS: Translations = {
   },
   view3d: {
     modeLabel: "View",
-    mode2d: "2D",
-    mode3d: "3D",
-    modeSplit: "2D + 3D",
+    mode2d: "2D view",
+    mode3d: "3D view",
+    modeSplit: "2D and 3D side by side",
     canvasLabel: "3D view of the panel",
     loading: "Loading 3D view…",
     unavailable: "The 3D view needs WebGL, which this browser does not provide.",
@@ -405,6 +414,7 @@ export const enUS: Translations = {
     dimensions: "Dimensions",
     hardware: "Knobs and nuts",
     gridSpacing: "Grid spacing (mm)",
+    overlaysLabel: "Canvas options",
     reset: "Reset view",
     panelColor: "Panel color",
     designColor: "Design color",
@@ -437,15 +447,15 @@ export const enUS: Translations = {
     height: "Height (mm)",
     rotation: "Rotation (°)",
     opacity: "Opacity",
-    replace: "Replace",
-    remove: "Remove",
+    replace: "Replace the image",
+    remove: "Remove the image",
     notKept:
       "This reference image is too large to be kept after a reload. The rest of your design is still saved.",
   },
   palette: {
     title: "Palette",
     subtitle: "Pick an element to place",
-    clear: "Clear",
+    clear: "Cancel placement (Esc)",
     select: "Select",
     place: "Place…",
     shapeLabelPrefix: "Shape",
@@ -512,12 +522,18 @@ export const enUS: Translations = {
     display: "Display",
     properties: "Properties",
     components: "Components",
+    componentsWithCount: (count) => `Components (${count})`,
+  },
+  layout: {
+    showTools: "Tools",
+    showProperties: "Properties",
+    closePanel: "Close",
   },
   components: {
     listLabel: "Placed components",
     summary: (count, hiddenCount) =>
       `${count} component${count === 1 ? "" : "s"}${hiddenCount ? ` · ${hiddenCount} hidden` : ""}`,
-    showAll: "Show all",
+    showAll: "Show all hidden components",
     empty: "No components yet. Pick one in the palette, then click on the panel to place it.",
     hint: "Shift-click to select several. Double-click a name to rename it. Hidden components are left out of the 3D view, exports and orders; locked ones cannot be moved on the canvas.",
     rename: (name) => `Rename ${name}`,
@@ -531,7 +547,6 @@ export const enUS: Translations = {
     title: "Properties",
     subtitle: "Selection",
     delete: "Delete",
-    importImage: "Image",
     empty: "Select an element to view its properties.",
     multiSelection: (count: number) => `${count} elements selected`,
     multiSelectionHint:
@@ -620,10 +635,10 @@ export const enUS: Translations = {
     title: "Projects",
     subtitle: "Local save + export",
     nameLabel: "Project name",
-    editNameLabel: "Edit project name",
-    newProject: "New",
+    editNameLabel: "Rename the project",
+    newProject: "New project",
     defaultName: "Untitled Project",
-    save: "Save",
+    save: "Save the project",
     exportJson: "Export JSON",
     exportPng: "Export PNG",
     exportSvg: "Export SVG",
@@ -634,10 +649,21 @@ export const enUS: Translations = {
     orderPrint: "Order this panel",
     reset: "Reset design",
     savedLabel: "Saved projects",
-    load: "Load",
+    load: "Open the selected project",
     delete: "Delete",
-    importJson: "Import JSON",
+    importJson: "Import a JSON design",
+    importImage: "Import a reference image",
     refresh: "Refresh",
+    unsavedChanges: "Unsaved changes",
+    savedPlaceholder: "Saved projects…",
+    deleteSelected: (name) => `Delete the saved project "${name}"`,
+    exportFormatShort: {
+      svg: "SVG",
+      png: "PNG",
+      kicadSvg: "KiCad SVG",
+      kicadPcb: "KiCad PCB",
+      stl: "STL",
+    },
     messages: {
       saveSuccess: (name: string) => `Project "${name}" saved.`,
       saveError: (name: string) =>
@@ -681,7 +707,7 @@ export const enUS: Translations = {
     },
   },
   changelog: {
-    buttonLabel: "Changelog",
+    buttonLabel: "What's new",
     title: "Changelog",
     description: "Here is what changed recently in Eurorack Panel Designer.",
     close: "Close",

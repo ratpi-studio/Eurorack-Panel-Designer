@@ -1,5 +1,6 @@
 import { Box, Columns2, Square, type LucideIcon } from "lucide-react";
 
+import { iconLabelProps } from "@components/Tooltip/TooltipLayer";
 import type { ViewMode } from "@lib/preferences";
 import type { ReturnTypeUseI18n } from "./types";
 import * as styles from "./PanelDesigner.css";
@@ -26,9 +27,9 @@ export function ViewModeSwitch({ t, value, onChange }: ViewModeSwitchProps) {
           className={styles.viewModeButton}
           aria-pressed={value === mode}
           onClick={() => onChange(mode)}
+          {...iconLabelProps(label)}
         >
-          <Icon size={14} />
-          {label}
+          <Icon />
         </button>
       ))}
     </div>

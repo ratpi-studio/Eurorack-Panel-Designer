@@ -1,7 +1,8 @@
-import { RotateCcw, TriangleAlert, Trash } from "lucide-react";
+import { RotateCcw, TriangleAlert, Trash2 } from "lucide-react";
 import React from "react";
 
 import { ColorPickerField, toColorInputValue } from "@components/DisplayOptions/DisplayOptions";
+import { IconButton } from "@components/IconButton/IconButton";
 import { useI18n } from "@i18n/I18nContext";
 import { formatDimensionMm } from "@lib/canvas/elementDimensions";
 import { applyPartChoice, getPartChoice, isPartChoice } from "@lib/elementParts";
@@ -169,10 +170,12 @@ export function ElementProperties({
             <div className={styles.subtitle}>{t.properties.multiSelection(selectionCount)}</div>
           </div>
           <div className={styles.actions}>
-            <button type="button" className={styles.removeButton} onClick={onRemove}>
-              <Trash />
-              {t.properties.delete}
-            </button>
+            <IconButton
+              label={t.properties.delete}
+              icon={Trash2}
+              variant="danger"
+              onClick={onRemove}
+            />
           </div>
         </div>
         <div className={styles.selectionSummary}>{t.properties.multiSelectionHint}</div>
@@ -332,10 +335,12 @@ export function ElementProperties({
         </div>
         <div className={styles.actions}>
           {!isDraft ? (
-            <button type="button" className={styles.removeButton} onClick={onRemove}>
-              <Trash />
-              {t.properties.delete}
-            </button>
+            <IconButton
+              label={t.properties.delete}
+              icon={Trash2}
+              variant="danger"
+              onClick={onRemove}
+            />
           ) : null}
         </div>
       </div>

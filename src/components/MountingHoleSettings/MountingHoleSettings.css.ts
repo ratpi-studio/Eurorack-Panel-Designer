@@ -27,17 +27,7 @@ export const description = style({
 });
 
 export const closeButton = style({
-  display: "inline-flex",
-  alignItems: "center",
-  gap: "6px",
   alignSelf: "flex-start",
-  borderRadius: "6px",
-  border: `1px solid ${vars.color.border}`,
-  backgroundColor: vars.color.surface,
-  color: vars.color.textPrimary,
-  padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
-  cursor: "pointer",
-  fontWeight: 600,
 });
 
 export const field = style({
@@ -63,32 +53,4 @@ export const numberInput = style({
 export const shapeGroup = style({
   display: "flex",
   gap: vars.spacing.xs,
-});
-
-const baseShapeButton = {
-  flex: 1,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: "6px",
-  borderRadius: "6px",
-  padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
-  border: `1px solid ${vars.color.border}`,
-  backgroundColor: vars.color.surface,
-  color: vars.color.textPrimary,
-  cursor: "pointer",
-  fontWeight: 600,
-  textAlign: "center",
-} as const;
-
-export const shapeButton = style({
-  ...baseShapeButton,
-  opacity: 0.7,
-});
-
-export const shapeButtonActive = style({
-  ...baseShapeButton,
-  borderColor: vars.color.accent,
-  color: vars.color.accent,
-  opacity: 1,
 });

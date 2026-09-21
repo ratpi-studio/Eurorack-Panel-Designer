@@ -2,6 +2,7 @@ import { X } from "lucide-react";
 import React from "react";
 
 import { ElementTypeIcon } from "@components/ElementTypeIcon/ElementTypeIcon";
+import { IconButton } from "@components/IconButton/IconButton";
 import { useI18n } from "@i18n/I18nContext";
 import { PanelElementType } from "@lib/panelTypes";
 
@@ -80,10 +81,13 @@ export function ElementPalette({ activeType, onSelect, onOpenSvgArtwork }: Eleme
           <div className={styles.title}>{t.palette.title}</div>
           <div className={styles.subtitle}>{t.palette.subtitle}</div>
         </div>
-        <button type="button" className={styles.clearButton} onClick={() => onSelect(null)}>
-          <X size={14} />
-          {t.palette.clear}
-        </button>
+        <IconButton
+          label={t.palette.clear}
+          icon={X}
+          variant="ghost"
+          disabled={activeType === null}
+          onClick={() => onSelect(null)}
+        />
       </div>
       <div className={styles.list}>
         {paletteItems.map((item) => {
@@ -94,7 +98,7 @@ export function ElementPalette({ activeType, onSelect, onOpenSvgArtwork }: Eleme
               key={item.type}
               type="button"
               className={isActive ? styles.cardActive : styles.card}
-              title={item.description}
+              data-tooltip={item.description}
               aria-pressed={isSvgArtwork ? undefined : isActive}
               onClick={() => {
                 if (isSvgArtwork) {

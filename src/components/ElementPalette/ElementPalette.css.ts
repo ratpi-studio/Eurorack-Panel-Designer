@@ -35,24 +35,6 @@ export const subtitle = style({
   color: vars.color.textPrimary,
 });
 
-export const clearButton = style({
-  display: "inline-flex",
-  alignItems: "center",
-  gap: "4px",
-  border: `1px solid ${vars.color.border}`,
-  backgroundColor: "transparent",
-  borderRadius: "8px",
-  color: vars.color.textSecondary,
-  padding: `6px ${vars.spacing.sm}`,
-  cursor: "pointer",
-  selectors: {
-    "&:hover": {
-      color: vars.color.textPrimary,
-      borderColor: vars.color.textSecondary,
-    },
-  },
-});
-
 export const list = style({
   display: "grid",
   gridTemplateColumns: "repeat(auto-fit, minmax(58px, 1fr))",

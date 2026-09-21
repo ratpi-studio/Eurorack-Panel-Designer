@@ -1,6 +1,8 @@
 import { ScrollText, ShoppingBag } from "lucide-react";
 import React from "react";
 
+import { iconLabelProps } from "@components/Tooltip/TooltipLayer";
+
 import * as styles from "./PanelDesigner.css";
 
 const GITHUB_REPO_URL = "https://github.com/ratpi-studio/Eurorack-Panel-Designer";
@@ -9,7 +11,6 @@ const logoSrc = `${import.meta.env.BASE_URL}images/logo.svg`;
 const supportImageSrc = `${import.meta.env.BASE_URL}images/kofi5.png`;
 
 interface PanelHeaderCopy {
-  githubLabel: string;
   githubAriaLabel: string;
   supportAriaLabel: string;
   supportImageAlt: string;
@@ -37,7 +38,7 @@ export function PanelHeader({ title, changelogLabel, copy, onOpenChangelog }: Pa
             href={GITHUB_REPO_URL}
             target="_blank"
             rel="noreferrer"
-            aria-label={copy.githubAriaLabel}
+            {...iconLabelProps(copy.githubAriaLabel)}
           >
             <svg className={styles.githubIcon} viewBox="0 0 16 16" role="img" aria-hidden="true">
               <path
@@ -45,14 +46,13 @@ export function PanelHeader({ title, changelogLabel, copy, onOpenChangelog }: Pa
                 fill="currentColor"
               />
             </svg>
-            <span className={styles.githubLabel}>{copy.githubLabel}</span>
           </a>
           <a
             className={styles.supportLink}
             href="https://ko-fi.com/T6T01PMWCO"
             target="_blank"
             rel="noreferrer"
-            aria-label={copy.supportAriaLabel}
+            {...iconLabelProps(copy.supportAriaLabel)}
           >
             <img className={styles.supportImage} src={supportImageSrc} alt={copy.supportImageAlt} />
           </a>
@@ -62,13 +62,18 @@ export function PanelHeader({ title, changelogLabel, copy, onOpenChangelog }: Pa
             target="_blank"
             rel="noreferrer"
             aria-label={copy.etsyAriaLabel}
+            data-tooltip={copy.etsyAriaLabel}
           >
             <ShoppingBag />
             <span className={styles.etsyWordmark}>{copy.etsyLabel}</span>
           </a>
-          <button type="button" className={styles.changelogButton} onClick={onOpenChangelog}>
+          <button
+            type="button"
+            className={styles.changelogButton}
+            onClick={onOpenChangelog}
+            {...iconLabelProps(changelogLabel)}
+          >
             <ScrollText />
-            {changelogLabel}
           </button>
         </div>
       </div>

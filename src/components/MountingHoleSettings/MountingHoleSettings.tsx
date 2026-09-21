@@ -2,6 +2,7 @@ import { Circle, X } from "lucide-react";
 import React from "react";
 
 import { SlotIcon } from "@components/ElementTypeIcon/elementIcons";
+import { IconButton } from "@components/IconButton/IconButton";
 import { useI18n } from "@i18n/I18nContext";
 import { type MountingHoleConfig } from "@lib/panelTypes";
 
@@ -60,30 +61,29 @@ export function MountingHoleSettings({ config, onChange, onClose }: MountingHole
           <div className={styles.title}>{t.mountingHoles.title}</div>
           <p className={styles.description}>{t.mountingHoles.description}</p>
         </div>
-        <button type="button" className={styles.closeButton} onClick={onClose}>
-          <X />
-          {t.mountingHoles.close}
-        </button>
+        <IconButton
+          label={t.mountingHoles.close}
+          icon={X}
+          variant="ghost"
+          className={styles.closeButton}
+          onClick={onClose}
+        />
       </div>
       <div className={styles.field}>
         <span className={styles.label}>{t.mountingHoles.shapeLabel}</span>
-        <div className={styles.shapeGroup}>
-          <button
-            type="button"
-            className={config.shape === "circle" ? styles.shapeButtonActive : styles.shapeButton}
+        <div className={styles.shapeGroup} role="group" aria-label={t.mountingHoles.shapeLabel}>
+          <IconButton
+            label={t.mountingHoles.typeCircle}
+            icon={Circle}
+            aria-pressed={config.shape === "circle"}
             onClick={() => handleShapeChange("circle")}
-          >
-            <Circle size={14} />
-            {t.mountingHoles.typeCircle}
-          </button>
-          <button
-            type="button"
-            className={config.shape === "slot" ? styles.shapeButtonActive : styles.shapeButton}
+          />
+          <IconButton
+            label={t.mountingHoles.typeSlot}
+            icon={SlotIcon}
+            aria-pressed={config.shape === "slot"}
             onClick={() => handleShapeChange("slot")}
-          >
-            <SlotIcon size={14} />
-            {t.mountingHoles.typeSlot}
-          </button>
+          />
         </div>
       </div>
       <label className={styles.field}>

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.14.0 - 2026-09-21
+
+- The project panel is tidier: the project name with a dot for unsaved changes, then one row of file actions (new, save, import a JSON design, import a reference image) with the export button on its right, then the saved projects with their open and delete buttons. The export button shows the format it exports to, and its menu now closes on Escape or on a click elsewhere.
+- Buttons show their icon alone, and say what they do in a tooltip when hovered or focused with the keyboard: the header, the 2D and 3D view buttons, the tabs of the right panel, the palette, the component list, the properties, the mounting holes and the reference image. The order button, menus, dialogs, and the buttons of small screens keep their text, as touch screens have no tooltips.
+- The Display tab turns its checkboxes into a row of toggle buttons (grid, snapping, mounting holes, dimensions, knobs and nuts), next to the reset view button.
+- The palette's clear button is greyed out when no element is picked.
+
 ## 0.13.0 - 2026-09-21
 
 - Panels can now be 1U, 2U, 3U, or 4U high, picked in the new Format bar of the width box. 3U stays the default, at 128.5 mm.
