@@ -7,6 +7,8 @@ import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv, type Plugin } from "vite-plus";
 import { vanillaExtractPlugin } from "@vanilla-extract/vite-plugin";
 
+import { seoPagesPlugin } from "./scripts/seo/plugin";
+
 const configDir = path.dirname(fileURLToPath(import.meta.url));
 
 const changelogVirtualId = "virtual:changelog";
@@ -198,6 +200,7 @@ export default defineConfig({
     vanillaExtractPlugin(),
     changelogPlugin(),
     chunkCycleGuardPlugin(),
+    seoPagesPlugin(basePath),
     react(),
     ...(useSentry
       ? [
