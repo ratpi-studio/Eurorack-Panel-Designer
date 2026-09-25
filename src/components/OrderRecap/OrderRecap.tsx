@@ -1,6 +1,7 @@
 import { ArrowLeft, Check, Copy, Download, FileBraces, ShoppingBag } from "lucide-react";
 import React from "react";
 
+import { SphereLoader } from "@components/SphereLoader/SphereLoader";
 import { useI18n } from "@i18n/I18nContext";
 import { collectTextFontIds, hasDesignElements } from "@lib/designLayer";
 import { reportError } from "@lib/monitoring";
@@ -144,7 +145,13 @@ function OrderDetails({ record, copy }: { record: OrderRecord; copy: OrderCopy }
       </section>
       <div className={styles.layout}>
         <div className={styles.previewFrame}>
-          <React.Suspense fallback={<p className={styles.status}>{copy.previewLoading}</p>}>
+          <React.Suspense
+            fallback={
+              <div className={styles.previewFallback}>
+                <SphereLoader label={copy.previewLoading} />
+              </div>
+            }
+          >
             <LazyPanel3DView
               model={previewModel}
               mountingHoles={mountingHoles}
@@ -264,13 +271,13 @@ export function OrderRecap({ id }: OrderRecapProps) {
         ) : (
           <>
             <h1 className={styles.title}>{copy.codeLabel}</h1>
-            <p className={styles.status} role={state.status === "loading" ? undefined : "alert"}>
-              {state.status === "loading"
-                ? copy.loading
-                : state.notFound
-                  ? copy.notFound
-                  : copy.loadError}
-            </p>
+            {state.status === "loading" ? (
+              <SphereLoader label={copy.loading} />
+            ) : (
+              <p className={styles.status} role="alert">
+                {state.notFound ? copy.notFound : copy.loadError}
+              </p>
+            )}
           </>
         )}
         <a className={styles.editLink} href="/">

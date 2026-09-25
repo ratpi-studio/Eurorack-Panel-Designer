@@ -7,6 +7,7 @@ import { PanelHeader } from "@components/PanelDesigner/PanelHeader";
 import { RightPanel } from "@components/PanelDesigner/RightPanel";
 import { ViewModeSwitch } from "@components/PanelDesigner/ViewModeSwitch";
 import { OrderDialog } from "@components/OrderDialog/OrderDialog";
+import { SphereLoader } from "@components/SphereLoader/SphereLoader";
 import { SvgArtworkModal } from "@components/SvgArtworkModal/SvgArtworkModal";
 import { useResponsivePanels } from "@components/PanelDesigner/useResponsivePanels";
 import { useRightPanelTab } from "@components/PanelDesigner/useRightPanelTab";
@@ -1179,7 +1180,11 @@ export function PanelDesigner() {
               {viewMode !== "2d" ? (
                 <div className={styles.viewportPane}>
                   <React.Suspense
-                    fallback={<div className={styles.viewportFallback}>{t.view3d.loading}</div>}
+                    fallback={
+                      <div className={styles.viewportFallback}>
+                        <SphereLoader label={t.view3d.loading} />
+                      </div>
+                    }
                   >
                     <LazyPanel3DView
                       model={outputModel}
@@ -1268,7 +1273,7 @@ export function PanelDesigner() {
                 <React.Suspense
                   fallback={
                     <div className={styles.viewportFallback}>
-                      {t.projects.stlDialog.previewLoading}
+                      <SphereLoader size="sm" label={t.projects.stlDialog.previewLoading} />
                     </div>
                   }
                 >

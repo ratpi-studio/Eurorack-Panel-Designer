@@ -40,15 +40,38 @@ plain HTML that needs none:
 
 - `index.html` carries the description, Open Graph tags and a `SoftwareApplication` JSON-LD block,
   plus a static summary inside `#root` that React replaces when it mounts.
-- `scripts/seo/` generates the reference pages (`/eurorack-hp-to-mm/`, `/eurorack-panel-dimensions/`,
-  `/eurorack-drill-sizes/`, `/3d-print-eurorack-panel/`, `/kicad-eurorack-panel/`) along with
-  `sitemap.xml`, `robots.txt`, `llms.txt` and `llms-full.txt`. Every measurement on them is read
-  from `src/lib`, so a page cannot quote a number the editor no longer applies.
+- `src/seo/` holds the content pages: the HP and U calculator (`/eurorack-hp-calculator/`) and the
+  reference pages (`/eurorack-hp-to-mm/`, `/eurorack-panel-dimensions/`, `/eurorack-drill-sizes/`,
+  `/3d-print-eurorack-panel/`, `/kicad-eurorack-panel/`). They are React pages built with the
+  [UI kit](#ui-kit), rendered to plain HTML at build time by `scripts/seo/plugin.ts`, along with
+  `sitemap.xml`, `robots.txt`, `llms.txt` and `llms-full.txt`. Their styles are a stylesheet
+  written at build time, with the dark background inline in the head so no white shows before it,
+  and the browser cross-fades from one page to the next. Only the calculator runs in the browser:
+  it is an island, hydrated over the HTML the build rendered for it; the other pages load no
+  script. Every measurement on the pages is read from `src/lib`, so a page cannot quote a number
+  the editor no longer applies.
+- `vp dev` serves the very files the build makes, built on the first request and again after a
+  source file changes: reload the page to see a change.
 - `public/images/og.png` is the link preview card, drawn by `scripts/generate-og-image.py` and
   committed; the build needs no Python.
 
-Add a page by adding it to `buildContentPages()` in `scripts/seo/pages.ts`: the sitemap, the footer
-links and `llms.txt` follow on their own.
+Add a page by adding it to `CONTENT_PAGES` in `src/seo/pages/index.ts`: the navigation, the footer,
+the sitemap and `llms.txt` follow on their own.
+
+### UI kit
+
+The content pages use UIPIRATE (`@salnika/uipirate`), the Ratpi UI kit: React components and
+vanilla-extract tokens, set in Geist and Geist Mono (SIL OFL, served from `public/fonts/ui/`). The
+editor keeps its own styles.
+
+The kit is not on the public npm registry, so the repository vendors the package as
+`vendor/salnika-uipirate-<version>.tgz`: installs need no token, locally, in CI and on Vercel. To
+update it, pack the new version in the kit's repository (`yarn pack`), put the tarball in `vendor/`
+in place of the old one, and point the dependency at it:
+
+```bash
+pnpm add @salnika/uipirate@file:vendor/salnika-uipirate-<version>.tgz
+```
 
 ## Getting started
 

@@ -141,6 +141,13 @@ export const previewFrame = style({
   },
 });
 
+export const previewFallback = style({
+  height: "100%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+});
+
 export const column = style({
   display: "flex",
   flexDirection: "column",

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.15.0 - 2026-09-25
+
+- New HP and U calculator, at /eurorack-hp-calculator/: convert HP to millimeters and back, with the width each panel is cut at, get the height of 1U (Intellijel or Pulp Logic), 2U, 3U and 4U panels, see the panel drawn to scale with the mounting holes the editor gives it, and work out the height of a case from its rows (a 19-inch rack row holds 84 HP).
+- The reference pages (HP to mm, panel dimensions, drill sizes, 3D printing a panel, KiCad export) have a new look, from the UIPIRATE design system, and a navigation bar that links them all. Their frequently asked questions are now shown on the page too.
+- A turning wireframe sphere now shows while things load: when the editor or an order page opens, while an order's design is fetched, and while the 3D view and the STL preview load.
+- Moving from one reference page to another, or to the editor, cross-fades over their dark background instead of flashing white, in the browsers that can. The reference pages still run no script, apart from the calculator's.
+
 ## 0.14.0 - 2026-09-21
 
 - The project panel is tidier: the project name with a dot for unsaved changes, then one row of file actions (new, save, import a JSON design, import a reference image) with the export button on its right, then the saved projects with their open and delete buttons. The export button shows the format it exports to, and its menu now closes on Escape or on a click elsewhere.

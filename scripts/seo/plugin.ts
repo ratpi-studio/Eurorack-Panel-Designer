@@ -1,140 +1,267 @@
 /**
- * Emits everything a crawler reads without running JavaScript: the static content pages, the
- * sitemap, robots.txt and llms.txt. No major AI crawler renders JS, so these files are the only
- * description of the product those crawlers ever see.
+ * Publishes the content pages of `src/seo/`: React pages built with the UI kit, rendered to plain
+ * HTML so that crawlers which never run JavaScript read them whole, along with the sitemap,
+ * robots.txt and llms.txt.
  *
- * Only the production build (base "/") emits them: the GitHub Pages build serves a `noindex`
- * redirect and would publish the pages under a path their absolute links do not match.
+ * Everything is made at build time, by two builds of its own:
+ * - a client build of the pages' stylesheet and island scripts, in `assets/seo/`, kept apart from
+ *   the editor's chunks so that neither changes the other;
+ * - a server build of `src/seo/render.tsx`, loaded to render the pages with the client's files.
+ * A page loads that stylesheet, and a script only for its island: no script brings styles.
+ *
+ * The production build adds their output to the app's. The dev server serves the very same files,
+ * built on the first request and again after a source file changes: reload to see a change.
+ *
+ * Only builds with the base "/" publish them: the GitHub Pages build serves a `noindex` redirect
+ * and would publish the pages under a path their absolute links do not match.
  */
 
-import type { Plugin } from "vite-plus";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 
-import { renderPage, type ContentPage } from "./layout";
-import { buildContentPages, pageLinks } from "./pages";
+import { vanillaExtractPlugin } from "@vanilla-extract/vite-plugin";
+import react from "@vitejs/plugin-react";
 import {
-  absoluteUrl,
-  buildDate,
-  NAMED_CRAWLERS,
-  REPO_URL,
-  SITE_DESCRIPTION,
-  SITE_NAME,
-  SITE_ORIGIN,
-  SITE_TAGLINE,
-} from "./site";
+  build,
+  type InlineConfig,
+  type Plugin,
+  type ResolvedConfig,
+  type Rolldown,
+  type ViteDevServer,
+} from "vite-plus";
 
-function sitemap(pages: readonly ContentPage[]): string {
-  const today = buildDate();
-  const entries = [
-    { loc: `${SITE_ORIGIN}/`, priority: "1.0" },
-    ...pages.map((page) => ({ loc: absoluteUrl(page.path), priority: "0.8" })),
-  ];
+import {
+  ISLAND_ENTRIES,
+  SEO_RENDER_ENTRY,
+  SEO_STYLES_ENTRY,
+  type IslandId,
+} from "../../src/seo/islands/entries";
+import { PAGE_PATHS, SITE_FILE_NAMES } from "../../src/seo/paths";
+import type { PageAssets, SiteFile } from "../../src/seo/render";
+import { chunkCycleGuardPlugin } from "../chunkCycleGuard";
 
-  const urls = entries
-    .map(
-      ({ loc, priority }) =>
-        `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${today}</lastmod>\n    <priority>${priority}</priority>\n  </url>`,
-    )
-    .join("\n");
-
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
+interface RenderModule {
+  renderSite: (assets: PageAssets) => SiteFile[];
 }
 
-function robots(): string {
-  const named = NAMED_CRAWLERS.map((agent) => `User-agent: ${agent}\nAllow: /\n`).join("\n");
-  return `# ${SITE_NAME} — ${SITE_TAGLINE}\n# Every crawler is welcome. The agents below are named so that narrowing this\n# file later has to be a deliberate edit rather than an accident.\n\nUser-agent: *\nAllow: /\n\n${named}\nSitemap: ${SITE_ORIGIN}/sitemap.xml\n`;
+const ASSETS_DIR = "assets/seo";
+const STYLES_ENTRY_NAME = "seo-styles";
+
+function sharedConfig(config: ResolvedConfig): InlineConfig {
+  return {
+    configFile: false,
+    root: config.root,
+    mode: config.mode,
+    logLevel: "warn",
+    resolve: { alias: config.resolve.alias },
+    plugins: [vanillaExtractPlugin(), react()],
+  };
 }
 
-function llmsTxt(pages: readonly ContentPage[]): string {
-  const links = pages
-    .map((page) => `- [${page.title}](${absoluteUrl(page.path)}): ${page.description}`)
-    .join("\n");
-
-  return `# ${SITE_NAME}
-
-> ${SITE_DESCRIPTION}
-
-${SITE_NAME} runs entirely in the browser. It has no account, no upload and no paid tier: designs
-are kept in the browser's own storage and exported as files. It is open source under the MIT
-license.
-
-## What it does
-
-- Panel formats: 3U Eurorack (128.50 mm), 1U Intellijel (39.65 mm), 1U Pulp Logic tiles (43.18 mm,
-  in multiples of 6 HP), 2U (84.05 mm), 4U (172.95 mm), or any custom size from 5 to 1000 mm.
-- Widths in HP or millimeters, cut at the widths Doepfer publishes: a 6 HP panel is 30.00 mm, not
-  30.48 mm.
-- Real parts with the hole their datasheet calls for: Thonkiconn jacks (6 mm), Alpha 9 mm pots and
-  Bourns PEC11R encoders (7 mm), Dailywell sub-mini (5 mm) and mini (6.35 mm) toggles, 3 mm and
-  5 mm LEDs. Knobs, nuts and washers are outlined, in red where they collide.
-- Mounting holes generated on the rail grid: first column 7.5 mm from the left edge, rows 3 mm from
-  the top and bottom, 3.4 mm across.
-- Text in five bundled fonts and SVG patterns, raised on the front for a two-colour 3D print.
-- Live 3D preview of the panel as it will be exported.
-- Exports: STL, SVG, PNG, JSON, and KiCad Edge.Cuts as SVG or .kicad_pcb.
-
-## Reference pages
-
-${links}
-
-## Project
-
-- [Editor](${SITE_ORIGIN}/): the application itself.
-- [Source code](${REPO_URL}): React, TypeScript, MIT license.
-`;
+function outputsOf(result: Awaited<ReturnType<typeof build>>): Rolldown.RolldownOutput[] {
+  const outputs = Array.isArray(result) ? result : [result];
+  return outputs.filter((output): output is Rolldown.RolldownOutput => "output" in output);
 }
 
-function toPlainText(html: string): string {
-  return html
-    .replace(/<\/(h2|p|li|tr|table|ul|ol|div)>/g, "\n")
-    .replace(/<li>/g, "- ")
-    .replace(/<\/t[dh]>\s*<t[dh][^>]*>/g, " | ")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/[ \t]+/g, " ")
-    .replace(/\n{3,}/g, "\n\n")
-    .replace(/^[ \t]+/gm, "")
-    .trim();
+/** The stylesheet, and every island's entry with the chunks it imports, from the client build. */
+function collectAssets(output: Rolldown.RolldownOutput): PageAssets {
+  const chunks = new Map<string, Rolldown.OutputChunk>();
+  const stylesheets: string[] = [];
+  for (const item of output.output) {
+    if (item.type === "chunk") {
+      chunks.set(item.fileName, item);
+    } else if (item.fileName.endsWith(".css")) {
+      stylesheets.push(`/${item.fileName}`);
+    }
+  }
+
+  const importsOf = (fileName: string, seen = new Set<string>()): string[] => {
+    for (const imported of chunks.get(fileName)?.imports ?? []) {
+      if (!seen.has(imported)) {
+        seen.add(imported);
+        importsOf(imported, seen);
+      }
+    }
+    return [...seen];
+  };
+
+  const islands: PageAssets["islands"] = {};
+  for (const chunk of chunks.values()) {
+    if (chunk.isEntry && chunk.name in ISLAND_ENTRIES) {
+      islands[chunk.name as IslandId] = {
+        script: `/${chunk.fileName}`,
+        preloads: importsOf(chunk.fileName).map((fileName) => `/${fileName}`),
+      };
+    }
+  }
+
+  return { stylesheets, islands };
 }
 
-function llmsFullTxt(pages: readonly ContentPage[]): string {
-  const sections = pages
-    .map(
-      (page) =>
-        `# ${page.title}\nURL: ${absoluteUrl(page.path)}\n\n${toPlainText(page.lead)}\n\n${toPlainText(page.bodyHtml)}`,
-    )
-    .join("\n\n---\n\n");
+async function buildClient(config: ResolvedConfig): Promise<Rolldown.RolldownOutput> {
+  const shared = sharedConfig(config);
+  const result = await build({
+    ...shared,
+    plugins: [...(shared.plugins ?? []), chunkCycleGuardPlugin()],
+    build: {
+      write: false,
+      outDir: config.build.outDir,
+      emptyOutDir: false,
+      copyPublicDir: false,
+      assetsDir: ASSETS_DIR,
+      // One stylesheet for every page, whether it runs an island or not.
+      cssCodeSplit: false,
+      sourcemap: false,
+      rolldownOptions: {
+        input: {
+          [STYLES_ENTRY_NAME]: path.resolve(config.root, SEO_STYLES_ENTRY),
+          ...Object.fromEntries(
+            Object.entries(ISLAND_ENTRIES).map(([id, entry]) => [
+              id,
+              path.resolve(config.root, entry),
+            ]),
+          ),
+        },
+      },
+    },
+  });
+  const [output] = outputsOf(result);
+  if (!output) {
+    throw new Error("The client build of the content pages produced no output.");
+  }
+  return output;
+}
 
-  return `${llmsTxt(pages)}\n---\n\n${sections}\n`;
+/** Builds `render.tsx` for Node, next to the dependencies it imports, and loads it. */
+async function loadRenderer(config: ResolvedConfig): Promise<RenderModule> {
+  // Apart per command, so a production build never overwrites what a running dev server loads.
+  const outDir = path.resolve(config.root, "node_modules/.cache/eurorack-seo", config.command);
+  await build({
+    ...sharedConfig(config),
+    build: {
+      ssr: path.resolve(config.root, SEO_RENDER_ENTRY),
+      outDir,
+      emptyOutDir: true,
+      copyPublicDir: false,
+      sourcemap: false,
+      rolldownOptions: {
+        output: { entryFileNames: "render.mjs" },
+      },
+    },
+  });
+  // A fresh URL for every build: Node would hand back the module it loaded first.
+  const url = `${pathToFileURL(path.join(outDir, "render.mjs")).href}?build=${Date.now()}`;
+  return (await import(url)) as RenderModule;
+}
+
+type SiteFiles = Map<string, string | Uint8Array>;
+
+/** Every file of the content pages, keyed by the path each one is published at. */
+async function buildSite(config: ResolvedConfig): Promise<SiteFiles> {
+  const client = await buildClient(config);
+  const renderer = await loadRenderer(config);
+  const files: SiteFiles = new Map();
+  for (const item of client.output) {
+    files.set(item.fileName, item.type === "chunk" ? item.code : item.source);
+  }
+  for (const file of renderer.renderSite(collectAssets(client))) {
+    files.set(file.fileName, file.source);
+  }
+  return files;
+}
+
+const PAGE_FILES = new Set<string>(Object.values(PAGE_PATHS).map((page) => `${page}index.html`));
+const SITE_FILES = new Set<string>(SITE_FILE_NAMES.map((name) => `/${name}`));
+
+/**
+ * The file a request asks for among those the content pages publish, or null. Every other
+ * request, the editor's modules included, goes straight to Vite.
+ */
+function publishedFile(url: string | undefined): string | null {
+  const pathname = url?.split("?")[0];
+  if (!pathname) {
+    return null;
+  }
+  if (pathname.startsWith(`/${ASSETS_DIR}/`) || SITE_FILES.has(pathname)) {
+    return pathname.slice(1);
+  }
+  const page = `${pathname.replace(/\/?(index\.html)?$/, "")}/index.html`;
+  return PAGE_FILES.has(page) ? page.slice(1) : null;
+}
+
+const CONTENT_TYPES: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".xml": "application/xml; charset=utf-8",
+  ".txt": "text/plain; charset=utf-8",
+};
+
+/** What the pages are built from: a change under these builds them again. */
+const SOURCES = ["src", "vendor", "package.json"];
+
+function serveBuiltSite(server: ViteDevServer, config: ResolvedConfig) {
+  let site: Promise<SiteFiles> | null = null;
+
+  server.watcher.on("all", (_event, file) => {
+    const relative = path.relative(config.root, file);
+    if (
+      SOURCES.some((source) => relative === source || relative.startsWith(`${source}${path.sep}`))
+    ) {
+      site = null;
+    }
+  });
+
+  server.middlewares.use((request, response, next) => {
+    const fileName =
+      request.method === "GET" || request.method === "HEAD" ? publishedFile(request.url) : null;
+    if (!fileName) {
+      next();
+      return;
+    }
+
+    site ??= buildSite(config).catch((error: unknown) => {
+      site = null;
+      throw error;
+    });
+    site
+      .then((files) => {
+        const source = files.get(fileName);
+        if (source === undefined) {
+          next();
+          return;
+        }
+        response.setHeader(
+          "Content-Type",
+          CONTENT_TYPES[path.extname(fileName)] ?? "application/octet-stream",
+        );
+        response.end(source);
+      })
+      .catch((error: unknown) => next(error));
+  });
 }
 
 export function seoPagesPlugin(base: string): Plugin {
+  let config: ResolvedConfig;
+
   return {
     name: "eurorack-seo-pages",
-    apply: "build",
-    generateBundle() {
-      if (base !== "/") {
+    configResolved(resolved) {
+      config = resolved;
+    },
+    configureServer(server) {
+      if (base === "/") {
+        serveBuiltSite(server, config);
+      }
+    },
+    async generateBundle() {
+      if (base !== "/" || config.command !== "build" || config.build.ssr) {
         return;
       }
 
-      const pages = buildContentPages();
-      const links = pageLinks(pages);
-
-      for (const page of pages) {
-        this.emitFile({
-          type: "asset",
-          fileName: `${page.path.replace(/^\/|\/$/g, "")}/index.html`,
-          source: renderPage(page, links),
-        });
+      for (const [fileName, source] of await buildSite(config)) {
+        this.emitFile({ type: "asset", fileName, source });
       }
-
-      this.emitFile({ type: "asset", fileName: "sitemap.xml", source: sitemap(pages) });
-      this.emitFile({ type: "asset", fileName: "robots.txt", source: robots() });
-      this.emitFile({ type: "asset", fileName: "llms.txt", source: llmsTxt(pages) });
-      this.emitFile({ type: "asset", fileName: "llms-full.txt", source: llmsFullTxt(pages) });
     },
   };
 }
