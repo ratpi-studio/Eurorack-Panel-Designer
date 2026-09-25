@@ -22,6 +22,9 @@ importers:
 
   .:
     dependencies:
+      '@salnika/uipirate':
+        specifier: file:vendor/salnika-uipirate-0.1.0.tgz
+        version: file:vendor/salnika-uipirate-0.1.0.tgz(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@sentry/react':
         specifier: ^10.75.0
         version: 10.75.0(react@19.3.0)
@@ -1179,6 +1182,13 @@ packages:
       rollup:
         optional: true
 
+  '@salnika/uipirate@file:vendor/salnika-uipirate-0.1.0.tgz':
+    resolution: {integrity: sha512-qc79mqXNFa968r1FyEfZFz7Jfot15IL8wL8g28q5PaRrz8n++uxsHgreH8ILMVh2sYbDZHo0J4gL2KtHQFUl/Q==, tarball: file:vendor/salnika-uipirate-0.1.0.tgz}
+    version: 0.1.0
+    peerDependencies:
+      react: ^18.3.0 || ^19.0.0
+      react-dom: ^18.3.0 || ^19.0.0
+
   '@sentry/babel-plugin-component-annotate@4.9.1':
     resolution: {integrity: sha512-0gEoi2Lb54MFYPOmdTfxlNKxI7kCOvNV7gP8lxMXJ7nCazF5OqOOZIVshfWjDLrc0QrSV6XdVvwPV9GDn4wBMg==}
     engines: {node: '>= 14'}
@@ -1351,6 +1361,9 @@ packages:
 
   '@vanilla-extract/css@1.21.2':
     resolution: {integrity: sha512-ehF/tmv2MxQwOJB1DicALUqnjZTnmY9Y7J2ccKB578JzZpYeL6sLAUqbaXo1taw1Erp0qBq0I4Kejs0uU/pBfg==}
+
+  '@vanilla-extract/dynamic@2.1.5':
+    resolution: {integrity: sha512-QGIFGb1qyXQkbzx6X6i3+3LMc/iv/ZMBttMBL+Wm/DetQd36KsKsFg5CtH3qy+1hCA/5w93mEIIAiL4fkM8ycw==}
 
   '@vanilla-extract/integration@8.0.10':
     resolution: {integrity: sha512-01IB5gbrgTe8IIrtfRXXTmACl5D8Enzqp2cKbCWaMKXmnoilXXVCPbJoA96q88PXkNDXsXepCxUugMvEmL3c7A==}
@@ -3722,6 +3735,12 @@ snapshots:
       estree-walker: 2.0.2
       picomatch: 4.0.7
 
+  '@salnika/uipirate@file:vendor/salnika-uipirate-0.1.0.tgz(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+    dependencies:
+      '@vanilla-extract/dynamic': 2.1.5
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
+
   '@sentry/babel-plugin-component-annotate@4.9.1': {}
 
   '@sentry/browser-utils@10.75.0':
@@ -3960,6 +3979,10 @@ snapshots:
       picocolors: 1.1.1
     transitivePeerDependencies:
       - babel-plugin-macros
+
+  '@vanilla-extract/dynamic@2.1.5':
+    dependencies:
+      '@vanilla-extract/private': 1.0.9
 
   '@vanilla-extract/integration@8.0.10':
     dependencies:

@@ -54,6 +54,11 @@ const PUBLISHED_PANEL_WIDTH_MM = new Map<number, number>([
 
 export const PANEL_WIDTH_CLEARANCE_MM = 0.35;
 
+/** Whether Doepfer's table gives the width of a `widthHp` HP panel, rather than the clearance. */
+export function isPublishedPanelWidth(widthHp: number): boolean {
+  return PUBLISHED_PANEL_WIDTH_MM.has(widthHp);
+}
+
 /** Width a front panel of `widthHp` HP is cut at: its pitch on the rack grid, less the clearance. */
 export function panelWidthMmForHp(widthHp: number): number {
   const published = PUBLISHED_PANEL_WIDTH_MM.get(widthHp);
