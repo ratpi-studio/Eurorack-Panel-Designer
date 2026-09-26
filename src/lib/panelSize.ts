@@ -1,8 +1,11 @@
 import {
-  getRackFormatSpec,
+  getFormatSpec,
+  KOSMO_WIDTH_STEP_MM,
+  kosmoWidthStepsForMm,
   resolvePanelDimensions,
   widthHpForMm,
   type PanelFormat,
+  type PanelSizeInput,
 } from "./panelFormat";
 import type { PanelDimensions, PanelModel } from "./panelTypes";
 
@@ -20,9 +23,9 @@ function withDimensions(
 
 /**
  * Switches the panel to another format, keeping its size where the format allows: a custom panel
- * starts from the current size, and a rack format keeps the width in HP, in the steps its widths
- * come in. A rack format whose mounting holes sit elsewhere than the previous one's moves them;
- * the elements keep their position.
+ * starts from the current size, a Eurorack row keeps the width in HP, in the steps its widths come
+ * in, and Kosmo the width in millimeters, to the nearest 2.5 cm. A format whose mounting holes sit
+ * elsewhere than the previous one's moves them; the elements keep their position.
  */
 export function setPanelFormat(model: PanelModel, format: PanelFormat): PanelModel {
   const next = withDimensions(model, format, resolvePanelDimensions(format, model.dimensions));
@@ -30,8 +33,8 @@ export function setPanelFormat(model: PanelModel, format: PanelFormat): PanelMod
     return next;
   }
 
-  const previousSpec = getRackFormatSpec(model.format);
-  const nextSpec = getRackFormatSpec(format);
+  const previousSpec = getFormatSpec(model.format);
+  const nextSpec = getFormatSpec(format);
   if (
     previousSpec.holeOffsetXMm === nextSpec.holeOffsetXMm &&
     previousSpec.holeOffsetYMm === nextSpec.holeOffsetYMm
@@ -58,17 +61,19 @@ export function setPanelWidthHp(model: PanelModel, widthHp: number): PanelModel 
 }
 
 /**
- * Sets the width from millimeters. A custom panel takes it as it is; a rack format takes the
- * HP that width needs, rounded up.
+ * Sets the width from millimeters. A custom panel takes it as it is; a Eurorack row takes the HP
+ * that width needs, and Kosmo the steps of 2.5 cm, rounded up.
  */
 export function setPanelWidthMm(model: PanelModel, widthMm: number): PanelModel {
-  const size = model.format.custom
+  const size: PanelSizeInput = model.format.custom
     ? { widthMm, heightMm: model.dimensions.heightMm }
-    : { widthHp: widthHpForMm(widthMm) };
+    : model.format.system === "kosmo"
+      ? { widthMm: kosmoWidthStepsForMm(widthMm) * KOSMO_WIDTH_STEP_MM }
+      : { widthHp: widthHpForMm(widthMm) };
   return withDimensions(model, model.format, resolvePanelDimensions(model.format, size));
 }
 
-/** Sets the height of a custom panel; rack formats have the height of their row. */
+/** Sets the height of a custom panel; Eurorack rows and Kosmo have a height of their own. */
 export function setPanelHeightMm(model: PanelModel, heightMm: number): PanelModel {
   if (!model.format.custom) {
     return model;

@@ -217,7 +217,7 @@ export interface DesignReliefConfig {
 }
 
 export interface PanelModel {
-  /** The rack row the panel is made for (1U to 4U), or a custom size. */
+  /** What the panel is made for: a Eurorack row (1U to 4U), Kosmo, or a custom size. */
   format: PanelFormat;
   dimensions: PanelDimensions;
   elements: PanelElement[];
@@ -459,7 +459,8 @@ export interface SerializedPanel {
 // v8: jacks, knobs, switches and LEDs can name a real part (`partId`), knobs the knob that goes on
 // them (`knobId`), and switches can have a round hole (`diameterMm`).
 // v9: panels have a format (`format`): 1U to 4U, or a custom size.
-export const SERIALIZATION_VERSION = 9;
+// v10: formats name their system (`format.system`): Eurorack, or Kosmo.
+export const SERIALIZATION_VERSION = 10;
 
 export function isCircularElementProperties(
   properties: PanelElement["properties"],

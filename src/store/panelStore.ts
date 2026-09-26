@@ -167,7 +167,7 @@ export const usePanelStore = create<PanelState & PanelActions>()(
         }),
       addElement: (type, positionMm) => {
         const element = withElementProperties(
-          createPanelElement(type, positionMm),
+          createPanelElement(type, positionMm, get().model.format.system),
           get().draftProperties[type],
         );
         set((state) => ({

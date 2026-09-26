@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.16.0 - 2026-09-26
+
+- New Kosmo format, the large format started by Look Mum No Computer, picked in the Format bar next to 1U to 4U. Kosmo panels are 200 mm high, and their width comes in steps of 2.5 cm, set in centimeters or millimeters and cut at the full width. Their mounting holes sit 3 mm from the top, the bottom and each side, one column per side: Kosmo widths leave the 5.08 mm grid of Eurorack rails, and Kosmo cases hold panels with sliding nuts or wood screws anywhere along the rails. A slot, if you pick one, runs inward from there so it stays off the edge.
+- Switching a design to Kosmo keeps its elements where they are and its width to the nearest 2.5 cm, and switching back finds the Eurorack row picked before. The canvas and the width box leave HP out on Kosmo panels.
+- New parts in the Part menu of jacks: Switchcraft (112A, 11, 12A) and Rean (NYS229, NYS230) 1/4 in jacks, and Johnson (108-09xx) and Tayda (J072, which also stands for the Hirschmann BIL 20) 4 mm banana sockets, each with the hole its datasheet calls for, and its nut, washer or insulated head outlined on the canvas. Thonkiconn jacks now say they are 3.5 mm.
+- New jacks placed on a Kosmo panel start as Rean 1/4 in jacks, in the 10 mm hole Kosmo builders drill. On Eurorack panels they still start as Thonkiconns.
+- Kosmo panels cannot be ordered on Etsy, like every format but 3U.
+- The panel dimensions page now covers Kosmo, and the drill sizes page the 1/4 in jacks and banana sockets.
+
 ## 0.15.0 - 2026-09-25
 
 - New HP and U calculator, at /eurorack-hp-calculator/: convert HP to millimeters and back, with the width each panel is cut at, get the height of 1U (Intellijel or Pulp Logic), 2U, 3U and 4U panels, see the panel drawn to scale with the mounting holes the editor gives it, and work out the height of a case from its rows (a 19-inch rack row holds 84 HP).

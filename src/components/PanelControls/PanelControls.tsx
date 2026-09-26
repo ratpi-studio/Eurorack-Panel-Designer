@@ -5,13 +5,18 @@ import { useI18n } from "@i18n/I18nContext";
 import {
   CUSTOM_SIZE_MAX_MM,
   CUSTOM_SIZE_MIN_MM,
-  getRackFormatSpec,
+  getFormatSpec,
+  KOSMO_WIDTH_STEP_MM,
+  MM_PER_CM,
   ONE_U_SPECS,
   PANEL_RACK_UNITS,
   type PanelFormat,
+  type PanelRackUnits,
 } from "@lib/panelFormat";
 
 import * as styles from "./PanelControls.css";
+
+const KOSMO_WIDTH_STEP_CM = KOSMO_WIDTH_STEP_MM / MM_PER_CM;
 
 interface PanelControlsProps {
   format: PanelFormat;
@@ -24,7 +29,22 @@ interface PanelControlsProps {
   onChangeHeightMm: (heightMm: number) => void;
 }
 
-function formatMm(value: number): string {
+/** What the format bar offers: a Eurorack row, or Kosmo. */
+type FormatChoice = PanelRackUnits | "kosmo";
+
+function getFormatChoice(format: PanelFormat): FormatChoice {
+  return format.system === "kosmo" ? "kosmo" : format.rackUnits;
+}
+
+/** Picks a row or Kosmo, keeping the rest of the format for when it comes back. */
+function withFormatChoice(format: PanelFormat, choice: FormatChoice): PanelFormat {
+  return choice === "kosmo"
+    ? { ...format, system: "kosmo" }
+    : { ...format, system: "eurorack", rackUnits: choice };
+}
+
+/** A length in mm or cm, to two decimals at most. */
+function formatLength(value: number): string {
   return String(Number(value.toFixed(2)));
 }
 
@@ -129,15 +149,24 @@ export function PanelControls({
   onChangeHeightMm,
 }: PanelControlsProps) {
   const t = useI18n();
-  const spec = getRackFormatSpec(format);
-  const rackUnitOptions = PANEL_RACK_UNITS.map((rackUnits) => ({
-    value: rackUnits,
-    label: t.controls.rackUnitsOption(rackUnits),
-  }));
+  const spec = getFormatSpec(format);
+  const formatOptions: Array<{ value: FormatChoice; label: string }> = [
+    ...PANEL_RACK_UNITS.map((rackUnits) => ({
+      value: rackUnits,
+      label: t.controls.rackUnitsOption(rackUnits),
+    })),
+    { value: "kosmo", label: t.controls.kosmoOption },
+  ];
   const oneUSpecOptions = ONE_U_SPECS.map((oneUSpec) => ({
     value: oneUSpec,
     label: t.controls.oneUSpecOptions[oneUSpec],
   }));
+  // Kosmo widths are not counted in HP.
+  const note = !format.custom
+    ? t.controls.heightNote(heightMm, t.controls.formatNames[spec.key])
+    : format.system === "eurorack"
+      ? t.controls.customNote(widthHp)
+      : null;
 
   return (
     <div className={styles.root}>
@@ -155,14 +184,14 @@ export function PanelControls({
           </label>
         </div>
         <SegmentedControl
-          name="panel-rack-units"
-          label={t.controls.rackUnitsLabel}
-          options={rackUnitOptions}
-          value={format.rackUnits}
+          name="panel-format"
+          label={t.controls.formatLabel}
+          options={formatOptions}
+          value={getFormatChoice(format)}
           disabled={format.custom}
-          onChange={(rackUnits) => onChangeFormat({ ...format, rackUnits })}
+          onChange={(choice) => onChangeFormat(withFormatChoice(format, choice))}
         />
-        {format.rackUnits === 1 ? (
+        {format.system === "eurorack" && format.rackUnits === 1 ? (
           <SegmentedControl
             name="panel-one-u-spec"
             label={t.controls.oneUSpecLabel}
@@ -182,7 +211,7 @@ export function PanelControls({
               label={t.controls.widthMmLabel}
               hint={t.controls.customWidthMmHint}
               value={widthMm}
-              format={formatMm}
+              format={formatLength}
               min={CUSTOM_SIZE_MIN_MM}
               step={1}
               onCommit={onChangeWidthMm}
@@ -192,10 +221,33 @@ export function PanelControls({
               label={t.controls.heightMmLabel}
               hint={t.controls.customHeightMmHint(CUSTOM_SIZE_MIN_MM, CUSTOM_SIZE_MAX_MM)}
               value={heightMm}
-              format={formatMm}
+              format={formatLength}
               min={CUSTOM_SIZE_MIN_MM}
               step={1}
               onCommit={onChangeHeightMm}
+            />
+          </>
+        ) : spec.key === "kosmo" ? (
+          <>
+            <NumberField
+              id="panel-width-cm"
+              label={t.controls.widthCmLabel}
+              hint={t.controls.kosmoWidthCmHint(KOSMO_WIDTH_STEP_CM)}
+              value={widthMm / MM_PER_CM}
+              format={formatLength}
+              min={KOSMO_WIDTH_STEP_CM}
+              step={KOSMO_WIDTH_STEP_CM}
+              onCommit={(widthCm) => onChangeWidthMm(widthCm * MM_PER_CM)}
+            />
+            <NumberField
+              id="panel-width-mm"
+              label={t.controls.widthMmLabel}
+              hint={t.controls.kosmoWidthMmHint(KOSMO_WIDTH_STEP_MM)}
+              value={widthMm}
+              format={formatLength}
+              min={1}
+              step={1}
+              onCommit={onChangeWidthMm}
             />
           </>
         ) : (
@@ -219,7 +271,7 @@ export function PanelControls({
               label={t.controls.widthMmLabel}
               hint={t.controls.widthMmHint}
               value={widthMm}
-              format={formatMm}
+              format={formatLength}
               min={1}
               step={1}
               onCommit={onChangeWidthMm}
@@ -228,17 +280,17 @@ export function PanelControls({
         )}
       </div>
 
-      <div className={styles.notes}>
-        <p className={styles.note}>
-          <Ruler />
-          {format.custom
-            ? t.controls.customNote(widthHp)
-            : t.controls.heightNote(heightMm, t.controls.formatNames[spec.key])}
-        </p>
-        {!format.custom && !spec.published ? (
-          <p className={styles.hint}>{t.controls.derivedHeightNote}</p>
-        ) : null}
-      </div>
+      {note ? (
+        <div className={styles.notes}>
+          <p className={styles.note}>
+            <Ruler />
+            {note}
+          </p>
+          {!format.custom && !spec.published ? (
+            <p className={styles.hint}>{t.controls.derivedHeightNote}</p>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -99,12 +99,21 @@ describe("serialization helpers", () => {
 
   it("round-trips the format of the panel", () => {
     const tile = setPanelFormat(sampleModel, {
+      ...DEFAULT_PANEL_FORMAT,
       rackUnits: 1,
       oneUSpec: "pulpLogic",
-      custom: false,
     });
+    const kosmo = setPanelFormat(sampleModel, { ...DEFAULT_PANEL_FORMAT, system: "kosmo" });
 
     expect(deserializePanelModel(serializePanelModel(tile))).toEqual(tile);
+    expect(deserializePanelModel(serializePanelModel(kosmo))).toEqual(kosmo);
+  });
+
+  it("opens saves from before Kosmo as Eurorack panels", () => {
+    const { system: _, ...format } = sampleModel.format;
+    const payload = JSON.stringify({ version: 9, model: { ...sampleModel, format } });
+
+    expect(deserializePanelModel(payload).format).toEqual(DEFAULT_PANEL_FORMAT);
   });
 
   it("opens saves from before formats as 3U panels, or custom ones when not 3U high", () => {
