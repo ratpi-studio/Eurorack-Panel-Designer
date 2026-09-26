@@ -1,7 +1,8 @@
 import type { PanelDimensions } from "./panelTypes";
 
 /**
- * Panel formats: the rack rows a panel is made for, and the numbers each standard publishes.
+ * Panel formats: the Eurorack rows and the Kosmo panels a design is made for, and the numbers each
+ * standard publishes.
  *
  * - 3U Eurorack, from the Doepfer A-100 construction details
  *   (https://doepfer.de/a100_man/a100m_e.htm): panels are 128.5 mm high and a few tenths of a
@@ -15,6 +16,13 @@ import type { PanelDimensions } from "./panelTypes";
  * - 2U and 4U: no brand publishes them. They take the rack unit less the 4.85 mm the rail lips
  *   take from a 3U panel (133.35 mm down to 128.5 mm), and the 3U holes, for rows built with the
  *   same rails.
+ * - Kosmo, the large format of Look Mum No Computer, has no formal specification. Its criteria
+ *   (https://www.lookmumnocomputer.com/modular): 20 cm tall panels, widths in steps of 2.5 cm,
+ *   10 mm top and bottom for the rails, M3 screws. The community's summary
+ *   (https://lookmumnocomputer.discourse.group/t/kosmo-specification/896, first post) puts the
+ *   hole centres 3 mm from the top, the bottom and the sides, and panel templates
+ *   (https://gitlab.com/rsholmes/Kosmo_panel_templates) are cut at the full step, 25 mm x 200 mm
+ *   and up, with no clearance.
  *
  * This module only imports types, so `panelTypes.ts` can import it without a cycle.
  */
@@ -76,44 +84,58 @@ export type PanelRackUnits = (typeof PANEL_RACK_UNITS)[number];
 export const ONE_U_SPECS = ["intellijel", "pulpLogic"] as const;
 export type OneUSpec = (typeof ONE_U_SPECS)[number];
 
+/** Modular systems: Eurorack, in rows of 1U to 4U, and Kosmo. */
+export const PANEL_SYSTEMS = ["eurorack", "kosmo"] as const;
+export type PanelSystem = (typeof PANEL_SYSTEMS)[number];
+
 export interface PanelFormat {
-  /** Height of the row the panel is made for, in rack units. */
+  /** The system the panel is made for. Saves from before Kosmo are all Eurorack. */
+  system: PanelSystem;
+  /** Height of the Eurorack row, in rack units. Kept on Kosmo, so coming back finds it. */
   rackUnits: PanelRackUnits;
   /** The 1U standard a 1U panel follows. Kept at other heights, so coming back to 1U finds it. */
   oneUSpec: OneUSpec;
-  /** Any width and height in mm instead of a rack format, whose choice is kept for later. */
+  /** Any width and height in mm instead of the format, whose choice is kept for later. */
   custom: boolean;
 }
 
 export const DEFAULT_PANEL_FORMAT: PanelFormat = {
+  system: "eurorack",
   rackUnits: 3,
   oneUSpec: "intellijel",
   custom: false,
 };
 
-export type PanelFormatKey =
-  | "intellijel1u"
-  | "pulpLogic1u"
-  | "rack2u"
-  | "eurorack3u"
-  | "rack4u"
-  | "custom";
+/** The Eurorack rows. */
+export type RackFormatKey = "intellijel1u" | "pulpLogic1u" | "rack2u" | "eurorack3u" | "rack4u";
+export type PanelFormatKey = RackFormatKey | "kosmo" | "custom";
 
-export interface RackFormatSpec {
-  key: Exclude<PanelFormatKey, "custom">;
+interface FormatSpecBase {
   heightMm: number;
   /** Mounting holes: the first column from the left edge, the rows from the top and bottom. */
   holeOffsetXMm: number;
   holeOffsetYMm: number;
-  /** Widths come in multiples of this many HP. */
-  widthStepHp: number;
   /** False for the heights no brand publishes, which are derived from the rack unit. */
   published: boolean;
 }
 
+export interface RackFormatSpec extends FormatSpecBase {
+  key: RackFormatKey;
+  /** Widths come in multiples of this many HP. */
+  widthStepHp: number;
+}
+
+export interface KosmoFormatSpec extends FormatSpecBase {
+  key: "kosmo";
+  /** Widths come in multiples of this many millimeters. */
+  widthStepMm: number;
+}
+
+export type FormatSpec = RackFormatSpec | KosmoFormatSpec;
+
 const EURORACK_HOLE_OFFSETS = { holeOffsetXMm: 7.5, holeOffsetYMm: 3 };
 
-const RACK_FORMAT_SPECS: Record<Exclude<PanelFormatKey, "custom">, RackFormatSpec> = {
+const RACK_FORMAT_SPECS: Record<RackFormatKey, RackFormatSpec> = {
   intellijel1u: {
     key: "intellijel1u",
     heightMm: 39.65,
@@ -154,7 +176,31 @@ const RACK_FORMAT_SPECS: Record<Exclude<PanelFormatKey, "custom">, RackFormatSpe
   },
 };
 
-/** The rack format a panel follows, custom or not: custom panels keep it for when they come back. */
+/** Kosmo widths come in steps of 2.5 cm, and panels are cut at their full width. */
+export const KOSMO_WIDTH_STEP_MM = 25;
+/** Room Look Mum No Computer leaves for the rails at the top and bottom of Kosmo panels. */
+export const KOSMO_RAIL_ALLOWANCE_MM = 10;
+
+export const KOSMO_FORMAT_SPEC: KosmoFormatSpec = {
+  key: "kosmo",
+  heightMm: 200,
+  holeOffsetXMm: 3,
+  holeOffsetYMm: 3,
+  widthStepMm: KOSMO_WIDTH_STEP_MM,
+  published: true,
+};
+
+/** Steps of 2.5 cm a width takes on Kosmo rails, rounded up. */
+export function kosmoWidthStepsForMm(widthMm: number): number {
+  return Math.max(1, Math.ceil(widthMm / KOSMO_WIDTH_STEP_MM - 1e-9));
+}
+
+/** Width a Kosmo panel of `steps` steps of 2.5 cm is cut at. */
+export function panelWidthMmForKosmoSteps(steps: number): number {
+  return steps * KOSMO_WIDTH_STEP_MM;
+}
+
+/** The Eurorack row of a panel, the one it keeps on Kosmo and custom panels for when they come back. */
 export function getRackFormatSpec(
   format: Pick<PanelFormat, "rackUnits" | "oneUSpec">,
 ): RackFormatSpec {
@@ -172,8 +218,15 @@ export function getRackFormatSpec(
   }
 }
 
+/** The format a panel follows, custom or not: custom panels keep it for when they come back. */
+export function getFormatSpec(
+  format: Pick<PanelFormat, "system" | "rackUnits" | "oneUSpec">,
+): FormatSpec {
+  return format.system === "kosmo" ? KOSMO_FORMAT_SPEC : getRackFormatSpec(format);
+}
+
 export function getPanelFormatKey(format: PanelFormat): PanelFormatKey {
-  return format.custom ? "custom" : getRackFormatSpec(format).key;
+  return format.custom ? "custom" : getFormatSpec(format).key;
 }
 
 /** Whether the panel is the 3U Eurorack format, the one Etsy orders are made for. */
@@ -189,6 +242,10 @@ export function clampCustomSizeMm(value: number, fallbackMm: number): number {
   return Math.min(Math.max(size, CUSTOM_SIZE_MIN_MM), CUSTOM_SIZE_MAX_MM);
 }
 
+function isPanelSystem(value: unknown): value is PanelSystem {
+  return PANEL_SYSTEMS.some((system) => system === value);
+}
+
 function isRackUnits(value: unknown): value is PanelRackUnits {
   return PANEL_RACK_UNITS.some((units) => units === value);
 }
@@ -201,7 +258,8 @@ const LEGACY_HEIGHT_TOLERANCE_MM = 0.01;
 
 /**
  * Repairs a saved format. Saves made before formats existed were all 3U, unless their height was
- * edited by hand: those become custom panels, so they keep their size.
+ * edited by hand: those become custom panels, so they keep their size. Saves made before Kosmo
+ * are Eurorack.
  */
 export function normalizePanelFormat(value: unknown, savedHeightMm?: number): PanelFormat {
   if (typeof value !== "object" || value === null) {
@@ -215,6 +273,7 @@ export function normalizePanelFormat(value: unknown, savedHeightMm?: number): Pa
 
   const saved = value as Partial<Record<keyof PanelFormat, unknown>>;
   return {
+    system: isPanelSystem(saved.system) ? saved.system : DEFAULT_PANEL_FORMAT.system,
     rackUnits: isRackUnits(saved.rackUnits) ? saved.rackUnits : DEFAULT_PANEL_FORMAT.rackUnits,
     oneUSpec: isOneUSpec(saved.oneUSpec) ? saved.oneUSpec : DEFAULT_PANEL_FORMAT.oneUSpec,
     custom: typeof saved.custom === "boolean" ? saved.custom : DEFAULT_PANEL_FORMAT.custom,
@@ -230,8 +289,11 @@ export function widthHpForMm(widthMm: number): number {
   return Math.max(1, Math.ceil(widthMm / DEFAULT_MM_PER_HP - 1e-9));
 }
 
-/** A width in HP the format allows: a whole number, in the steps its widths come in. */
-export function snapWidthHp(widthHp: number, format: PanelFormat): number {
+/** A width in HP a Eurorack row allows: a whole number, in the steps its widths come in. */
+export function snapWidthHp(
+  widthHp: number,
+  format: Pick<PanelFormat, "rackUnits" | "oneUSpec" | "custom">,
+): number {
   const step = format.custom ? 1 : getRackFormatSpec(format).widthStepHp;
   const hp = readPositive(widthHp) ?? step;
   return Math.max(step, Math.round(hp / step) * step);
@@ -244,9 +306,10 @@ export interface PanelSizeInput {
 }
 
 /**
- * Dimensions of a panel in a format. Rack formats measure the width in HP, cut as the standards
- * publish it, and take their height from the format; custom panels keep any size in mm, within
- * `CUSTOM_SIZE_MIN_MM` and `CUSTOM_SIZE_MAX_MM`, and count the HP they take on the rails.
+ * Dimensions of a panel in a format. Eurorack rows measure the width in HP, cut as the standards
+ * publish it, and Kosmo in steps of 2.5 cm, the nearest one to the width in mm; both take their
+ * height from the format. Custom panels keep any size in mm, within `CUSTOM_SIZE_MIN_MM` and
+ * `CUSTOM_SIZE_MAX_MM`. Every panel counts the HP it takes on Eurorack rails.
  */
 export function resolvePanelDimensions(format: PanelFormat, size: PanelSizeInput): PanelDimensions {
   const savedWidthHp = readPositive(size.widthHp);
@@ -259,6 +322,19 @@ export function resolvePanelDimensions(format: PanelFormat, size: PanelSizeInput
     );
     const heightMm = clampCustomSizeMm(size.heightMm ?? Number.NaN, THREE_U_HEIGHT_MM);
     return { widthCm: widthMm / MM_PER_CM, widthMm, widthHp: widthHpForMm(widthMm), heightMm };
+  }
+
+  if (format.system === "kosmo") {
+    const requestedMm =
+      savedWidthMm ?? (savedWidthHp ? panelWidthMmForHp(savedWidthHp) : KOSMO_WIDTH_STEP_MM);
+    const steps = Math.max(1, Math.round(requestedMm / KOSMO_WIDTH_STEP_MM));
+    const widthMm = panelWidthMmForKosmoSteps(steps);
+    return {
+      widthCm: widthMm / MM_PER_CM,
+      widthMm,
+      widthHp: widthHpForMm(widthMm),
+      heightMm: KOSMO_FORMAT_SPEC.heightMm,
+    };
   }
 
   const widthHp = snapWidthHp(

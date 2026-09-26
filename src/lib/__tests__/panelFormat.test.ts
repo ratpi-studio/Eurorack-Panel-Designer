@@ -4,9 +4,13 @@ import {
   CUSTOM_SIZE_MAX_MM,
   CUSTOM_SIZE_MIN_MM,
   DEFAULT_PANEL_FORMAT,
+  getFormatSpec,
   getPanelFormatKey,
   getRackFormatSpec,
+  isEurorack3uFormat,
+  kosmoWidthStepsForMm,
   normalizePanelFormat,
+  panelWidthMmForKosmoSteps,
   RACK_UNIT_MM,
   resolvePanelDimensions,
   snapWidthHp,
@@ -19,6 +23,7 @@ function format(overrides: Partial<PanelFormat>): PanelFormat {
 }
 
 const pulpLogic = format({ rackUnits: 1, oneUSpec: "pulpLogic" });
+const kosmo = format({ system: "kosmo" });
 
 describe("panel formats", () => {
   it("gives each rack format the height its standard publishes", () => {
@@ -54,6 +59,16 @@ describe("panel formats", () => {
     expect(getPanelFormatKey(format({ custom: true }))).toBe("custom");
   });
 
+  it("makes Kosmo panels 20 cm high, in widths of 2.5 cm steps, whatever row was picked before", () => {
+    const spec = getFormatSpec(kosmo);
+
+    expect(spec).toMatchObject({ key: "kosmo", heightMm: 200, widthStepMm: 25 });
+    expect(getFormatSpec({ ...kosmo, rackUnits: 1 })).toEqual(spec);
+    expect(getPanelFormatKey(kosmo)).toBe("kosmo");
+    expect(getPanelFormatKey({ ...kosmo, custom: true })).toBe("custom");
+    expect(isEurorack3uFormat(kosmo)).toBe(false);
+  });
+
   it("makes Pulp Logic tiles multiples of 6 HP, and other widths whole HP", () => {
     expect(snapWidthHp(4, pulpLogic)).toBe(6);
     expect(snapWidthHp(20, pulpLogic)).toBe(18);
@@ -87,6 +102,26 @@ describe("panel dimensions", () => {
     expect(dimensions.widthCm).toBeCloseTo(12.34);
   });
 
+  it("measures Kosmo panels in steps of 2.5 cm, the nearest one to their width", () => {
+    expect(resolvePanelDimensions(kosmo, { widthMm: 50 })).toEqual({
+      widthCm: 5,
+      widthMm: 50,
+      widthHp: 10,
+      heightMm: 200,
+    });
+    expect(resolvePanelDimensions(kosmo, { widthMm: 60.6, widthHp: 12 }).widthMm).toBe(50);
+    expect(resolvePanelDimensions(kosmo, { widthMm: 64 }).widthMm).toBe(75);
+    expect(resolvePanelDimensions(kosmo, { widthMm: 3 }).widthMm).toBe(25);
+    expect(resolvePanelDimensions(kosmo, { widthHp: 20 }).widthMm).toBe(100);
+  });
+
+  it("counts the 2.5 cm steps a width takes on Kosmo rails, rounded up", () => {
+    expect(kosmoWidthStepsForMm(25)).toBe(1);
+    expect(kosmoWidthStepsForMm(25.1)).toBe(2);
+    expect(kosmoWidthStepsForMm(0)).toBe(1);
+    expect(panelWidthMmForKosmoSteps(4)).toBe(100);
+  });
+
   it("keeps custom sizes within the limits", () => {
     const dimensions = resolvePanelDimensions(format({ custom: true }), {
       widthMm: 1,
@@ -108,9 +143,16 @@ describe("saved formats", () => {
   });
 
   it("repairs what it does not know", () => {
-    expect(normalizePanelFormat({ rackUnits: 5, oneUSpec: "moog", custom: "yes" })).toEqual(
-      DEFAULT_PANEL_FORMAT,
-    );
+    expect(
+      normalizePanelFormat({ system: "buchla", rackUnits: 5, oneUSpec: "moog", custom: "yes" }),
+    ).toEqual(DEFAULT_PANEL_FORMAT);
     expect(normalizePanelFormat(pulpLogic)).toEqual(pulpLogic);
+    expect(normalizePanelFormat(kosmo)).toEqual(kosmo);
+  });
+
+  it("makes saves from before Kosmo Eurorack panels, keeping their row", () => {
+    expect(normalizePanelFormat({ rackUnits: 1, oneUSpec: "pulpLogic", custom: false })).toEqual(
+      pulpLogic,
+    );
   });
 });

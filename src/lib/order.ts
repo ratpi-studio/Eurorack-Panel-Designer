@@ -86,6 +86,7 @@ export function computeOrderMountingHoles(model: PanelModel): MountingHole[] {
     widthMm: model.dimensions.widthMm,
     heightMm: model.dimensions.heightMm,
     config: model.mountingHoleConfig,
+    system: model.format.system,
   });
   return [
     ...panelHoles,

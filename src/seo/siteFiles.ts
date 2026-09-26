@@ -69,14 +69,17 @@ license.
 ## What it does
 
 - Panel formats: 3U Eurorack (128.50 mm), 1U Intellijel (39.65 mm), 1U Pulp Logic tiles (43.18 mm,
-  in multiples of 6 HP), 2U (84.05 mm), 4U (172.95 mm), or any custom size from 5 to 1000 mm.
+  in multiples of 6 HP), 2U (84.05 mm), 4U (172.95 mm), Kosmo (200 mm, in steps of 2.5 cm), or any
+  custom size from 5 to 1000 mm.
 - Widths in HP or millimeters, cut at the widths Doepfer publishes: a 6 HP panel is 30.00 mm, not
   30.48 mm.
-- Real parts with the hole their datasheet calls for: Thonkiconn jacks (6 mm), Alpha 9 mm pots and
-  Bourns PEC11R encoders (7 mm), Dailywell sub-mini (5 mm) and mini (6.35 mm) toggles, 3 mm and
-  5 mm LEDs. Knobs, nuts and washers are outlined, in red where they collide.
+- Real parts with the hole their datasheet calls for: Thonkiconn jacks (6 mm), Switchcraft (9.53 mm)
+  and Rean (10 mm) 1/4 in jacks, Johnson (8.33 mm) and Tayda (8 mm) 4 mm banana sockets, Alpha 9 mm
+  pots and Bourns PEC11R encoders (7 mm), Dailywell sub-mini (5 mm) and mini (6.35 mm) toggles,
+  3 mm and 5 mm LEDs. Knobs, nuts and washers are outlined, in red where they collide. New jacks
+  on a Kosmo panel start as 1/4 in jacks.
 - Mounting holes generated on the rail grid: first column 7.5 mm from the left edge, rows 3 mm from
-  the top and bottom, 3.4 mm across.
+  the top and bottom, 3.4 mm across. Kosmo panels take one column 3 mm from each side.
 - Text in five bundled fonts and SVG patterns, raised on the front for a two-colour 3D print.
 - Live 3D preview of the panel as it will be exported.
 - Exports: STL, SVG, PNG, JSON, and KiCad Edge.Cuts as SVG or .kicad_pcb.

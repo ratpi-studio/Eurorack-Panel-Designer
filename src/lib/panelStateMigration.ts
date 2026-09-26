@@ -9,8 +9,9 @@ import { normalizePanelModel, type PanelModel, type PanelModelInput } from "./pa
  * - v10: panel options gained `showHardware`, and elements can name a real part.
  * - v11: panels are as wide as they are cut, a few tenths of a millimeter under the HP grid.
  * - v12: panels have a format, 1U to 4U or a custom size; older autosaves are 3U.
+ * - v13: formats name their system, Eurorack or Kosmo; older autosaves are Eurorack.
  */
-export const PANEL_STATE_VERSION = 12;
+export const PANEL_STATE_VERSION = 13;
 
 interface PersistedPanelState {
   model?: PanelModel | PanelModelInput | null;

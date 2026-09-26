@@ -46,6 +46,13 @@ describe("getFrontOutline", () => {
     ).toBe(12);
   });
 
+  it("outlines the nut of a 1/4 in jack placed on a Kosmo panel", () => {
+    const jack = createPanelElement(PanelElementType.Jack, { x: 20, y: 50 }, "kosmo");
+
+    expect(jack.properties).toMatchObject({ partId: "reanNys229", diameterMm: 10 });
+    expect(getFrontOutline(jack)).toMatchObject({ diameterMm: 15, hasHardware: true });
+  });
+
   it("keeps bare holes as they are", () => {
     expect(getFrontOutline(place(PanelElementType.Led, 20))).toMatchObject({
       diameterMm: 3,

@@ -197,13 +197,14 @@ export function PanelCanvas({
     ],
   );
 
+  const panelSystem = model.format.system;
   const ghostElement = React.useMemo<PanelElement | null>(() => {
     if (!placementType || !pointerPanelPos) {
       return null;
     }
 
     const snappedPoint = maybeSnap(pointerPanelPos);
-    const base = createPanelElement(placementType, snappedPoint);
+    const base = createPanelElement(placementType, snappedPoint, panelSystem);
     const draft = draftProperties[placementType];
     const withDraft = draft ? withElementProperties(base, draft) : base;
 
@@ -211,7 +212,7 @@ export function PanelCanvas({
       ...withDraft,
       id: "ghost",
     };
-  }, [draftProperties, maybeSnap, placementType, pointerPanelPos]);
+  }, [draftProperties, maybeSnap, panelSystem, placementType, pointerPanelPos]);
 
   useCanvasRender({
     canvasRef,
@@ -238,7 +239,9 @@ export function PanelCanvas({
   const sizeText = `${Number(model.dimensions.widthMm.toFixed(2))} x ${Number(
     model.dimensions.heightMm.toFixed(2),
   )} mm`;
-  const hudText = `${model.dimensions.widthHp} HP · ${sizeText} · Zoom ${(zoom * 100).toFixed(0)}%${pointerText}`;
+  // Kosmo widths are not counted in HP.
+  const hpText = model.format.system === "eurorack" ? `${model.dimensions.widthHp} HP · ` : "";
+  const hudText = `${hpText}${sizeText} · Zoom ${(zoom * 100).toFixed(0)}%${pointerText}`;
 
   // Browser translation rewraps text nodes in <font> elements, and React crashes if it later
   // has to remove one. Keep this subtree static: one HUD text node, selection rect always

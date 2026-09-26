@@ -28,7 +28,7 @@ import {
 } from "@lib/panelTypes";
 import { getVisibleElements } from "@lib/elementVisibility";
 import { isOrderingEnabled } from "@lib/order";
-import type { PanelFormat } from "@lib/panelFormat";
+import type { PanelFormat, PanelSystem } from "@lib/panelFormat";
 import { setPanelFormat, setPanelHeightMm, setPanelWidthHp, setPanelWidthMm } from "@lib/panelSize";
 
 import { changelogEntries } from "@lib/changelog";
@@ -57,12 +57,14 @@ const LazyPanel3DView = React.lazy(() =>
 function computeMountingHoles(
   dimensions: PanelDimensions,
   config: MountingHoleConfig,
+  system: PanelSystem,
 ): MountingHole[] {
   return generateMountingHoles({
     widthHp: dimensions.widthHp,
     widthMm: dimensions.widthMm,
     heightMm: dimensions.heightMm,
     config,
+    system,
   });
 }
 
@@ -159,9 +161,10 @@ export function PanelDesigner() {
     removeElements,
   } = usePanelHistory();
 
+  const panelSystem = panelModel.format.system;
   const mountingHoles = React.useMemo(
-    () => computeMountingHoles(panelModel.dimensions, panelModel.mountingHoleConfig),
-    [panelModel.dimensions, panelModel.mountingHoleConfig],
+    () => computeMountingHoles(panelModel.dimensions, panelModel.mountingHoleConfig, panelSystem),
+    [panelModel.dimensions, panelModel.mountingHoleConfig, panelSystem],
   );
 
   // Hidden elements stay in the design, but out of the canvas, the 3D view, exports and orders.
@@ -531,12 +534,12 @@ export function PanelDesigner() {
     if (!placementType) {
       return null;
     }
-    const base = createPanelElement(placementType, { x: 0, y: 0 });
+    const base = createPanelElement(placementType, { x: 0, y: 0 }, panelSystem);
     return {
       ...withElementProperties(base, draftProperties[placementType] ?? null),
       id: "draft",
     };
-  }, [draftProperties, placementType]);
+  }, [draftProperties, panelSystem, placementType]);
 
   const elementForProperties = selectedElement ?? draftElement;
 

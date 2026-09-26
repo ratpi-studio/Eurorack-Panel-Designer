@@ -28,8 +28,9 @@ function createModel(widthHp = 20): PanelModel {
   });
 }
 
-const pulpLogic: PanelFormat = { rackUnits: 1, oneUSpec: "pulpLogic", custom: false };
-const intellijel: PanelFormat = { rackUnits: 1, oneUSpec: "intellijel", custom: false };
+const pulpLogic: PanelFormat = { ...DEFAULT_PANEL_FORMAT, rackUnits: 1, oneUSpec: "pulpLogic" };
+const intellijel: PanelFormat = { ...DEFAULT_PANEL_FORMAT, rackUnits: 1 };
+const kosmo: PanelFormat = { ...DEFAULT_PANEL_FORMAT, system: "kosmo" };
 
 function holeColumnsAndRows(model: PanelModel): { xs: number[]; ys: number[] } {
   const holes = generateMountingHoles({
@@ -37,6 +38,7 @@ function holeColumnsAndRows(model: PanelModel): { xs: number[]; ys: number[] } {
     widthMm: model.dimensions.widthMm,
     heightMm: model.dimensions.heightMm,
     config: model.mountingHoleConfig,
+    system: model.format.system,
   });
   const unique = (values: number[]) => [
     ...new Set(values.map((value) => Number(value.toFixed(2)))),
@@ -70,6 +72,44 @@ describe("panel formats on a design", () => {
       xs: [7.5, 22.74],
       ys: [3, 36.65],
     });
+  });
+
+  it("switches to Kosmo: 20 cm high, the nearest 2.5 cm step, the elements in place", () => {
+    const model = setPanelFormat(createModel(10), kosmo);
+
+    expect(model.dimensions).toMatchObject({ widthMm: 50, heightMm: 200 });
+    expect(model.elements[0]?.positionMm).toEqual({ x: 10, y: 100 });
+  });
+
+  it("drills a Kosmo panel 3 mm from each edge, off the HP grid and with no column between", () => {
+    expect(holeColumnsAndRows(setPanelFormat(createModel(20), kosmo))).toEqual({
+      xs: [3, 97],
+      ys: [3, 197],
+    });
+    expect(
+      holeColumnsAndRows(setPanelWidthMm(setPanelFormat(createModel(), kosmo), 400)).xs,
+    ).toEqual([3, 397]);
+  });
+
+  it("runs Kosmo slots inward from the hole position, so they stay off the edge", () => {
+    const model = setPanelFormat(createModel(10), kosmo);
+    const slotted = {
+      ...model,
+      mountingHoleConfig: { ...model.mountingHoleConfig, shape: "slot" as const, slotLengthMm: 8 },
+    };
+
+    expect(holeColumnsAndRows(slotted).xs).toEqual([5.3, 44.7]);
+  });
+
+  it("comes back from Kosmo to the Eurorack row picked before", () => {
+    const tile = setPanelFormat(createModel(12), pulpLogic);
+    const back = setPanelFormat(setPanelFormat(tile, { ...tile.format, system: "kosmo" }), {
+      ...tile.format,
+    });
+
+    expect(back.format).toEqual(pulpLogic);
+    expect(back.dimensions).toMatchObject({ widthHp: 12, heightMm: 43.18 });
+    expect(back.mountingHoleConfig.horizontalOffsetMm).toBe(5.08);
   });
 
   it("keeps the hole offsets set by hand when the new format drills at the same place", () => {
@@ -128,6 +168,15 @@ describe("panel sizes", () => {
     expect(setPanelWidthMm(setPanelFormat(createModel(), pulpLogic), 35).dimensions.widthHp).toBe(
       6,
     );
+  });
+
+  it("gives a width typed in mm on a Kosmo panel the 2.5 cm steps it needs", () => {
+    const model = setPanelFormat(createModel(), kosmo);
+
+    expect(setPanelWidthMm(model, 75).dimensions.widthMm).toBe(75);
+    expect(setPanelWidthMm(model, 76).dimensions.widthMm).toBe(100);
+    expect(setPanelWidthMm(model, 1).dimensions.widthMm).toBe(25);
+    expect(setPanelHeightMm(model, 150)).toBe(model);
   });
 
   it("widens in the steps of the format", () => {

@@ -1,4 +1,4 @@
-import { DEFAULT_MM_PER_HP } from "./panelFormat";
+import { DEFAULT_MM_PER_HP, type PanelSystem } from "./panelFormat";
 import {
   DEFAULT_MOUNTING_HOLE_CONFIG,
   type MountingHole,
@@ -10,6 +10,8 @@ interface MountingHoleInput {
   widthMm: number;
   heightMm: number;
   config?: Partial<MountingHoleConfig>;
+  /** Eurorack by default: its holes follow the rail grid, Kosmo ones sit at the edges. */
+  system?: PanelSystem;
 }
 
 interface ColumnInput {
@@ -76,11 +78,36 @@ function buildColumnXs(input: ColumnInput): number[] {
   return columnXs.map((x) => clamp(x, minCenter, maxCenter));
 }
 
+/**
+ * Where the columns of mounting holes go on a Kosmo panel. Its metric widths leave the 5.08 mm
+ * grid, so it is held by sliding nuts or wood screws, anywhere along the rails: one column
+ * `horizontalOffsetMm` from each edge, and none in between. A slot keeps its outer end there and
+ * runs inward, as in Rich Holmes' Kosmo panel templates, so it never reaches the edge.
+ * Sources: https://lookmumnocomputer.discourse.group/t/kosmo-specification/896 (first post:
+ * holes 3 mm from the top and the sides) and https://gitlab.com/rsholmes/Kosmo_panel_templates.
+ */
+function buildEdgeColumnXs(input: ColumnInput): number[] {
+  const { config, horizontalFootprint, minCenter, maxCenter, widthMm } = input;
+  const insetMm = config.horizontalOffsetMm + horizontalFootprint - config.diameterMm / 2;
+  const minSeparationMm = Math.max(
+    config.diameterMm,
+    horizontalFootprint,
+    MIN_MOUNTING_HOLE_SPACING_MM,
+  );
+
+  if (widthMm - insetMm * 2 < minSeparationMm) {
+    return [singleColumnX(input)];
+  }
+
+  return [insetMm, widthMm - insetMm].map((x) => clamp(x, minCenter, maxCenter));
+}
+
 export function generateMountingHoles({
   widthHp,
   widthMm,
   heightMm,
   config,
+  system = "eurorack",
 }: MountingHoleInput): MountingHole[] {
   if (widthHp <= 0 || widthMm <= 0 || heightMm <= 0) {
     return [];
@@ -109,7 +136,8 @@ export function generateMountingHoles({
   const topY = resolvedConfig.verticalOffsetMm;
   const bottomY = heightMm - resolvedConfig.verticalOffsetMm;
 
-  const columnXs = buildColumnXs({
+  const buildColumns = system === "kosmo" ? buildEdgeColumnXs : buildColumnXs;
+  const columnXs = buildColumns({
     widthMm,
     config: resolvedConfig,
     horizontalFootprint,

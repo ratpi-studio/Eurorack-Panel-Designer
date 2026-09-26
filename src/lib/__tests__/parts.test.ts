@@ -6,6 +6,7 @@ import {
   DEFAULT_PART_IDS,
   PANEL_KNOBS,
   PANEL_PARTS,
+  getDefaultPartId,
   getPart,
   getPartsForType,
   isKnobId,
@@ -34,6 +35,19 @@ describe("parts catalog", () => {
     expect(getPart("dailywellMiniToggle")).toMatchObject({ holeDiameterMm: 6.35 });
   });
 
+  it("keeps the datasheet holes of 1/4 in jacks and 4 mm banana sockets", () => {
+    expect(getPart("switchcraft112a")).toMatchObject({
+      holeDiameterMm: 9.53,
+      hardwareDiameterMm: 15.87,
+    });
+    expect(getPart("reanNys229")).toMatchObject({ holeDiameterMm: 10, hardwareDiameterMm: 15 });
+    expect(getPart("johnsonBanana")).toMatchObject({
+      holeDiameterMm: 8.33,
+      hardwareDiameterMm: 11.13,
+    });
+    expect(getPart("taydaBanana")).toMatchObject({ holeDiameterMm: 8, hardwareDiameterMm: 10.8 });
+  });
+
   it("starts each type with one of its own parts, and knobs with a known knob", () => {
     for (const [type, partId] of Object.entries(DEFAULT_PART_IDS)) {
       expect(getPart(partId).type).toBe(type);
@@ -41,8 +55,22 @@ describe("parts catalog", () => {
     expect(isKnobId(DEFAULT_KNOB_ID)).toBe(true);
   });
 
+  it("starts jacks on Kosmo panels as 1/4 in jacks, and the other types as on Eurorack", () => {
+    expect(getDefaultPartId("jack", "eurorack")).toBe("thonkiconn");
+    expect(getDefaultPartId("jack", "kosmo")).toBe("reanNys229");
+    for (const type of ["potentiometer", "switch", "led"] as const) {
+      expect(getDefaultPartId(type, "kosmo")).toBe(DEFAULT_PART_IDS[type]);
+    }
+  });
+
   it("lists the parts of a type, none for the types without parts", () => {
-    expect(getPartsForType(PanelElementType.Jack).map((part) => part.id)).toEqual(["thonkiconn"]);
+    expect(getPartsForType(PanelElementType.Jack).map((part) => part.id)).toEqual([
+      "thonkiconn",
+      "switchcraft112a",
+      "reanNys229",
+      "johnsonBanana",
+      "taydaBanana",
+    ]);
     expect(getPartsForType(PanelElementType.Switch).map((part) => part.id)).toEqual([
       "dailywellSubMiniToggle",
       "dailywellMiniToggle",

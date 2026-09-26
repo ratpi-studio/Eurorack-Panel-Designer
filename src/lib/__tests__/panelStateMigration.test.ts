@@ -50,8 +50,21 @@ const legacyModel = {
 } as unknown as PanelModel;
 
 describe("migratePersistedPanelState", () => {
-  it("is at version 12, where panels gained a format", () => {
-    expect(PANEL_STATE_VERSION).toBe(12);
+  it("is at version 13, where formats gained a system", () => {
+    expect(PANEL_STATE_VERSION).toBe(13);
+  });
+
+  it("makes 0.15 autosaves Eurorack panels", () => {
+    const initial = createInitialModel();
+    const { system: _, ...format } = initial.format;
+
+    const migrated = migratePersistedPanelState(
+      { model: { ...initial, format } as unknown as PanelModel },
+      12,
+      createInitialModel,
+    );
+
+    expect(migrated?.model?.format).toEqual(DEFAULT_PANEL_FORMAT);
   });
 
   it("makes 0.12 autosaves 3U panels", () => {

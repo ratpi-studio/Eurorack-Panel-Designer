@@ -37,17 +37,20 @@ interface Translations {
   };
   controls: {
     formatLabel: string;
-    rackUnitsLabel: string;
     rackUnitsOption: (rackUnits: number) => string;
+    kosmoOption: string;
     oneUSpecLabel: string;
     oneUSpecOptions: Record<OneUSpec, string>;
     customLabel: string;
     widthHpLabel: string;
+    widthCmLabel: string;
     widthMmLabel: string;
     heightMmLabel: string;
     widthHpHint: string;
     tileWidthHpHint: (stepHp: number) => string;
+    kosmoWidthCmHint: (stepCm: number) => string;
     widthMmHint: string;
+    kosmoWidthMmHint: (stepMm: number) => string;
     customWidthMmHint: string;
     customHeightMmHint: (minMm: number, maxMm: number) => string;
     heightNote: (heightMm: number, formatName: string) => string;
@@ -379,8 +382,8 @@ export const enUS: Translations = {
   },
   controls: {
     formatLabel: "Format",
-    rackUnitsLabel: "Rack units",
     rackUnitsOption: (rackUnits) => `${rackUnits}U`,
+    kosmoOption: "Kosmo",
     oneUSpecLabel: "1U standard",
     oneUSpecOptions: {
       intellijel: "Intellijel",
@@ -388,11 +391,14 @@ export const enUS: Translations = {
     },
     customLabel: "Custom size",
     widthHpLabel: "Width (HP)",
+    widthCmLabel: "Width (cm)",
     widthMmLabel: "Width (mm)",
     heightMmLabel: "Height (mm)",
     widthHpHint: "Eurorack units (1 HP = 5.08 mm)",
     tileWidthHpHint: (stepHp) => `Tiles come in multiples of ${stepHp} HP`,
+    kosmoWidthCmHint: (stepCm) => `Kosmo widths come in steps of ${stepCm} cm`,
     widthMmHint: "Width to cut, a bit under the HP grid (Doepfer)",
+    kosmoWidthMmHint: (stepMm) => `Width to cut, a multiple of ${stepMm} mm`,
     customWidthMmHint: "Any width, in millimeters",
     customHeightMmHint: (minMm, maxMm) => `Any height from ${minMm} to ${maxMm} mm`,
     heightNote: (heightMm, formatName) => `Height ${Number(heightMm.toFixed(2))} mm, ${formatName}`,
@@ -405,6 +411,7 @@ export const enUS: Translations = {
       rack2u: "2U rails",
       eurorack3u: "Eurorack 3U",
       rack4u: "4U rails",
+      kosmo: "Kosmo",
     },
   },
   display: {
@@ -462,7 +469,7 @@ export const enUS: Translations = {
     items: {
       jack: {
         label: "Jack",
-        description: "3.5 mm input/output",
+        description: "Input/output: 3.5 mm, 1/4 in or banana",
         color: "#38bdf8",
       },
       potentiometer: {
@@ -591,7 +598,11 @@ export const enUS: Translations = {
     embedDepth: "Embed depth (mm)",
     part: "Part",
     partOptions: {
-      thonkiconn: "Thonkiconn · PJ398SM, WQP518MA",
+      thonkiconn: "Thonkiconn 3.5 mm · PJ398SM, WQP518MA",
+      switchcraft112a: "Switchcraft 1/4 in · 112A, 11, 12A",
+      reanNys229: "Rean 1/4 in · NYS229, NYS230",
+      johnsonBanana: "Johnson 4 mm banana · 108-09xx-001",
+      taydaBanana: "Tayda 4 mm banana · J072, Hirschmann BIL 20",
       alpha9mm: "Alpha 9 mm pot · RD901F",
       bournsPec11r: "Bourns PEC11R encoder",
       dailywellSubMiniToggle: "Dailywell sub-mini toggle · 2MS",
@@ -604,7 +615,7 @@ export const enUS: Translations = {
     customRectangularHole: "Custom rectangular hole",
     partHint: (holeMm: string, hardwareMm: string | null) =>
       hardwareMm
-        ? `Recommended hole Ø${holeMm} mm, nut or washer Ø${hardwareMm} mm.`
+        ? `Recommended hole Ø${holeMm} mm; its nut, washer or head covers Ø${hardwareMm} mm on the front.`
         : `Recommended hole Ø${holeMm} mm.`,
     useRecommendedHole: (holeMm: string) => `Use Ø${holeMm} mm`,
     knob: "Knob",
@@ -617,7 +628,7 @@ export const enUS: Translations = {
       roganPt3ps: "Rogan PT-3PS, large",
     },
     crowdedHardware:
-      "Too close to another component: a knob, nut or washer overlaps. Move them apart.",
+      "Too close to another component: a knob, nut, washer or socket head overlaps. Move them apart.",
   },
   svgArtwork: {
     title: "Add SVG",

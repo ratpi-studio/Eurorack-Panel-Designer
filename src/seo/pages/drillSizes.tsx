@@ -23,6 +23,26 @@ import { mm } from "./shared";
 /** Display names and datasheets. A new part or knob fails to compile until it is listed here. */
 const PART_LABELS: Record<PartId, { name: string; kind: string; source: string }> = {
   thonkiconn: { name: "Thonkiconn jack", kind: "3.5 mm jack", source: "QingPu PJ398SM / WQP518MA" },
+  switchcraft112a: {
+    name: "Switchcraft 1/4 in jack",
+    kind: "6.35 mm (1/4 in) jack",
+    source: "Switchcraft 112A / 11 / 12A",
+  },
+  reanNys229: {
+    name: "Rean 1/4 in jack",
+    kind: "6.35 mm (1/4 in) jack",
+    source: "Rean NYS229 / NYS230",
+  },
+  johnsonBanana: {
+    name: "Johnson banana socket",
+    kind: "4 mm banana socket",
+    source: "Johnson (Cinch) 108-0902-001",
+  },
+  taydaBanana: {
+    name: "Tayda banana socket",
+    kind: "4 mm banana socket",
+    source: "Tayda J072 / Hirschmann BIL 20",
+  },
   alpha9mm: { name: "Alpha 9 mm potentiometer", kind: "Potentiometer", source: "Alpha RD901F-40" },
   bournsPec11r: { name: "Bourns PEC11R encoder", kind: "Rotary encoder", source: "Bourns PEC11R" },
   dailywellSubMiniToggle: {
@@ -81,6 +101,10 @@ const KNOB_COLUMNS: Column<PanelKnob>[] = [
 ];
 
 const thonkiconn = getPart("thonkiconn");
+const switchcraft = getPart("switchcraft112a");
+const rean = getPart("reanNys229");
+const johnsonBanana = getPart("johnsonBanana");
+const taydaBanana = getPart("taydaBanana");
 const alpha9mm = getPart("alpha9mm");
 const subMiniToggle = getPart("dailywellSubMiniToggle");
 const miniToggle = getPart("dailywellMiniToggle");
@@ -92,6 +116,14 @@ const FAQ: FaqEntry[] = [
   {
     question: "What size hole does a Thonkiconn jack need?",
     answer: `${mm(thonkiconn.holeDiameterMm, 0)} mm. The bushing of the QingPu PJ398SM is ${mm(thonkiconn.holeDiameterMm, 0)} mm across, and its knurled nut covers ${mm(thonkiconn.hardwareDiameterMm ?? thonkiconn.holeDiameterMm, 1)} mm on the front of the panel.`,
+  },
+  {
+    question: "What size hole does a 1/4 inch jack need?",
+    answer: `${mm(switchcraft.holeDiameterMm)} mm (3/8 in) for Switchcraft jacks, whose 3/8-32 bushing takes a nut and a ${mm(switchcraft.hardwareDiameterMm ?? switchcraft.holeDiameterMm)} mm washer on the front, and ${mm(rean.holeDiameterMm, 0)} mm for Rean NYS229 and NYS230 jacks. ${mm(rean.holeDiameterMm, 0)} mm is also the hole Kosmo builders drill for their 1/4 in jacks.`,
+  },
+  {
+    question: "What size hole does a 4 mm banana socket need?",
+    answer: `${mm(johnsonBanana.holeDiameterMm)} mm for Johnson (Cinch) sockets, sold for Buchla and Serge builds, and ${mm(taydaBanana.holeDiameterMm, 0)} mm for Tayda J072 and Hirschmann BIL 20 sockets. Their insulated head covers ${mm(johnsonBanana.hardwareDiameterMm ?? johnsonBanana.holeDiameterMm)} and ${mm(taydaBanana.hardwareDiameterMm ?? taydaBanana.holeDiameterMm)} mm on the front of the panel.`,
   },
   {
     question: "What hole do Alpha 9 mm potentiometers need?",
@@ -110,7 +142,7 @@ function Body() {
           rows={[...PANEL_PARTS]}
           rowKey={(part) => part.id}
           minWidth="lg"
-          note="Hardware diameter is the widest part on the front of the panel: nut or locking washer."
+          note="Hardware diameter is the widest part on the front of the panel: nut, washer, or the head of a banana socket."
         />
         <Prose>
           <p>
@@ -152,9 +184,11 @@ function Body() {
       <Section number="04" title="Sources" kicker="DATASHEETS">
         <Prose small>
           <p>
-            Thonkiconn from the QingPu PJ398SM and WQP518MA datasheets; Alpha 9 mm from the
-            RD901F-40 datasheet; the encoder from the Bourns PEC11R datasheet; the toggles from the
-            Dailywell 1MS and 2MS datasheets. The editor applies them in{" "}
+            Thonkiconn from the QingPu PJ398SM and WQP518MA datasheets; the 1/4 in jacks from the
+            Switchcraft catalog and the Rean NYS229 drawing; the banana sockets from the Johnson
+            108-0902-001, Tayda J072 and Hirschmann BIL 20 drawings; Alpha 9 mm from the RD901F-40
+            datasheet; the encoder from the Bourns PEC11R datasheet; the toggles from the Dailywell
+            1MS and 2MS datasheets. The editor applies them in{" "}
             <a href={`${REPO_URL}/blob/master/src/lib/parts.ts`}>
               <code>parts.ts</code>
             </a>
@@ -172,14 +206,17 @@ export const drillSizesPage: ContentPage = {
   group: "reference",
   title: "Drill sizes for Eurorack panel parts",
   description:
-    "Panel hole diameters for Thonkiconn jacks, Alpha 9 mm pots, Bourns PEC11R encoders, " +
-    "Dailywell toggles and 3 mm and 5 mm LEDs, each from the part's datasheet.",
+    "Panel hole diameters for Thonkiconn, 1/4 in and banana jacks, Alpha 9 mm pots, Bourns " +
+    "PEC11R encoders, Dailywell toggles and LEDs, from each part's datasheet.",
   kicker: "REFERENCE / PARTS",
   lead: (
     <>
-      A Thonkiconn jack needs a <strong>{mm(thonkiconn.holeDiameterMm, 0)} mm</strong> hole, an
-      Alpha 9 mm pot and a Bourns PEC11R encoder{" "}
-      <strong>{mm(alpha9mm.holeDiameterMm, 0)} mm</strong>, a Dailywell sub-mini toggle{" "}
+      A Thonkiconn jack needs a <strong>{mm(thonkiconn.holeDiameterMm, 0)} mm</strong> hole, a 1/4
+      in jack <strong>{mm(switchcraft.holeDiameterMm)}</strong> or{" "}
+      <strong>{mm(rean.holeDiameterMm, 0)} mm</strong>, a 4 mm banana socket{" "}
+      <strong>{mm(taydaBanana.holeDiameterMm, 0)}</strong> or{" "}
+      <strong>{mm(johnsonBanana.holeDiameterMm)} mm</strong>, an Alpha 9 mm pot and a Bourns PEC11R
+      encoder <strong>{mm(alpha9mm.holeDiameterMm, 0)} mm</strong>, a Dailywell sub-mini toggle{" "}
       <strong>{mm(subMiniToggle.holeDiameterMm, 0)} mm</strong>, a mini toggle{" "}
       <strong>{mm(miniToggle.holeDiameterMm)} mm</strong>, and LEDs{" "}
       <strong>{mm(led3mm.holeDiameterMm, 0)}</strong> or{" "}
@@ -189,7 +226,11 @@ export const drillSizesPage: ContentPage = {
   facts: [
     { label: "THONKICONN", value: mm(thonkiconn.holeDiameterMm), unit: "mm" },
     { label: "ALPHA 9 MM POT", value: mm(alpha9mm.holeDiameterMm), unit: "mm" },
-    { label: "SUB-MINI TOGGLE", value: mm(subMiniToggle.holeDiameterMm), unit: "mm" },
+    {
+      label: "1/4 IN JACK",
+      value: `${mm(switchcraft.holeDiameterMm)} / ${mm(rean.holeDiameterMm, 0)}`,
+      unit: "mm",
+    },
     {
       label: "LED",
       value: `${mm(led3mm.holeDiameterMm, 0)} / ${mm(led5mm.holeDiameterMm, 0)}`,
