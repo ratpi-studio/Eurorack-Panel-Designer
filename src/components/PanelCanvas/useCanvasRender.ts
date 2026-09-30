@@ -1,6 +1,6 @@
 import React from "react";
 
-import { drawPanelScene } from "@lib/canvas/renderScene";
+import { drawPanelScene, type ReferenceCalibrationOverlay } from "@lib/canvas/renderScene";
 import { type ClearanceLines } from "@lib/clearance";
 import { canvasPalette, derivePaletteFromModel } from "@lib/canvas/palette";
 import {
@@ -39,6 +39,7 @@ interface CanvasRenderOptions {
   referenceImage: ReferenceImage | null;
   referenceImageElement: HTMLImageElement | null;
   referenceImageSelected: boolean;
+  referenceCalibration: ReferenceCalibrationOverlay | null;
   placementType: PanelElementType | null;
 }
 
@@ -57,6 +58,7 @@ export function useCanvasRender({
   referenceImage,
   referenceImageElement,
   referenceImageSelected,
+  referenceCalibration,
   placementType,
 }: CanvasRenderOptions) {
   // Hidden elements are not drawn, nor used to clip the design or to measure distances.
@@ -210,9 +212,11 @@ export function useCanvasRender({
             ? {
                 image: referenceImageElement,
                 info: referenceImage,
-                selected: referenceImageSelected,
+                // The handles would get in the way of the points being picked.
+                selected: referenceImageSelected && !referenceCalibration,
               }
             : null,
+        referenceCalibration,
         mountingHoles,
         elementMountingHoles,
         mountingHolesSelected,
@@ -265,6 +269,7 @@ export function useCanvasRender({
     referenceImage,
     referenceImageElement,
     referenceImageSelected,
+    referenceCalibration,
     model.dimensions.widthMm,
     model.dimensions.heightMm,
     model.panelColor,

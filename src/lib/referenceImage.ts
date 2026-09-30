@@ -227,6 +227,51 @@ export function resizeReferenceImageFromHandle(
   };
 }
 
+/** Shortest distance between the two calibration points, below which a click counts as the same point. */
+export const MIN_REFERENCE_CALIBRATION_DISTANCE_MM = 0.1;
+
+export function getCalibrationDistanceMm(first: Vector2, second: Vector2): number {
+  return Math.hypot(second.x - first.x, second.y - first.y);
+}
+
+/**
+ * Scales the image so the two points picked on it end up `realDistanceMm` apart, like the
+ * calibration of Fusion's canvases. The scale keeps the aspect ratio and the rotation, and the
+ * first point stays where it is on the panel. Returns null when the points or the distance cannot
+ * give a scale.
+ */
+export function calibrateReferenceImage(
+  image: Pick<ReferenceImage, "positionMm" | "widthMm" | "heightMm">,
+  first: Vector2,
+  second: Vector2,
+  realDistanceMm: number,
+): Pick<ReferenceImage, "positionMm" | "widthMm" | "heightMm"> | null {
+  const measuredMm = getCalibrationDistanceMm(first, second);
+  if (
+    measuredMm < MIN_REFERENCE_CALIBRATION_DISTANCE_MM ||
+    !Number.isFinite(realDistanceMm) ||
+    realDistanceMm <= 0
+  ) {
+    return null;
+  }
+
+  const scale = realDistanceMm / measuredMm;
+  const widthMm = image.widthMm * scale;
+  const heightMm = image.heightMm * scale;
+  if (Math.min(widthMm, heightMm) < MIN_REFERENCE_IMAGE_SIZE_MM) {
+    return null;
+  }
+
+  return {
+    positionMm: {
+      x: first.x + (image.positionMm.x - first.x) * scale,
+      y: first.y + (image.positionMm.y - first.y) * scale,
+    },
+    widthMm,
+    heightMm,
+  };
+}
+
 /** Longest side kept for imported reference images: enough detail to trace at any zoom. */
 export const MAX_REFERENCE_IMAGE_SIDE_PX = 2048;
 // Images within the size limit are still re-encoded above this (e.g. large PNG photos).

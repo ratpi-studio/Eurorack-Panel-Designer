@@ -190,6 +190,15 @@ interface Translations {
     replace: string;
     remove: string;
     notKept: string;
+    calibrate: string;
+    calibrationTitle: string;
+    calibrationPickFirst: string;
+    calibrationPickSecond: string;
+    calibrationDistance: string;
+    calibrationMeasured: (distanceMm: number) => string;
+    calibrationApply: string;
+    calibrationCancel: string;
+    calibrationInvalid: string;
   };
   svgArtwork: {
     title: string;
@@ -458,6 +467,16 @@ export const enUS: Translations = {
     remove: "Remove the image",
     notKept:
       "This reference image is too large to be kept after a reload. The rest of your design is still saved.",
+    calibrate: "Calibrate the scale from two points",
+    calibrationTitle: "Calibrate the image",
+    calibrationPickFirst: "Click the first point of a known distance on the image.",
+    calibrationPickSecond: "Click the second point.",
+    calibrationDistance: "Real distance (mm)",
+    calibrationMeasured: (distanceMm) =>
+      `Measured on the image: ${Number(distanceMm.toFixed(2))} mm. Click again to pick other points.`,
+    calibrationApply: "Scale",
+    calibrationCancel: "Cancel the calibration (Esc)",
+    calibrationInvalid: "Enter a distance above 0 mm.",
   },
   palette: {
     title: "Palette",

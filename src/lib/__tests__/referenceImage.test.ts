@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import {
+  calibrateReferenceImage,
   getReferenceImageControlPositions,
+  referenceImageLocalToWorld,
+  referenceImageWorldToLocal,
   getScaledImageSize,
   isPointInReferenceImage,
   resizeReferenceImageFromHandle,
@@ -81,5 +84,51 @@ describe("getScaledImageSize", () => {
 
   it("never returns an empty dimension", () => {
     expect(getScaledImageSize(10_000, 1, 2048)).toEqual({ width: 2048, height: 1 });
+  });
+});
+
+describe("reference image calibration", () => {
+  it("scales the image so the two points are the given distance apart", () => {
+    const image = createReferenceImage();
+    // 20 mm apart on the image, 50 mm on the real part.
+    const result = calibrateReferenceImage(image, { x: 40, y: 60 }, { x: 60, y: 60 }, 50);
+
+    expect(result).not.toBeNull();
+    expect(result!.widthMm).toBeCloseTo(100);
+    expect(result!.heightMm).toBeCloseTo(50);
+  });
+
+  it("keeps the first point where it is and moves the second one to the real distance", () => {
+    const image = createReferenceImage({ rotationDeg: 30 });
+    const first = { x: 42, y: 55 };
+    const second = { x: 61, y: 68 };
+    const firstLocal = referenceImageWorldToLocal(first, image);
+    const secondLocal = referenceImageWorldToLocal(second, image);
+    const result = calibrateReferenceImage(image, first, second, 12);
+    expect(result).not.toBeNull();
+
+    const scale = result!.widthMm / image.widthMm;
+    const calibrated = { ...image, ...result! };
+    const scaledLocal = (point: { x: number; y: number }) => ({
+      x: point.x * scale,
+      y: point.y * scale,
+    });
+    const firstAfter = referenceImageLocalToWorld(scaledLocal(firstLocal), calibrated);
+    const secondAfter = referenceImageLocalToWorld(scaledLocal(secondLocal), calibrated);
+
+    expect(firstAfter.x).toBeCloseTo(first.x);
+    expect(firstAfter.y).toBeCloseTo(first.y);
+    expect(Math.hypot(secondAfter.x - firstAfter.x, secondAfter.y - firstAfter.y)).toBeCloseTo(12);
+    expect(result!.heightMm / result!.widthMm).toBeCloseTo(image.heightMm / image.widthMm);
+  });
+
+  it("gives no scale for points on top of each other or a distance that is not positive", () => {
+    const image = createReferenceImage();
+
+    expect(calibrateReferenceImage(image, { x: 50, y: 60 }, { x: 50, y: 60 }, 10)).toBeNull();
+    expect(calibrateReferenceImage(image, { x: 40, y: 60 }, { x: 60, y: 60 }, 0)).toBeNull();
+    expect(
+      calibrateReferenceImage(image, { x: 40, y: 60 }, { x: 60, y: 60 }, Number.NaN),
+    ).toBeNull();
   });
 });

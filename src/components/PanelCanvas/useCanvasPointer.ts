@@ -172,6 +172,9 @@ interface CanvasPointerOptions {
   onSelectReferenceImage: () => void;
   onClearReferenceSelection: () => void;
   onUpdateReferenceImage: (updates: Partial<ReferenceImage>) => void;
+  /** Set while the reference image is being calibrated: clicks pick its points, nothing else. */
+  referenceCalibrationPoints: Vector2[] | null;
+  onPickCalibrationPoint: (pointMm: Vector2) => void;
   onSelectMountingHoles: () => void;
   onClearMountingHoleSelection: () => void;
   clearanceLines: ClearanceLines;
@@ -305,6 +308,8 @@ export function useCanvasPointer({
   onSelectReferenceImage,
   onClearReferenceSelection,
   onUpdateReferenceImage,
+  referenceCalibrationPoints,
+  onPickCalibrationPoint,
   onSelectMountingHoles,
   onClearMountingHoleSelection,
   clearanceLines,
@@ -530,6 +535,12 @@ export function useCanvasPointer({
         return;
       }
 
+      if (referenceCalibrationPoints) {
+        setIsHoveringInteractive(false);
+        setCanvasCursor(DEFAULT_CANVAS_CURSOR);
+        return;
+      }
+
       const selectedReferenceHandle = findReferenceControlAtPoint(pointPx);
       if (selectedReferenceHandle && referenceImage) {
         setIsHoveringInteractive(true);
@@ -611,6 +622,7 @@ export function useCanvasPointer({
       interactiveElements,
       mountingHoles,
       placementType,
+      referenceCalibrationPoints,
       referenceImage,
       referenceImageSelected,
       selectedElementSet,
@@ -649,6 +661,13 @@ export function useCanvasPointer({
     };
     const pointPanel = screenPointToPanel(pointPx, transform);
     if (!pointPanel) {
+      return;
+    }
+
+    // Points are picked where the image shows them, never snapped to the grid.
+    if (referenceCalibrationPoints) {
+      pointerModeRef.current = "idle";
+      onPickCalibrationPoint(pointPanel);
       return;
     }
 

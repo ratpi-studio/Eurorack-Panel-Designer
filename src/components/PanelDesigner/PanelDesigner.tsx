@@ -7,6 +7,7 @@ import { PanelHeader } from "@components/PanelDesigner/PanelHeader";
 import { RightPanel } from "@components/PanelDesigner/RightPanel";
 import { ViewModeSwitch } from "@components/PanelDesigner/ViewModeSwitch";
 import { OrderDialog } from "@components/OrderDialog/OrderDialog";
+import { ReferenceCalibrationBar } from "@components/ReferenceCalibrationBar/ReferenceCalibrationBar";
 import { SphereLoader } from "@components/SphereLoader/SphereLoader";
 import { SvgArtworkModal } from "@components/SvgArtworkModal/SvgArtworkModal";
 import { useResponsivePanels } from "@components/PanelDesigner/useResponsivePanels";
@@ -33,7 +34,13 @@ import { setPanelFormat, setPanelHeightMm, setPanelWidthHp, setPanelWidthMm } fr
 
 import { changelogEntries } from "@lib/changelog";
 import { computeElementMountingHoles } from "@lib/elementMountingHoles";
-import { shrinkReferenceImage, type ReferenceImage } from "@lib/referenceImage";
+import {
+  calibrateReferenceImage,
+  getCalibrationDistanceMm,
+  MIN_REFERENCE_CALIBRATION_DISTANCE_MM,
+  shrinkReferenceImage,
+  type ReferenceImage,
+} from "@lib/referenceImage";
 import { computeClearanceLines, applyClearanceLinePosition } from "@lib/clearance";
 import { type ExportFormat } from "@lib/preferences";
 import { usePanelStore } from "@store/panelStore";
@@ -469,6 +476,68 @@ export function PanelDesigner() {
     selectReferenceImage(false);
   }, [selectReferenceImage, setReferenceImage]);
 
+  // Points picked on the canvas to calibrate the reference image, null when not calibrating.
+  const [calibrationPoints, setCalibrationPoints] = React.useState<Vector2[] | null>(null);
+  const isCalibrating = calibrationPoints !== null;
+
+  const handleCancelReferenceCalibration = React.useCallback(() => {
+    setCalibrationPoints(null);
+  }, []);
+
+  const handleToggleReferenceCalibration = React.useCallback(() => {
+    if (isCalibrating) {
+      setCalibrationPoints(null);
+      return;
+    }
+    setPlacementType(null);
+    setCalibrationPoints([]);
+    // The drawer would cover the image the points are picked on.
+    if (isCompact) {
+      setShowRightPanel(false);
+    }
+  }, [isCalibrating, isCompact, setPlacementType, setShowRightPanel]);
+
+  const handlePickCalibrationPoint = React.useCallback((pointMm: Vector2) => {
+    setCalibrationPoints((current) => {
+      if (!current) {
+        return current;
+      }
+      // A third click starts a new pair, as a first point.
+      if (current.length !== 1) {
+        return [pointMm];
+      }
+      return getCalibrationDistanceMm(current[0], pointMm) < MIN_REFERENCE_CALIBRATION_DISTANCE_MM
+        ? current
+        : [current[0], pointMm];
+    });
+  }, []);
+
+  const handleApplyReferenceCalibration = React.useCallback(
+    (realDistanceMm: number) => {
+      if (!referenceImage || calibrationPoints?.length !== 2) {
+        return;
+      }
+      const calibrated = calibrateReferenceImage(
+        referenceImage,
+        calibrationPoints[0],
+        calibrationPoints[1],
+        realDistanceMm,
+      );
+      if (!calibrated) {
+        toast.error(t.referenceImage.calibrationInvalid);
+        return;
+      }
+      updateReferenceImage(calibrated);
+      setCalibrationPoints(null);
+    },
+    [calibrationPoints, referenceImage, t.referenceImage.calibrationInvalid, updateReferenceImage],
+  );
+
+  // Calibration only lasts while its image is there and selected (reset during render, not in an effect).
+  if (isCalibrating && (!referenceImage || !referenceImageSelected)) {
+    setCalibrationPoints(null);
+  }
+
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
@@ -477,6 +546,10 @@ export function PanelDesigner() {
         (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
 
       if (event.key === "Escape") {
+        if (isCalibrating) {
+          setCalibrationPoints(null);
+          return;
+        }
         setPlacementType(null);
         clearSelection();
         return;
@@ -517,6 +590,7 @@ export function PanelDesigner() {
     handleRemoveSelection,
     handleRemoveReferenceImage,
     handleUndoDeleteProject,
+    isCalibrating,
     referenceImage,
     referenceImageSelected,
     redo,
@@ -1039,6 +1113,8 @@ export function PanelDesigner() {
     onReferenceImageChange: handleReferenceImageChange,
     onImportReferenceImageClick: handleImportReferenceImageClick,
     onRemoveReferenceImage: handleRemoveReferenceImage,
+    isCalibratingReferenceImage: calibrationPoints !== null,
+    onToggleReferenceCalibration: handleToggleReferenceCalibration,
     onChangePosition: handleChangeElementPosition,
     onChangeRotation: handleChangeElementRotation,
     onChangeProperties: handleChangeElementProperties,
@@ -1165,6 +1241,8 @@ export function PanelDesigner() {
                     }}
                     onClearReferenceSelection={handleClearReferenceSelection}
                     onUpdateReferenceImage={handleReferenceImageChange}
+                    referenceCalibrationPoints={calibrationPoints}
+                    onPickCalibrationPoint={handlePickCalibrationPoint}
                     onSelectMountingHoles={() => {
                       handleSelectMountingHoles();
                       setRightPanelTab("properties");
@@ -1178,6 +1256,13 @@ export function PanelDesigner() {
                     onClearanceLineDragStart={handleClearanceDragStart}
                     onClearanceLineDragEnd={handleClearanceDragEnd}
                   />
+                  {calibrationPoints ? (
+                    <ReferenceCalibrationBar
+                      points={calibrationPoints}
+                      onApply={handleApplyReferenceCalibration}
+                      onCancel={handleCancelReferenceCalibration}
+                    />
+                  ) : null}
                 </div>
               ) : null}
               {viewMode !== "2d" ? (
