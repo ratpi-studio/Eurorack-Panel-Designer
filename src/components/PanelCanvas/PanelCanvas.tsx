@@ -56,6 +56,8 @@ interface PanelCanvasProps {
   onSelectReferenceImage: () => void;
   onClearReferenceSelection: () => void;
   onUpdateReferenceImage: (updates: Partial<ReferenceImage>) => void;
+  referenceCalibrationPoints: Vector2[] | null;
+  onPickCalibrationPoint: (pointMm: Vector2) => void;
   onSelectMountingHoles: () => void;
   onClearMountingHoleSelection: () => void;
   displayOptions: Pick<
@@ -97,6 +99,8 @@ export function PanelCanvas({
   onSelectReferenceImage,
   onClearReferenceSelection,
   onUpdateReferenceImage,
+  referenceCalibrationPoints,
+  onPickCalibrationPoint,
   onSelectMountingHoles,
   onClearMountingHoleSelection,
   displayOptions,
@@ -172,6 +176,8 @@ export function PanelCanvas({
     onSelectReferenceImage,
     onClearReferenceSelection,
     onUpdateReferenceImage,
+    referenceCalibrationPoints,
+    onPickCalibrationPoint,
     onSelectMountingHoles,
     onClearMountingHoleSelection,
     clearanceLines,
@@ -214,6 +220,17 @@ export function PanelCanvas({
     };
   }, [draftProperties, maybeSnap, panelSystem, placementType, pointerPanelPos]);
 
+  const referenceCalibration = React.useMemo(
+    () =>
+      referenceCalibrationPoints
+        ? {
+            points: referenceCalibrationPoints,
+            pointerMm: referenceCalibrationPoints.length === 1 ? pointerPanelPos : null,
+          }
+        : null,
+    [pointerPanelPos, referenceCalibrationPoints],
+  );
+
   useCanvasRender({
     canvasRef,
     canvasSize,
@@ -229,6 +246,7 @@ export function PanelCanvas({
     referenceImage,
     referenceImageElement,
     referenceImageSelected,
+    referenceCalibration,
     placementType,
   });
 

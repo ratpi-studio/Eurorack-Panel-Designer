@@ -81,6 +81,8 @@ interface PanelSceneDrawingOptions {
   panelSizeMm: Vector2;
   elements: PanelElement[];
   referenceImage?: { image: HTMLImageElement; info: ReferenceImage; selected: boolean } | null;
+  /** Points picked to calibrate the reference image, and the pointer while the second is picked. */
+  referenceCalibration?: ReferenceCalibrationOverlay | null;
   mountingHoles: MountingHole[];
   elementMountingHoles?: MountingHole[];
   mountingHolesSelected?: boolean;
@@ -105,6 +107,11 @@ interface PanelSceneDrawingOptions {
   showDimensions?: boolean;
   /** Editor-only outlines of the knobs, nuts and washers on the front of the panel. */
   showHardware?: boolean;
+}
+
+export interface ReferenceCalibrationOverlay {
+  points: Vector2[];
+  pointerMm: Vector2 | null;
 }
 
 const DIMENSION_FONT_SIZE_PX = 10;
@@ -142,6 +149,7 @@ export function drawPanelScene({
   showGhostDistances,
   showDimensions = false,
   showHardware = false,
+  referenceCalibration,
 }: PanelSceneDrawingOptions) {
   // The element being placed counts too, so it shows where it would crowd the others.
   const crowdedIds = showHardware
@@ -250,6 +258,79 @@ export function drawPanelScene({
       }
     }
   }
+
+  if (referenceCalibration) {
+    drawReferenceCalibration(context, transform, referenceCalibration, palette, fontFamily);
+  }
+}
+
+const CALIBRATION_COLOR = "#38bdf8";
+const CALIBRATION_POINT_RADIUS_PX = 5;
+const CALIBRATION_CROSS_PX = 9;
+
+/** The points picked on the reference image, and the distance between them as it stands. */
+function drawReferenceCalibration(
+  context: CanvasRenderingContext2D,
+  transform: CanvasTransform,
+  { points, pointerMm }: ReferenceCalibrationOverlay,
+  palette: PanelCanvasPalette,
+  fontFamily: string,
+) {
+  const [first, second] = points;
+  const end = second ?? pointerMm;
+  const pointsPx = points.map((point) => projectPanelPoint(point, transform));
+
+  context.save();
+  context.lineCap = "round";
+
+  if (first && end) {
+    const startPx = pointsPx[0];
+    const endPx = projectPanelPoint(end, transform);
+    // A dark halo under the line keeps it readable on light and dark images alike.
+    context.strokeStyle = palette.dimensionHalo;
+    context.lineWidth = 4;
+    context.beginPath();
+    context.moveTo(startPx.x, startPx.y);
+    context.lineTo(endPx.x, endPx.y);
+    context.stroke();
+    context.strokeStyle = CALIBRATION_COLOR;
+    context.lineWidth = 1.5;
+    context.setLineDash(second ? [] : [6, 4]);
+    context.stroke();
+    context.setLineDash([]);
+
+    const label = `${formatDimensionMm(Math.hypot(end.x - first.x, end.y - first.y))} mm`;
+    context.font = `${DIMENSION_FONT_SIZE_PX + 1}px ${fontFamily}`;
+    context.textAlign = "center";
+    context.textBaseline = "bottom";
+    const labelX = (startPx.x + endPx.x) / 2;
+    const labelY = (startPx.y + endPx.y) / 2 - 6;
+    context.lineWidth = 3;
+    context.lineJoin = "round";
+    context.strokeStyle = palette.dimensionHalo;
+    context.strokeText(label, labelX, labelY);
+    context.fillStyle = palette.dimensionText;
+    context.fillText(label, labelX, labelY);
+  }
+
+  pointsPx.forEach((pointPx) => {
+    context.strokeStyle = palette.dimensionHalo;
+    context.lineWidth = 3;
+    context.beginPath();
+    context.moveTo(pointPx.x - CALIBRATION_CROSS_PX, pointPx.y);
+    context.lineTo(pointPx.x + CALIBRATION_CROSS_PX, pointPx.y);
+    context.moveTo(pointPx.x, pointPx.y - CALIBRATION_CROSS_PX);
+    context.lineTo(pointPx.x, pointPx.y + CALIBRATION_CROSS_PX);
+    context.stroke();
+    context.strokeStyle = CALIBRATION_COLOR;
+    context.lineWidth = 1.5;
+    context.stroke();
+    context.beginPath();
+    context.arc(pointPx.x, pointPx.y, CALIBRATION_POINT_RADIUS_PX, 0, Math.PI * 2);
+    context.stroke();
+  });
+
+  context.restore();
 }
 
 function drawPanelArea(

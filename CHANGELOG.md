@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.0 - 2026-09-30
+
+- Reference images can be calibrated from two points, like the canvases of Fusion: select the image, click the ruler button in its properties, click the two ends of a length you know on the image (the holes of a panel you measured, a ruler in the photo), then enter that length in millimeters. The image scales to it, keeping its proportions and its rotation, and the first point stays where it was. Clicking again picks another pair of points, and Esc cancels.
+
 ## 0.16.0 - 2026-09-26
 
 - New Kosmo format, the large format started by Look Mum No Computer, picked in the Format bar next to 1U to 4U. Kosmo panels are 200 mm high, and their width comes in steps of 2.5 cm, set in centimeters or millimeters and cut at the full width. Their mounting holes sit 3 mm from the top, the bottom and each side, one column per side: Kosmo widths leave the 5.08 mm grid of Eurorack rails, and Kosmo cases hold panels with sliding nuts or wood screws anywhere along the rails. A slot, if you pick one, runs inward from there so it stays off the edge.

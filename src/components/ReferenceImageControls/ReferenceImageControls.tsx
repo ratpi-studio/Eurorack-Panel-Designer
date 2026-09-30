@@ -1,4 +1,4 @@
-import { ImageUp, Trash2 } from "lucide-react";
+import { ImageUp, Ruler, Trash2 } from "lucide-react";
 import React from "react";
 
 import { IconButton } from "@components/IconButton/IconButton";
@@ -12,6 +12,8 @@ interface ReferenceImageControlsProps {
   onChange: (updates: Partial<ReferenceImage>) => void;
   onReplace: () => void;
   onRemove: () => void;
+  calibrating: boolean;
+  onToggleCalibration: () => void;
 }
 
 function sanitizeNumber(value: string, fallback: number): number {
@@ -24,6 +26,8 @@ export function ReferenceImageControls({
   onChange,
   onReplace,
   onRemove,
+  calibrating,
+  onToggleCalibration,
 }: ReferenceImageControlsProps) {
   const t = useI18n();
 
@@ -32,6 +36,12 @@ export function ReferenceImageControls({
       <div className={styles.header}>
         <div className={styles.title}>{t.referenceImage.title}</div>
         <div className={styles.actions}>
+          <IconButton
+            label={t.referenceImage.calibrate}
+            icon={Ruler}
+            aria-pressed={calibrating}
+            onClick={onToggleCalibration}
+          />
           <IconButton label={t.referenceImage.replace} icon={ImageUp} onClick={onReplace} />
           <IconButton
             label={t.referenceImage.remove}

@@ -110,6 +110,8 @@ interface PropertiesPanelProps {
   onReferenceImageChange: (updates: Partial<ReferenceImage>) => void;
   onImportReferenceImageClick: () => void;
   onRemoveReferenceImage: () => void;
+  isCalibratingReferenceImage: boolean;
+  onToggleReferenceCalibration: () => void;
   onChangePosition: (positionMm: Vector2) => void;
   onChangeRotation: (rotationDeg: number) => void;
   onChangeProperties: (properties: PanelElement["properties"]) => void;
@@ -394,6 +396,8 @@ function PropertiesTab({
   onReferenceImageChange,
   onImportReferenceImageClick,
   onRemoveReferenceImage,
+  isCalibratingReferenceImage,
+  onToggleReferenceCalibration,
   onChangePosition,
   onChangeRotation,
   onChangeProperties,
@@ -440,6 +444,8 @@ function PropertiesTab({
         onChange={onReferenceImageChange}
         onReplace={onImportReferenceImageClick}
         onRemove={onRemoveReferenceImage}
+        calibrating={isCalibratingReferenceImage}
+        onToggleCalibration={onToggleReferenceCalibration}
       />
     );
   }
