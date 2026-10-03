@@ -33,6 +33,10 @@ import { ElementProperties } from "@components/ElementProperties/ElementProperti
 import { IconButton } from "@components/IconButton/IconButton";
 import { MountingHoleSettings } from "@components/MountingHoleSettings/MountingHoleSettings";
 import { ReferenceImageControls } from "@components/ReferenceImageControls/ReferenceImageControls";
+import {
+  SelectionTools,
+  type SelectionToolsProps,
+} from "@components/SelectionTools/SelectionTools";
 import { iconLabelProps } from "@components/Tooltip/TooltipLayer";
 import { describeComponents } from "@lib/componentList";
 import { findCrowdedElements } from "@lib/elementParts";
@@ -120,6 +124,8 @@ interface PropertiesPanelProps {
   onChangeElementHoleConfig: (updates: Partial<ElementMountingHoleConfig>) => void;
   onChangeElementHoleRotation: (rotationDeg: number) => void;
   onToggleElementHoleEnabled: (enabled: boolean) => void;
+  /** Copy, paste, mirror and patterns of the selection. */
+  selectionTools: Omit<SelectionToolsProps, "selectionCount" | "panelCenter">;
 }
 
 interface RightPanelProps {
@@ -406,19 +412,24 @@ function PropertiesTab({
   onChangeElementHoleConfig,
   onChangeElementHoleRotation,
   onToggleElementHoleEnabled,
+  selectionTools,
 }: PropertiesPanelProps) {
   const typeLabels = useElementTypeLabels();
+  const components = React.useMemo(
+    () => describeComponents(panelModel.elements, typeLabels),
+    [panelModel.elements, typeLabels],
+  );
   // The name the components list shows, so both panels call the element the same way.
   const elementName = React.useMemo(() => {
     if (!selectedElement) {
       return null;
     }
-    return (
-      describeComponents(panelModel.elements, typeLabels).find(
-        (item) => item.id === selectedElement.id,
-      )?.name ?? null
-    );
-  }, [panelModel.elements, selectedElement, typeLabels]);
+    return components.find((item) => item.id === selectedElement.id)?.name ?? null;
+  }, [components, selectedElement]);
+  const panelCenter = React.useMemo(
+    () => ({ x: panelModel.dimensions.widthMm / 2, y: panelModel.dimensions.heightMm / 2 }),
+    [panelModel.dimensions.heightMm, panelModel.dimensions.widthMm],
+  );
   // Hidden elements are left out of the panel, so they crowd nothing.
   const isCrowded = React.useMemo(
     () =>
@@ -452,6 +463,13 @@ function PropertiesTab({
 
   return (
     <div className={styles.sectionStack}>
+      {selectedElementCount > 0 ? (
+        <SelectionTools
+          {...selectionTools}
+          selectionCount={selectedElementCount}
+          panelCenter={panelCenter}
+        />
+      ) : null}
       <ElementProperties
         element={elementForProperties}
         name={elementName}

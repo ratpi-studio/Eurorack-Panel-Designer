@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.18.0 - 2026-10-03
+
+- Copy, cut and paste placed elements with `Ctrl/Cmd + C`, `X` and `V`, or duplicate them with `Ctrl/Cmd + D`. Each paste lands a little further down and to the right (one grid step when the grid snaps, 5 mm otherwise), and the copies stay on hand when you open another design, so you can carry elements from one panel to the next. Copies come unlocked.
+- New **Mirror**, **Rectangular pattern** and **Circular pattern** commands, which work like Fusion's: they apply to the selection, show their result on the canvas as you change them, and only change the design on **OK** (or Enter), in one step to undo. Esc or **Cancel** leaves the design as it was.
+  - **Mirror**: click the panel where the mirror line goes, vertical or horizontal. It snaps to the middle of the panel and to the centers of the other elements, and can be dragged afterward. Keep the original to add a mirrored copy, or not to move the selection across. Slots, rectangles and triangles turn into their mirror image, and the holes around an element follow; texts and SVG patterns keep reading the right way and only move.
+  - **Rectangular pattern**: drag the two arrows on the canvas to set the spacing (snapped to the grid, 10.16 mm, 2 HP, across by default), and set the number of columns and rows.
+  - **Circular pattern**: click the panel to place the center (it snaps to other elements, for a ring of LEDs around a knob), drag the arrow to set the diameter, and set how many elements, over what angle, turned with the circle or not.
+- Right-click an element on the canvas for a menu with cut, copy, paste, duplicate, the three commands, and delete. A right drag still pans the view.
+- The **Copy, mirror & pattern** box sits at the top of the properties of a selection.
+
 ## 0.17.0 - 2026-09-30
 
 - Reference images can be calibrated from two points, like the canvases of Fusion: select the image, click the ruler button in its properties, click the two ends of a length you know on the image (the holes of a panel you measured, a ruler in the photo), then enter that length in millimeters. The image scales to it, keeping its proportions and its rotation, and the first point stays where it was. Clicking again picks another pair of points, and Esc cancels.

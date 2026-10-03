@@ -179,6 +179,50 @@ interface Translations {
     knobOptions: Record<KnobId, string>;
     crowdedHardware: string;
   };
+  selectionTools: {
+    title: string;
+    copy: string;
+    cut: string;
+    paste: string;
+    duplicate: string;
+    delete: string;
+    copyKeys: string;
+    cutKeys: string;
+    pasteKeys: string;
+    duplicateKeys: string;
+    deleteKeys: string;
+    applyKeys: string;
+    mirror: string;
+    rectangular: string;
+    circular: string;
+    apply: string;
+    cancel: string;
+    middleOfPanel: string;
+    mirrorPickHint: string;
+    mirrorDragHint: string;
+    lineOrientation: string;
+    lineVertical: string;
+    lineHorizontal: string;
+    linePositionX: string;
+    linePositionY: string;
+    keepOriginal: string;
+    rectangularHint: string;
+    columns: string;
+    rows: string;
+    spacingX: string;
+    spacingY: string;
+    circularPickHint: string;
+    circularDragHint: string;
+    centerX: string;
+    centerY: string;
+    count: string;
+    diameter: string;
+    sweep: string;
+    rotateCopies: string;
+    tooMany: (max: number) => string;
+    copyCount: (count: number) => string;
+    copied: (count: number) => string;
+  };
   referenceImage: {
     title: string;
     positionX: string;
@@ -351,6 +395,12 @@ interface Translations {
     undoShortcut: string;
     redo: string;
     redoShortcut: string;
+    copyPaste: string;
+    copyPasteShortcut: string;
+    duplicate: string;
+    duplicateShortcut: string;
+    rightClick: string;
+    contextMenu: string;
   };
 }
 
@@ -454,6 +504,55 @@ export const enUS: Translations = {
     offsetLabel: "Distance from edge (mm)",
     defaultRotationLabel: "Default rotation (°)",
     rotationLabel: "Element rotation",
+  },
+  selectionTools: {
+    title: "Copy, mirror & pattern",
+    copy: "Copy",
+    cut: "Cut",
+    paste: "Paste",
+    duplicate: "Duplicate",
+    delete: "Delete",
+    copyKeys: "Ctrl/Cmd + C",
+    cutKeys: "Ctrl/Cmd + X",
+    pasteKeys: "Ctrl/Cmd + V",
+    duplicateKeys: "Ctrl/Cmd + D",
+    deleteKeys: "Delete",
+    applyKeys: "Enter",
+    mirror: "Mirror",
+    rectangular: "Rectangular pattern",
+    circular: "Circular pattern",
+    apply: "OK",
+    cancel: "Cancel",
+    middleOfPanel: "Middle of the panel",
+    mirrorPickHint:
+      "Click the panel where the mirror line goes. It snaps to the middle of the panel and to the centers of the other elements.",
+    mirrorDragHint: "Drag the line on the panel to move it. The result shows as you go.",
+    lineOrientation: "Mirror line",
+    lineVertical: "Vertical (left ↔ right)",
+    lineHorizontal: "Horizontal (top ↔ bottom)",
+    linePositionX: "Line X (mm)",
+    linePositionY: "Line Y (mm)",
+    keepOriginal: "Keep the original (off: move it across)",
+    rectangularHint:
+      "Drag the two arrows on the panel to set the spacing; 5.08 mm is 1 HP. The selection stays in the first cell.",
+    columns: "Columns",
+    rows: "Rows",
+    spacingX: "Spacing X (mm)",
+    spacingY: "Spacing Y (mm)",
+    circularPickHint:
+      "Click the panel to place the center of the circle. It snaps to the centers of the other elements, such as a knob.",
+    circularDragHint:
+      "Drag the center, or the arrow to change the diameter. 360° spaces the elements evenly; less spreads them over an arc, clockwise.",
+    centerX: "Center X (mm)",
+    centerY: "Center Y (mm)",
+    count: "Count",
+    diameter: "Diameter (mm)",
+    sweep: "Angle (°)",
+    rotateCopies: "Turn copies to follow the circle",
+    tooMany: (max: number) => `Up to ${max} copies at once.`,
+    copyCount: (count: number) =>
+      count === 0 ? "No copy" : count === 1 ? "1 copy" : `${count} copies`,
+    copied: (count: number) => (count === 1 ? "1 element copied" : `${count} elements copied`),
   },
   referenceImage: {
     title: "Reference image",
@@ -576,7 +675,7 @@ export const enUS: Translations = {
     empty: "Select an element to view its properties.",
     multiSelection: (count: number) => `${count} elements selected`,
     multiSelectionHint:
-      "Multi-selection is active. Drag elements on the canvas to move the group or press Delete to remove it.",
+      "Multi-selection is active. Drag elements on the canvas to move the group, copy, mirror or repeat it below, or press Delete to remove it.",
     posX: "Position X (mm)",
     posY: "Position Y (mm)",
     rotation: "Rotation (°)",
@@ -835,5 +934,11 @@ export const enUS: Translations = {
     undoShortcut: "Ctrl/Cmd + Z",
     redo: "Redo",
     redoShortcut: "Ctrl/Cmd + Shift + Z",
+    copyPaste: "Copy, cut, paste",
+    copyPasteShortcut: "Ctrl/Cmd + C, X, V",
+    duplicate: "Duplicate",
+    duplicateShortcut: "Ctrl/Cmd + D",
+    rightClick: "Right click",
+    contextMenu: "Copy, mirror, pattern",
   },
 };

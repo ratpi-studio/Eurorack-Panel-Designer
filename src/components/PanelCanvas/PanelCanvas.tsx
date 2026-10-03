@@ -1,5 +1,7 @@
 import React from "react";
 
+import type { PatternCanvasBinding } from "@components/PanelDesigner/usePatternCommand";
+import type { PatternOverlay } from "@lib/canvas/patternOverlay";
 import { computeCanvasTransform } from "@lib/canvas/transform";
 import {
   PanelElementType,
@@ -14,12 +16,18 @@ import type { ReferenceImage } from "@lib/referenceImage";
 import { type ClearanceLines } from "@lib/clearance";
 import { createPanelElement } from "@lib/elements";
 import { snapPointToGrid } from "@lib/grid";
-import { useCanvasPointer } from "./useCanvasPointer";
+import {
+  useCanvasPointer,
+  type CanvasContextMenuRequest,
+  type CanvasPatternPointer,
+} from "./useCanvasPointer";
 import { useCanvasRender } from "./useCanvasRender";
 import { useCanvasSize } from "./useCanvasSize";
 import * as styles from "./PanelCanvas.css";
 
 const CANVAS_PADDING_PX = 48;
+// How close, in pixels, a reference must come to an element's center to snap to it.
+const PATTERN_SNAP_PX = 10;
 
 type DraftPropertiesState = Partial<{
   [T in PanelElementType]: PanelElement["properties"];
@@ -71,6 +79,9 @@ interface PanelCanvasProps {
   onClearanceLineChange: (line: "top" | "bottom", positionMm: number) => void;
   onClearanceLineDragStart: () => void;
   onClearanceLineDragEnd: () => void;
+  /** A running mirror or pattern command, previewed on the canvas. */
+  pattern: PatternCanvasBinding | null;
+  onRequestContextMenu: (request: CanvasContextMenuRequest) => void;
 }
 
 export function PanelCanvas({
@@ -112,6 +123,8 @@ export function PanelCanvas({
   onClearanceLineChange,
   onClearanceLineDragStart,
   onClearanceLineDragEnd,
+  pattern,
+  onRequestContextMenu,
 }: PanelCanvasProps) {
   const internalCanvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const canvasRef = forwardedCanvasRef ?? internalCanvasRef;
@@ -132,6 +145,24 @@ export function PanelCanvas({
     [canvasSize, model.dimensions.heightMm, model.dimensions.widthMm, pan, zoom],
   );
 
+  const patternSnap = React.useCallback(
+    (grid: boolean) => ({ thresholdMm: PATTERN_SNAP_PX / Math.max(transform.scale, 0.01), grid }),
+    [transform.scale],
+  );
+  const patternPointer = React.useMemo<CanvasPatternPointer | null>(
+    () =>
+      pattern
+        ? {
+            guides: pattern.guides,
+            awaitingReference: pattern.awaitingReference,
+            onPick: (pointMm, snap) => pattern.pick(pointMm, patternSnap(snap)),
+            onDragHandle: (handle, pointMm, snap) =>
+              pattern.dragHandle(handle, pointMm, patternSnap(snap)),
+          }
+        : null,
+    [pattern, patternSnap],
+  );
+
   const {
     selectionOverlay,
     pointerPanelPos,
@@ -144,6 +175,7 @@ export function PanelCanvas({
     handlePointerUp,
     handlePointerLeave,
     handleContextMenu,
+    activePatternHandle,
   } = useCanvasPointer({
     canvasRef,
     transform,
@@ -184,6 +216,8 @@ export function PanelCanvas({
     onClearanceLineChange,
     onClearanceLineDragStart,
     onClearanceLineDragEnd,
+    pattern: patternPointer,
+    onRequestContextMenu,
   });
 
   const maybeSnap = React.useCallback(
@@ -231,11 +265,43 @@ export function PanelCanvas({
     [pointerPanelPos, referenceCalibrationPoints],
   );
 
+  // While a command runs, the canvas shows the design as it would be once applied.
+  const renderModel = React.useMemo(
+    () => (pattern ? { ...model, elements: pattern.previewElements } : model),
+    [model, pattern],
+  );
+  const patternOverlay = React.useMemo<PatternOverlay | null>(() => {
+    if (!pattern) {
+      return null;
+    }
+    const candidate =
+      pattern.awaitingReference && pointerPanelPos
+        ? pattern.getCandidate(
+            pointerPanelPos,
+            patternSnap(displayOptions.snapToGrid && !snapOverridden),
+          )
+        : null;
+    return {
+      guides: pattern.guides,
+      candidate,
+      copyIds: pattern.copyIds,
+      activeHandle: activePatternHandle,
+    };
+  }, [
+    activePatternHandle,
+    displayOptions.snapToGrid,
+    pattern,
+    patternSnap,
+    pointerPanelPos,
+    snapOverridden,
+  ]);
+
   useCanvasRender({
     canvasRef,
     canvasSize,
     transform,
-    model,
+    model: renderModel,
+    patternOverlay,
     mountingHoles,
     elementMountingHoles,
     displayOptions,

@@ -13,6 +13,7 @@ import {
 import type { ReferenceImage } from "@lib/referenceImage";
 import { themeValues } from "@styles/theme.css";
 import { type CanvasTransform } from "@lib/canvas/transform";
+import type { PatternOverlay } from "@lib/canvas/patternOverlay";
 import { collectTextFontIds } from "@lib/designLayer";
 import { getVisibleElements } from "@lib/elementVisibility";
 import { buildSvgArtworkDataUrl, isSvgArtworkElement } from "@lib/svgArtwork";
@@ -41,6 +42,7 @@ interface CanvasRenderOptions {
   referenceImageSelected: boolean;
   referenceCalibration: ReferenceCalibrationOverlay | null;
   placementType: PanelElementType | null;
+  patternOverlay: PatternOverlay | null;
 }
 
 export function useCanvasRender({
@@ -60,6 +62,7 @@ export function useCanvasRender({
   referenceImageSelected,
   referenceCalibration,
   placementType,
+  patternOverlay,
 }: CanvasRenderOptions) {
   // Hidden elements are not drawn, nor used to clip the design or to measure distances.
   const visibleElements = React.useMemo(() => getVisibleElements(model.elements), [model.elements]);
@@ -235,6 +238,7 @@ export function useCanvasRender({
         showGhostDistances: Boolean(ghostElement && placementType),
         showDimensions: model.options.showDimensions,
         showHardware: model.options.showHardware,
+        patternOverlay,
       });
 
       if (typeof window !== "undefined") {
@@ -279,5 +283,6 @@ export function useCanvasRender({
     placementType,
     svgArtworkImageMap,
     panelSurfacePath,
+    patternOverlay,
   ]);
 }
