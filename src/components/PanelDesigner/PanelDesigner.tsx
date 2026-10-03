@@ -1,7 +1,20 @@
-import { Check, Download, ExternalLink, PanelLeft, PanelRight, X } from "lucide-react";
+import {
+  Check,
+  ClipboardPaste,
+  Copy,
+  CopyPlus,
+  Download,
+  ExternalLink,
+  PanelLeft,
+  PanelRight,
+  Scissors,
+  Trash2,
+  X,
+} from "lucide-react";
 import React from "react";
 
 import { PanelCanvas } from "@components/PanelCanvas/PanelCanvas";
+import type { CanvasContextMenuRequest } from "@components/PanelCanvas/useCanvasPointer";
 import { LeftPanel } from "@components/PanelDesigner/LeftPanel";
 import { PanelHeader } from "@components/PanelDesigner/PanelHeader";
 import { RightPanel } from "@components/PanelDesigner/RightPanel";
@@ -11,6 +24,16 @@ import { ReferenceCalibrationBar } from "@components/ReferenceCalibrationBar/Ref
 import { SphereLoader } from "@components/SphereLoader/SphereLoader";
 import { SvgArtworkModal } from "@components/SvgArtworkModal/SvgArtworkModal";
 import { useResponsivePanels } from "@components/PanelDesigner/useResponsivePanels";
+import {
+  hasCopiedElements,
+  useElementClipboard,
+} from "@components/PanelDesigner/useElementClipboard";
+import { usePatternCommand } from "@components/PanelDesigner/usePatternCommand";
+import {
+  CanvasContextMenu,
+  type ContextMenuItem,
+} from "@components/CanvasContextMenu/CanvasContextMenu";
+import { PATTERN_TOOL_ICONS } from "@components/SelectionTools/SelectionTools";
 import { useRightPanelTab } from "@components/PanelDesigner/useRightPanelTab";
 import { useViewMode } from "@components/PanelDesigner/useViewMode";
 import { useI18n } from "@i18n/I18nContext";
@@ -42,6 +65,7 @@ import {
   type ReferenceImage,
 } from "@lib/referenceImage";
 import { computeClearanceLines, applyClearanceLinePosition } from "@lib/clearance";
+import { getCircularDiameterMm } from "@lib/patternTool";
 import { type ExportFormat } from "@lib/preferences";
 import { usePanelStore } from "@store/panelStore";
 import { usePanelHistory } from "@store/usePanelHistory";
@@ -167,6 +191,51 @@ export function PanelDesigner() {
     removeElement,
     removeElements,
   } = usePanelHistory();
+
+  const { canPaste, copySelection, cutSelection, paste, duplicateSelection } = useElementClipboard({
+    panelModel,
+    selectedElementIds,
+    updateModel,
+    removeElements,
+  });
+
+  const patternCommand = usePatternCommand({ panelModel, selectedElementIds, updateModel });
+  const { tool: patternTool, cancel: cancelPattern, apply: applyPattern } = patternCommand;
+  // Placing an element from the palette ends the command (reset during render, not in an effect).
+  if (patternTool && placementType) {
+    cancelPattern();
+  }
+  const startPattern = patternCommand.start;
+  const handleStartPattern = React.useCallback(
+    (kind: Parameters<typeof startPattern>[0]) => {
+      setPlacementType(null);
+      startPattern(kind);
+      setRightPanelTab("properties");
+      if (isCompact) {
+        setShowRightPanel(true);
+      }
+    },
+    [isCompact, setPlacementType, setRightPanelTab, setShowRightPanel, startPattern],
+  );
+  const circularDiameterMm = React.useMemo(() => {
+    if (patternTool?.kind !== "circular") {
+      return null;
+    }
+    const ids = new Set(selectedElementIds);
+    return getCircularDiameterMm(
+      panelModel.elements.filter((element) => ids.has(element.id)),
+      patternTool,
+    );
+  }, [panelModel.elements, patternTool, selectedElementIds]);
+
+  const [contextMenu, setContextMenu] = React.useState<{ x: number; y: number } | null>(null);
+  const closeContextMenu = React.useCallback(() => setContextMenu(null), []);
+
+  const handleCopySelection = React.useCallback(() => {
+    if (copySelection()) {
+      toast(t.selectionTools.copied(selectedElementIds.length), { id: "selection-copied" });
+    }
+  }, [copySelection, selectedElementIds.length, t.selectionTools]);
 
   const panelSystem = panelModel.format.system;
   const mountingHoles = React.useMemo(
@@ -550,6 +619,10 @@ export function PanelDesigner() {
           setCalibrationPoints(null);
           return;
         }
+        if (patternTool) {
+          cancelPattern();
+          return;
+        }
         setPlacementType(null);
         clearSelection();
         return;
@@ -566,6 +639,44 @@ export function PanelDesigner() {
           handleRemoveSelection();
         }
         return;
+      }
+
+      // Enter applies the running command, as OK does (inside its fields, the form submits).
+      if (event.key === "Enter" && patternTool && !isEditingField) {
+        const isButton = target?.tagName === "BUTTON" || target?.tagName === "SELECT";
+        if (!isButton) {
+          event.preventDefault();
+          applyPattern();
+        }
+        return;
+      }
+
+      const isShortcut = (event.metaKey || event.ctrlKey) && !event.altKey;
+      // Copying text selected on the page stays the browser's.
+      const hasTextSelection = Boolean(window.getSelection()?.toString());
+      if (isShortcut && !isEditingField && !hasTextSelection) {
+        const key = event.key.toLowerCase();
+        if (key === "c" && selectedElementIds.length > 0) {
+          event.preventDefault();
+          handleCopySelection();
+          return;
+        }
+        if (key === "x" && selectedElementIds.length > 0) {
+          event.preventDefault();
+          cutSelection();
+          return;
+        }
+        if (key === "v" && hasCopiedElements()) {
+          event.preventDefault();
+          setPlacementType(null);
+          paste();
+          return;
+        }
+        if (key === "d" && selectedElementIds.length > 0) {
+          event.preventDefault();
+          duplicateSelection();
+          return;
+        }
       }
 
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
@@ -586,8 +697,15 @@ export function PanelDesigner() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [
+    applyPattern,
+    cancelPattern,
+    patternTool,
     clearSelection,
+    cutSelection,
+    duplicateSelection,
+    handleCopySelection,
     handleRemoveSelection,
+    paste,
     handleRemoveReferenceImage,
     handleUndoDeleteProject,
     isCalibrating,
@@ -598,6 +716,73 @@ export function PanelDesigner() {
     setPlacementType,
     undo,
   ]);
+
+  const handleRequestContextMenu = React.useCallback(
+    ({ clientX, clientY, elementId }: CanvasContextMenuRequest) => {
+      // Right-clicking an element outside the selection selects it, as in most editors.
+      if (elementId && !selectedElementIds.includes(elementId)) {
+        setSelectedElementId(elementId);
+        revealProperties();
+      }
+      if (!elementId && !selectedElementIds.length && !hasCopiedElements()) {
+        return;
+      }
+      setContextMenu({ x: clientX, y: clientY });
+    },
+    [revealProperties, selectedElementIds, setSelectedElementId],
+  );
+
+  const hasSelection = selectedElementIds.length > 0;
+  const contextMenuGroups: ContextMenuItem[][] = [
+    [
+      {
+        label: t.selectionTools.cut,
+        icon: Scissors,
+        shortcut: t.selectionTools.cutKeys,
+        disabled: !hasSelection,
+        onSelect: cutSelection,
+      },
+      {
+        label: t.selectionTools.copy,
+        icon: Copy,
+        shortcut: t.selectionTools.copyKeys,
+        disabled: !hasSelection,
+        onSelect: handleCopySelection,
+      },
+      {
+        label: t.selectionTools.paste,
+        icon: ClipboardPaste,
+        shortcut: t.selectionTools.pasteKeys,
+        disabled: !canPaste,
+        onSelect: paste,
+      },
+      {
+        label: t.selectionTools.duplicate,
+        icon: CopyPlus,
+        shortcut: t.selectionTools.duplicateKeys,
+        disabled: !hasSelection,
+        onSelect: duplicateSelection,
+      },
+    ],
+    hasSelection
+      ? (["mirror", "rectangular", "circular"] as const).map((kind) => ({
+          label: t.selectionTools[kind],
+          icon: PATTERN_TOOL_ICONS[kind],
+          onSelect: () => handleStartPattern(kind),
+        }))
+      : [],
+    hasSelection
+      ? [
+          {
+            label: t.selectionTools.delete,
+            icon: Trash2,
+            shortcut: t.selectionTools.deleteKeys,
+            danger: true,
+            onSelect: handleRemoveSelection,
+          },
+        ]
+      : [],
+  ];
 
   const selectedElement = React.useMemo(
     () => panelModel.elements.find((element) => element.id === selectedElementId) ?? null,
@@ -1102,6 +1287,7 @@ export function PanelDesigner() {
     elementForProperties,
     selectedElement,
     selectedElementCount: selectedElementIds.length,
+    selectedElementIds,
     placementType,
     snapEnabled: panelModel.options.snapToGrid,
     onDisplayOptionsChange: handleDisplayOptionsChange,
@@ -1123,6 +1309,20 @@ export function PanelDesigner() {
     onChangeElementHoleConfig: handleElementHoleConfigChange,
     onChangeElementHoleRotation: handleSelectedElementHoleRotationChange,
     onToggleElementHoleEnabled: handleToggleElementHoleEnabled,
+    selectionTools: {
+      canPaste,
+      tool: patternTool,
+      circularDiameterMm,
+      problem: patternCommand.problem,
+      onCopy: handleCopySelection,
+      onCut: cutSelection,
+      onPaste: paste,
+      onDuplicate: duplicateSelection,
+      onStart: handleStartPattern,
+      onChange: patternCommand.change,
+      onApply: applyPattern,
+      onCancel: cancelPattern,
+    },
   };
 
   return (
@@ -1255,7 +1455,17 @@ export function PanelDesigner() {
                     onClearanceLineChange={handleClearanceLineChange}
                     onClearanceLineDragStart={handleClearanceDragStart}
                     onClearanceLineDragEnd={handleClearanceDragEnd}
+                    pattern={patternCommand.canvas}
+                    onRequestContextMenu={handleRequestContextMenu}
                   />
+                  {contextMenu ? (
+                    <CanvasContextMenu
+                      x={contextMenu.x}
+                      y={contextMenu.y}
+                      groups={contextMenuGroups}
+                      onClose={closeContextMenu}
+                    />
+                  ) : null}
                   {calibrationPoints ? (
                     <ReferenceCalibrationBar
                       points={calibrationPoints}
@@ -1296,6 +1506,12 @@ export function PanelDesigner() {
               <span className={styles.shortcutLabel}>{t.shortcuts.undo}</span>
               <span className={styles.key}>{t.shortcuts.redoShortcut}</span>
               <span className={styles.shortcutLabel}>{t.shortcuts.redo}</span>
+              <span className={styles.key}>{t.shortcuts.copyPasteShortcut}</span>
+              <span className={styles.shortcutLabel}>{t.shortcuts.copyPaste}</span>
+              <span className={styles.key}>{t.shortcuts.duplicateShortcut}</span>
+              <span className={styles.shortcutLabel}>{t.shortcuts.duplicate}</span>
+              <span className={styles.key}>{t.shortcuts.rightClick}</span>
+              <span className={styles.shortcutLabel}>{t.shortcuts.contextMenu}</span>
             </div>
           </div>
           {rightVisible ? (

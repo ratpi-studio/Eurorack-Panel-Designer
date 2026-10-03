@@ -16,7 +16,7 @@ import { DEFAULT_KNOB_ID, getDefaultPartId, getPart, type PartElementType } from
 import { DEFAULT_SVG_ARTWORK_COLOR } from "@lib/svgArtwork";
 import { DEFAULT_TEXT_FONT_ID } from "@lib/text/textFonts";
 
-function generateElementId(): string {
+export function generateElementId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
   }

@@ -7,6 +7,7 @@ import {
   getElementFrameRotationDeg,
   resizeElementFromHandle,
 } from "@lib/canvas/elementHandles";
+import { findPatternHandleAtPoint } from "@lib/canvas/patternOverlay";
 import { projectPanelPoint, screenPointToPanel, type CanvasTransform } from "@lib/canvas/transform";
 import { type ClearanceLines } from "@lib/clearance";
 import { snapPointToGrid } from "@lib/grid";
@@ -19,6 +20,7 @@ import {
   type SvgArtworkElementProperties,
   type Vector2,
 } from "@lib/panelTypes";
+import type { PatternGuides, PatternHandleId } from "@lib/patternTool";
 import {
   getReferenceImageControlPositions,
   getReferenceImageHandleDirection,
@@ -110,7 +112,25 @@ type PointerMode =
   | "reference-rotate"
   | "svg-artwork-resize"
   | "svg-artwork-rotate"
-  | "element-resize";
+  | "element-resize"
+  | "pattern-handle";
+
+/** A running mirror or pattern command, as the pointer drives it. */
+export interface CanvasPatternPointer {
+  guides: PatternGuides;
+  /** Clicks place the command's reference instead of selecting. */
+  awaitingReference: boolean;
+  onPick: (pointMm: Vector2, snap: boolean) => void;
+  onDragHandle: (handle: PatternHandleId, pointMm: Vector2, snap: boolean) => void;
+}
+
+/** A right click that did not drag, to open the context menu there. */
+export interface CanvasContextMenuRequest {
+  clientX: number;
+  clientY: number;
+  /** The element under the pointer, if any. */
+  elementId: string | null;
+}
 
 interface SelectionOverlay {
   left: number;
@@ -131,6 +151,8 @@ interface CanvasPointerResult {
   handlePointerUp: (event: React.PointerEvent<HTMLCanvasElement>) => void;
   handlePointerLeave: (event: React.PointerEvent<HTMLCanvasElement>) => void;
   handleContextMenu: (event: React.MouseEvent<HTMLCanvasElement>) => void;
+  /** The pattern handle under the pointer or being dragged. */
+  activePatternHandle: PatternHandleId | null;
 }
 
 interface CanvasPointerOptions {
@@ -181,7 +203,12 @@ interface CanvasPointerOptions {
   onClearanceLineChange: (line: "top" | "bottom", positionMm: number) => void;
   onClearanceLineDragStart: () => void;
   onClearanceLineDragEnd: () => void;
+  pattern: CanvasPatternPointer | null;
+  onRequestContextMenu: (request: CanvasContextMenuRequest) => void;
 }
+
+// A right click that moves less than this opens the menu; more pans the view.
+const CONTEXT_MENU_MAX_MOVE_PX = 4;
 
 function cloneReferenceImage(image: ReferenceImage): ReferenceImage {
   return {
@@ -316,6 +343,8 @@ export function useCanvasPointer({
   onClearanceLineChange,
   onClearanceLineDragStart,
   onClearanceLineDragEnd,
+  pattern,
+  onRequestContextMenu,
 }: CanvasPointerOptions): CanvasPointerResult {
   const panRef = React.useRef<Vector2>(pan);
   const pointerStartRef = React.useRef<Vector2 | null>(null);
@@ -325,6 +354,11 @@ export function useCanvasPointer({
   const elementResizeRef = React.useRef<ElementResizeInteractionState | null>(null);
   const panStartRef = React.useRef<Vector2 | null>(null);
   const moveStateRef = React.useRef<MoveState | null>(null);
+  const patternHandleRef = React.useRef<PatternHandleId | null>(null);
+  const panButtonRef = React.useRef<number | null>(null);
+  const [activePatternHandle, setActivePatternHandle] = React.useState<PatternHandleId | null>(
+    null,
+  );
   const [isPanning, setIsPanning] = React.useState(false);
   const [pointerPanelPos, setPointerPanelPos] = React.useState<Vector2 | null>(null);
   const [snapOverridden, setSnapOverridden] = React.useState(false);
@@ -541,6 +575,21 @@ export function useCanvasPointer({
         return;
       }
 
+      if (pattern) {
+        const handle = findPatternHandleAtPoint(pattern.guides, pointPx, transform);
+        setActivePatternHandle(handle);
+        if (handle) {
+          setIsHoveringInteractive(true);
+          setCanvasCursor("grab");
+          return;
+        }
+        if (pattern.awaitingReference) {
+          setIsHoveringInteractive(false);
+          setCanvasCursor(DEFAULT_CANVAS_CURSOR);
+          return;
+        }
+      }
+
       const selectedReferenceHandle = findReferenceControlAtPoint(pointPx);
       if (selectedReferenceHandle && referenceImage) {
         setIsHoveringInteractive(true);
@@ -621,14 +670,18 @@ export function useCanvasPointer({
       findSelectedElementControlAtPoint,
       interactiveElements,
       mountingHoles,
+      pattern,
       placementType,
       referenceCalibrationPoints,
       referenceImage,
       referenceImageSelected,
       selectedElementSet,
       singleSelectedElement,
+      transform,
     ],
   );
+
+  const isSnapActive = displayOptions.snapToGrid && !snapOverridden;
 
   const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
     event.stopPropagation();
@@ -645,6 +698,7 @@ export function useCanvasPointer({
     pointerModeRef.current = shouldPan ? "pan" : "click";
     pointerStartRef.current = { x: event.clientX, y: event.clientY };
     panStartRef.current = shouldPan ? { ...panRef.current } : null;
+    panButtonRef.current = shouldPan ? event.button : null;
     setIsHoveringInteractive(false);
 
     if (shouldPan) {
@@ -669,6 +723,22 @@ export function useCanvasPointer({
       pointerModeRef.current = "idle";
       onPickCalibrationPoint(pointPanel);
       return;
+    }
+
+    if (pattern) {
+      const handle = findPatternHandleAtPoint(pattern.guides, pointPx, transform);
+      if (handle) {
+        patternHandleRef.current = handle;
+        setActivePatternHandle(handle);
+        pointerModeRef.current = "pattern-handle";
+        setCanvasCursor("grabbing");
+        return;
+      }
+      if (pattern.awaitingReference) {
+        pointerModeRef.current = "idle";
+        pattern.onPick(pointPanel, isSnapActive);
+        return;
+      }
     }
 
     const selectedReferenceHandle = findReferenceControlAtPoint(pointPx);
@@ -909,6 +979,13 @@ export function useCanvasPointer({
     };
     const pointPanel = screenPointToPanel(pointPx, transform);
     updateHoverState(pointPanel, pointPx);
+
+    if (pointerModeRef.current === "pattern-handle") {
+      if (pointPanel && pattern && patternHandleRef.current) {
+        pattern.onDragHandle(patternHandleRef.current, pointPanel, isSnapActive);
+      }
+      return;
+    }
 
     if (pointerModeRef.current === "clearance") {
       if (!pointPanel) {
@@ -1172,9 +1249,41 @@ export function useCanvasPointer({
       onClearanceLineDragEnd();
     }
 
+    // A right click that stayed put opens the menu of what is under it.
+    if (
+      pointerModeRef.current === "pan" &&
+      panButtonRef.current === 2 &&
+      pointerStartRef.current &&
+      canvas &&
+      Math.hypot(
+        event.clientX - pointerStartRef.current.x,
+        event.clientY - pointerStartRef.current.y,
+      ) < CONTEXT_MENU_MAX_MOVE_PX
+    ) {
+      const rect = canvas.getBoundingClientRect();
+      const pointPanel = screenPointToPanel(
+        { x: event.clientX - rect.left, y: event.clientY - rect.top },
+        transform,
+      );
+      const element = pointPanel
+        ? pickElementAtPoint(pointPanel, interactiveElements, {
+            isOverMountingHole: findMountingHoleAtPoint(pointPanel, mountingHoles) !== null,
+            isPlacing: false,
+            selectedIds: selectedElementSet,
+          })
+        : null;
+      onRequestContextMenu({
+        clientX: event.clientX,
+        clientY: event.clientY,
+        elementId: element?.id ?? null,
+      });
+    }
+
     pointerModeRef.current = "idle";
     pointerStartRef.current = null;
     panStartRef.current = null;
+    panButtonRef.current = null;
+    patternHandleRef.current = null;
     moveStateRef.current = null;
     referenceInteractionRef.current = null;
     svgArtworkInteractionRef.current = null;
@@ -1206,6 +1315,9 @@ export function useCanvasPointer({
     pointerModeRef.current = "idle";
     pointerStartRef.current = null;
     panStartRef.current = null;
+    panButtonRef.current = null;
+    patternHandleRef.current = null;
+    setActivePatternHandle(null);
     moveStateRef.current = null;
     referenceInteractionRef.current = null;
     svgArtworkInteractionRef.current = null;
@@ -1242,5 +1354,6 @@ export function useCanvasPointer({
     handlePointerUp,
     handlePointerLeave,
     handleContextMenu,
+    activePatternHandle,
   };
 }

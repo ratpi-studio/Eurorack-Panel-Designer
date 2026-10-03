@@ -24,6 +24,11 @@ import {
 } from "@lib/referenceImage";
 
 import {
+  drawPatternOverlay,
+  PATTERN_COPY_OUTLINE_COLOR,
+  type PatternOverlay,
+} from "./patternOverlay";
+import {
   formatBoxLabel,
   formatDiameterLabel,
   formatDimensionMm,
@@ -107,6 +112,8 @@ interface PanelSceneDrawingOptions {
   showDimensions?: boolean;
   /** Editor-only outlines of the knobs, nuts and washers on the front of the panel. */
   showHardware?: boolean;
+  /** Handles and copies of a running mirror or pattern command. */
+  patternOverlay?: PatternOverlay | null;
 }
 
 export interface ReferenceCalibrationOverlay {
@@ -150,6 +157,7 @@ export function drawPanelScene({
   showDimensions = false,
   showHardware = false,
   referenceCalibration,
+  patternOverlay,
 }: PanelSceneDrawingOptions) {
   // The element being placed counts too, so it shows where it would crowd the others.
   const crowdedIds = showHardware
@@ -261,6 +269,15 @@ export function drawPanelScene({
 
   if (referenceCalibration) {
     drawReferenceCalibration(context, transform, referenceCalibration, palette, fontFamily);
+  }
+
+  if (patternOverlay) {
+    elements.forEach((element) => {
+      if (patternOverlay.copyIds.has(element.id)) {
+        drawSelectionOutline(context, element, transform, PATTERN_COPY_OUTLINE_COLOR);
+      }
+    });
+    drawPatternOverlay(context, patternOverlay, transform, fontFamily);
   }
 }
 
