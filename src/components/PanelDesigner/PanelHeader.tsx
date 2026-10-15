@@ -1,8 +1,9 @@
-import { ScrollText, ShoppingBag } from "lucide-react";
+import { Scale, ScrollText, ShoppingBag } from "lucide-react";
 import React from "react";
 
 import { iconLabelProps } from "@components/Tooltip/TooltipLayer";
 
+import { PAGE_PATHS } from "../../seo/paths";
 import * as styles from "./PanelDesigner.css";
 
 const GITHUB_REPO_URL = "https://github.com/ratpi-studio/Eurorack-Panel-Designer";
@@ -16,6 +17,7 @@ interface PanelHeaderCopy {
   supportImageAlt: string;
   etsyLabel: string;
   etsyAriaLabel: string;
+  termsLabel: string;
 }
 
 interface PanelHeaderProps {
@@ -66,6 +68,15 @@ export function PanelHeader({ title, changelogLabel, copy, onOpenChangelog }: Pa
           >
             <ShoppingBag />
             <span className={styles.etsyWordmark}>{copy.etsyLabel}</span>
+          </a>
+          <a
+            className={styles.githubLink}
+            href={PAGE_PATHS.terms}
+            target="_blank"
+            rel="noreferrer"
+            {...iconLabelProps(copy.termsLabel)}
+          >
+            <Scale />
           </a>
           <button
             type="button"

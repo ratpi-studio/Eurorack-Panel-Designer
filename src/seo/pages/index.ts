@@ -5,6 +5,7 @@ import { hpToMmPage } from "./hpToMm";
 import { kicadPage } from "./kicad";
 import { panelDimensionsPage } from "./panelDimensions";
 import { printingPage } from "./printing";
+import { termsPage } from "./terms";
 
 /**
  * Every content page, in navigation order. Adding one here is enough: the build renders it, and
@@ -17,4 +18,5 @@ export const CONTENT_PAGES: readonly ContentPage[] = [
   drillSizesPage,
   printingPage,
   kicadPage,
+  termsPage,
 ];

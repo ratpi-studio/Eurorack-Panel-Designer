@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.19.0 - 2026-10-15
+
+- New **Terms of use** page (`/terms/`), linked from the scale button in the editor's header, under the export formats, and at the foot of every content page. The editor stays free for personal use, but the files it exports, and panels or other objects made from them, may not be sold; panels ordered from the editor are made and sold by the RatpiSynth shop on Etsy. The page also says what data leaves the browser (hosting, visit counts, error reports, orders), and holds the legal notice.
+
 ## 0.18.0 - 2026-10-03
 
 - Copy, cut and paste placed elements with `Ctrl/Cmd + C`, `X` and `V`, or duplicate them with `Ctrl/Cmd + D`. Each paste lands a little further down and to the right (one grid step when the grid snaps, 5 mm otherwise), and the copies stay on hand when you open another design, so you can carry elements from one panel to the next. Copies come unlocked.

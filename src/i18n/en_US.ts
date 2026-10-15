@@ -21,6 +21,7 @@ interface Translations {
     supportImageAlt: string;
     etsyLabel: string;
     etsyAriaLabel: string;
+    termsLabel: string;
   };
   canvas: {
     hudSuffix: string;
@@ -271,6 +272,8 @@ interface Translations {
     exportKicadPcb: string;
     exportStl: string;
     exportMenuLabel: string;
+    exportTermsNotice: string;
+    exportTermsLink: string;
     orderPrint: string;
     reset: string;
     savedLabel: string;
@@ -425,6 +428,7 @@ export const enUS: Translations = {
     supportImageAlt: "Buy me a coffee on Ko-fi",
     etsyLabel: "Etsy",
     etsyAriaLabel: "Open the RatpiSynth Etsy shop",
+    termsLabel: "Terms of use",
   },
   canvas: {
     hudSuffix: "Static render",
@@ -775,6 +779,8 @@ export const enUS: Translations = {
     exportKicadPcb: "Export KiCad PCB",
     exportStl: "Export STL",
     exportMenuLabel: "Choose export format",
+    exportTermsNotice: "For personal use: do not sell these files, nor panels made from them.",
+    exportTermsLink: "Terms of use",
     orderPrint: "Order this panel",
     reset: "Reset design",
     savedLabel: "Saved projects",

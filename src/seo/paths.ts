@@ -11,6 +11,7 @@ export const PAGE_PATHS = {
   drillSizes: "/eurorack-drill-sizes/",
   printing: "/3d-print-eurorack-panel/",
   kicad: "/kicad-eurorack-panel/",
+  terms: "/terms/",
 } as const;
 
 export const SITE_FILE_NAMES = ["sitemap.xml", "robots.txt", "llms.txt", "llms-full.txt"] as const;

@@ -66,6 +66,7 @@ Prefer Vite+ commands when working in the repository:
 - `src/seo/`
   - The content pages: React pages built with the UI kit, rendered to plain HTML at build time, since no major AI crawler runs JavaScript. `pages/index.ts` lists them (`CONTENT_PAGES`); each page module holds its metadata, FAQ and sections.
   - `render.tsx` is the server entry: it renders the pages, and `siteFiles.ts` the sitemap, `robots.txt` and `llms.txt`. `components/` holds the shared frame (`SeoLayout`, numbered `Section`, `DataTable`, `Faq`, `Prose`).
+  - `pages/terms.tsx` holds the terms of use (group `legal`, linked from the footer, the editor's header and its export menu), with the privacy and legal notices. Keep its privacy section true to what leaves the browser: update it, its `TERMS_UPDATED` date and the changelog together when the app starts sending data somewhere new (a new analytics, monitoring or storage service, a new upload).
   - `islands/` holds the parts that run in the browser, such as the calculator: the build renders each one on its own, and its client entry (listed in `islands/entries.ts`) hydrates that HTML.
 - `scripts/`
   - Small maintenance scripts, such as the SVG library manifest generator.

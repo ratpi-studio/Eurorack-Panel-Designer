@@ -14,6 +14,7 @@ export const SITE_DESCRIPTION =
   "no account.";
 
 export const REPO_URL = "https://github.com/ratpi-studio/Eurorack-Panel-Designer";
+export const ETSY_SHOP_URL = "https://www.etsy.com/shop/RatpiSynth";
 export const OG_IMAGE_PATH = "/images/og.png";
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;

@@ -7,8 +7,11 @@ export interface PageLink {
   path: string;
   /** Short label used in the navigation and the footer. */
   label: string;
-  /** Tools compute something; references are tables and guides. */
-  group: "tools" | "reference";
+  /**
+   * Tools compute something; references are tables and guides. Legal pages, such as the terms of
+   * use, are only linked from the footer.
+   */
+  group: "tools" | "reference" | "legal";
 }
 
 /** A figure of the spec sheet at the top of a page. */
@@ -39,6 +42,11 @@ export interface ContentPage extends PageLink {
   structuredData?: object[];
   /** The island the page shows, whose script the page loads. */
   island?: IslandId;
+  /**
+   * The day the text last changed, as YYYY-MM-DD, for pages whose date matters, such as the
+   * terms of use. Other pages show the build date.
+   */
+  updated?: string;
   /** The numbered sections under the lead. */
   Body: () => ReactNode;
 }

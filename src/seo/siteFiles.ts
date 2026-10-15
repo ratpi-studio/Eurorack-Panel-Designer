@@ -32,7 +32,10 @@ function sitemap(pages: readonly ContentPage[]): string {
   const today = buildDate();
   const entries = [
     { loc: `${SITE_ORIGIN}/`, priority: "1.0" },
-    ...pages.map((page) => ({ loc: absoluteUrl(page.path), priority: "0.8" })),
+    ...pages.map((page) => ({
+      loc: absoluteUrl(page.path),
+      priority: page.group === "legal" ? "0.3" : "0.8",
+    })),
   ];
 
   const urls = entries
@@ -63,8 +66,9 @@ function llmsTxt(pages: readonly ContentPage[]): string {
 > ${SITE_DESCRIPTION}
 
 ${SITE_NAME} runs entirely in the browser. It has no account, no upload and no paid tier: designs
-are kept in the browser's own storage and exported as files. It is open source under the MIT
-license.
+are kept in the browser's own storage and exported as files. Its source code is open source under
+the MIT license. The terms of use of the hosted editor allow personal use only: the files it
+exports, and panels or other objects made from them, may not be sold.
 
 ## What it does
 
@@ -96,6 +100,7 @@ ${pageList(pages, "reference")}
 
 - [Editor](${SITE_ORIGIN}/): the application itself.
 - [Source code](${REPO_URL}): React, TypeScript, MIT license.
+${pageList(pages, "legal")}
 `;
 }
 

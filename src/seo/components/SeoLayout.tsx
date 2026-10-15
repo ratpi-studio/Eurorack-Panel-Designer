@@ -23,7 +23,7 @@ interface SeoLayoutProps {
   /** Every page, in navigation order. */
   pages: readonly PageLink[];
   version: string;
-  /** The build date, as YYYY-MM-DD. */
+  /** The build date, as YYYY-MM-DD, shown unless the page has a date of its own. */
   updated: string;
 }
 
@@ -34,6 +34,7 @@ export function SeoLayout({ page, pages, version, updated }: SeoLayoutProps) {
     label,
     links: pages.filter((link) => link.group === group),
   }));
+  const legalLinks = pages.filter((link) => link.group === "legal");
   const current = (link: PageLink) => (link.path === page.path ? "page" : undefined);
 
   return (
@@ -95,26 +96,28 @@ export function SeoLayout({ page, pages, version, updated }: SeoLayoutProps) {
 
         <Body />
 
-        <section className={styles.cta} aria-labelledby="editor-cta">
-          <Panel
-            variant="device"
-            title="EDITOR"
-            sub="FREE · NO ACCOUNT"
-            meta="STL · SVG · PNG · KICAD"
-          >
-            <div className={styles.ctaBody}>
-              <h2 id="editor-cta" className={styles.ctaTitle}>
-                Draw it instead of measuring it
-              </h2>
-              <p className={styles.ctaText}>
-                {SITE_NAME} applies every number on this page automatically: pick a width in HP or
-                millimeters, drop the parts, and export an STL, an SVG, a PNG or a KiCad Edge.Cuts
-                outline. It runs in the browser, it is free, and it needs no account.
-              </p>
-              <ButtonLink href="/">Open the editor</ButtonLink>
-            </div>
-          </Panel>
-        </section>
+        {page.group === "legal" ? null : (
+          <section className={styles.cta} aria-labelledby="editor-cta">
+            <Panel
+              variant="device"
+              title="EDITOR"
+              sub="FREE · NO ACCOUNT"
+              meta="STL · SVG · PNG · KICAD"
+            >
+              <div className={styles.ctaBody}>
+                <h2 id="editor-cta" className={styles.ctaTitle}>
+                  Draw it instead of measuring it
+                </h2>
+                <p className={styles.ctaText}>
+                  {SITE_NAME} applies every number on this page automatically: pick a width in HP or
+                  millimeters, drop the parts, and export an STL, an SVG, a PNG or a KiCad Edge.Cuts
+                  outline. It runs in the browser, it is free, and it needs no account.
+                </p>
+                <ButtonLink href="/">Open the editor</ButtonLink>
+              </div>
+            </Panel>
+          </section>
+        )}
       </main>
 
       <footer className={styles.footer}>
@@ -142,10 +145,17 @@ export function SeoLayout({ page, pages, version, updated }: SeoLayoutProps) {
               <li>
                 <a href={REPO_URL}>Source on GitHub</a>
               </li>
+              {legalLinks.map((link) => (
+                <li key={link.path}>
+                  <a href={link.path} aria-current={current(link)}>
+                    {link.label}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
-        <StatusBar trailing={`UPDATED ${updated}`}>
+        <StatusBar trailing={`UPDATED ${page.updated ?? updated}`}>
           <span>{SITE_NAME.toUpperCase()}</span>
           <span>OPEN SOURCE · MIT</span>
         </StatusBar>

@@ -42,7 +42,8 @@ plain HTML that needs none:
   plus a static summary inside `#root` that React replaces when it mounts.
 - `src/seo/` holds the content pages: the HP and U calculator (`/eurorack-hp-calculator/`) and the
   reference pages (`/eurorack-hp-to-mm/`, `/eurorack-panel-dimensions/`, `/eurorack-drill-sizes/`,
-  `/3d-print-eurorack-panel/`, `/kicad-eurorack-panel/`). They are React pages built with the
+  `/3d-print-eurorack-panel/`, `/kicad-eurorack-panel/`), and the terms of use (`/terms/`). They
+  are React pages built with the
   [UI kit](#ui-kit), rendered to plain HTML at build time by `scripts/seo/plugin.ts`, along with
   `sitemap.xml`, `robots.txt`, `llms.txt` and `llms-full.txt`. Their styles are a stylesheet
   written at build time, with the dark background inline in the head so no white shows before it,
@@ -164,5 +165,10 @@ Issues, feature ideas, and pull requests are welcome. Please open a discussion b
 ## License
 
 Distributed under the [MIT License](LICENSE). Feel free to fork, remix, and build on the project.
+
+The hosted editor at [www.eurorackpanel.com](https://www.eurorackpanel.com) has its own
+[terms of use](https://www.eurorackpanel.com/terms/), written in `src/seo/pages/terms.tsx`: it is
+free for personal use, and the files it exports, and panels or other objects made from them, may
+not be sold. The terms also hold the privacy notice and the legal notice.
 
 The fonts in `public/fonts/` (Roboto, Barlow Condensed, JetBrains Mono, Michroma, Orbitron) are distributed under the [SIL Open Font License 1.1](https://openfontlicense.org); each folder holds the font's license.

@@ -53,6 +53,8 @@ import {
 } from "@lib/panelTypes";
 import type { ReferenceImage } from "@lib/referenceImage";
 import type { StoredProject } from "@lib/storage";
+
+import { PAGE_PATHS } from "../../seo/paths";
 import * as styles from "./PanelDesigner.css";
 import type { ReturnTypeUseI18n } from "./types";
 
@@ -306,6 +308,12 @@ function ProjectPanel({
                   {label}
                 </button>
               ))}
+              <p className={styles.exportMenuNotice}>
+                {t.projects.exportTermsNotice}{" "}
+                <a href={PAGE_PATHS.terms} target="_blank" rel="noreferrer">
+                  {t.projects.exportTermsLink}
+                </a>
+              </p>
             </div>
           ) : null}
         </div>

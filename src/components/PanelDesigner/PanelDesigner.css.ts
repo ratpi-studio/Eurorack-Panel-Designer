@@ -1,4 +1,4 @@
-import { style, styleVariants } from "@vanilla-extract/css";
+import { globalStyle, style, styleVariants } from "@vanilla-extract/css";
 
 import { vars } from "@styles/theme.css";
 
@@ -381,6 +381,21 @@ export const exportMenuItem = style({
       backgroundColor: "#101c33",
     },
   },
+});
+
+// The terms of use, under the formats: exports are for personal use.
+export const exportMenuNotice = style({
+  margin: 0,
+  padding: `${vars.spacing.sm} ${vars.spacing.sm}`,
+  borderTop: `1px solid ${vars.color.border}`,
+  maxWidth: "240px",
+  fontSize: "12px",
+  lineHeight: 1.4,
+  color: vars.color.textSecondary,
+});
+
+globalStyle(`${exportMenuNotice} a`, {
+  color: vars.color.accent,
 });
 
 export const hiddenInput = style({

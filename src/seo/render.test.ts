@@ -107,6 +107,20 @@ describe("content pages", () => {
     expect(head).toContain("@view-transition{navigation:auto}");
   });
 
+  it.each(pageFiles)("links $page.path to the terms of use from its footer", ({ html }) => {
+    const nav = html.slice(html.indexOf("<nav"), html.indexOf("</nav>"));
+    const footer = html.slice(html.indexOf("<footer"));
+    expect(nav).not.toContain(`href="${PAGE_PATHS.terms}"`);
+    expect(footer).toContain(`href="${PAGE_PATHS.terms}"`);
+  });
+
+  it("dates the terms of use by their text, not by the build", () => {
+    const terms = pageFiles.find(({ page }) => page.path === PAGE_PATHS.terms);
+    expect(terms?.page.updated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(terms?.html).toContain(`UPDATED ${terms?.page.updated}`);
+    expect(terms?.html).not.toContain('id="editor-cta"');
+  });
+
   it("lists every page in the sitemap and llms.txt", () => {
     const sitemap = files.find((file) => file.fileName === "sitemap.xml")?.source ?? "";
     const llms = files.find((file) => file.fileName === "llms.txt")?.source ?? "";
