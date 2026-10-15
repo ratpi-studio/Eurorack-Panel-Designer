@@ -19,7 +19,10 @@ const ASSETS: PageAssets = {
       preloads: ["/assets/seo/shared-test.js"],
     },
   },
+  analytics: true,
 };
+
+const ANALYTICS_TAGS = ["<script>", '<script defer src="/_vercel/insights/script.js">'];
 
 const files = renderSite(ASSETS);
 const pageFiles = CONTENT_PAGES.map((page) => {
@@ -82,14 +85,23 @@ describe("content pages", () => {
     }
   });
 
+  it("leaves the analytics beacon out when the pages do not count their visits", () => {
+    for (const file of renderSite({ ...ASSETS, analytics: false })) {
+      expect(file.source).not.toContain("/_vercel/insights/");
+    }
+  });
+
   it.each(pageFiles)(
-    "loads no script on $page.path but its island's, and its styles from a stylesheet",
+    "loads no script on $page.path but the analytics beacon and its island's, and its styles from a stylesheet",
     ({ page, html }) => {
       const scripts = [...html.matchAll(/<script(?: [^>]*)?>/g)]
         .map((match) => match[0])
         .filter((tag) => !tag.includes('type="application/ld+json"'));
       const island = page.island ? ASSETS.islands[page.island] : undefined;
-      expect(scripts).toEqual(island ? [`<script type="module" src="${island.script}">`] : []);
+      expect(scripts).toEqual([
+        ...ANALYTICS_TAGS,
+        ...(island ? [`<script type="module" src="${island.script}">`] : []),
+      ]);
       expect(html.includes(`<div id="${page.island}">`)).toBe(Boolean(island));
       expect(html.includes('<link rel="modulepreload" href="/assets/seo/shared-test.js">')).toBe(
         Boolean(island),

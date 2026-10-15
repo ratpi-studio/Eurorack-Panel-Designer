@@ -151,6 +151,27 @@ While the flag is off (the default), the order button is hidden and `/api/order`
 
 The `/order/:id` rewrite is already configured in `vercel.json`.
 
+## Sharing a design by link
+
+The share button of the project panel (next to the import buttons) turns the design into a link,
+`/p/<code>`, which anyone can open without an account:
+
+1. Nothing leaves the browser until **Create link** is clicked: the dialog says that a copy of the
+   design is uploaded. Hidden components are left out, as in every export.
+2. The browser draws the card the link shows in chats and forums (`src/lib/canvas/shareCard.ts`):
+   1200 × 630, the panel as the PNG export draws it, its name and its size. `api/share.ts` stores
+   the design and the card with Vercel Blob, under `shares/<code>/design.json` and
+   `shares/<code>/card.png`.
+3. `/p/<code>` is rewritten to `api/share-page.ts`, which serves the editor's `index.html` with the
+   design's title, its card as `og:image`, and `noindex`: crawlers of chats, forums and search
+   engines read the head without running JavaScript. The app then shows the design in 3D, with
+   **Open in the editor**, which loads a copy through `/?design=<code>` after saving the work in
+   progress, as a new project does.
+
+Sharing uses the Blob store the orders use. Add a rate limit on `/api/share` in the Vercel
+Firewall, as for `/api/order`: every share costs Blob operations, which the Hobby plan caps each
+month.
+
 ## KiCad Edge.Cuts export
 
 - Open the export dropdown and pick either **KiCad Edge SVG** (minimal Edge.Cuts-only SVG) or **KiCad PCB** (minimal `.kicad_pcb` with Edge.Cuts lines).

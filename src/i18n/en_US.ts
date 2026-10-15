@@ -1,5 +1,6 @@
 import type { OneUSpec, PanelFormatKey } from "@lib/panelFormat";
 import type { KnobId, PartId } from "@lib/parts";
+import type { PanelSize } from "@lib/share";
 import type { TextFontId } from "@lib/text/textFonts";
 
 interface Translations {
@@ -387,6 +388,39 @@ interface Translations {
     loadError: string;
     notFound: string;
   };
+  share: {
+    button: string;
+    dialogTitle: string;
+    dialogDescription: string;
+    create: string;
+    creating: string;
+    linkLabel: string;
+    copyLink: string;
+    copied: string;
+    openLink: string;
+    close: string;
+    cancel: string;
+    errors: {
+      tooLarge: string;
+      invalid: string;
+      server: string;
+      network: string;
+    };
+    size: (size: PanelSize) => string;
+    cardTagline: string;
+    pageEyebrow: string;
+    untitled: string;
+    previewLoading: string;
+    openInEditor: string;
+    openInEditorHint: string;
+    downloadJson: string;
+    designYourOwn: string;
+    loading: string;
+    notFound: string;
+    loadError: string;
+    opened: (name: string) => string;
+    openError: string;
+  };
   shortcuts: {
     shift: string;
     disableSnap: string;
@@ -405,6 +439,11 @@ interface Translations {
     rightClick: string;
     contextMenu: string;
   };
+}
+
+/** A size with at most one decimal and no trailing zero: 60.6, 128.5, 10. */
+function formatDecimal(value: number): string {
+  return String(Math.round(value * 10) / 10);
 }
 
 export const enUS: Translations = {
@@ -928,6 +967,52 @@ export const enUS: Translations = {
     loading: "Loading the design…",
     loadError: "This design could not be loaded. Try again in a moment.",
     notFound: "No design matches this code. Check the code and try again.",
+  },
+  share: {
+    button: "Share a link",
+    dialogTitle: "Share this panel",
+    dialogDescription:
+      "Creating a link uploads a copy of this design. Anyone with the link can see it and open their own copy in the editor; your saved projects stay in your browser. Hidden components are left out.",
+    create: "Create link",
+    creating: "Creating link…",
+    linkLabel: "Link",
+    copyLink: "Copy link",
+    copied: "Copied",
+    openLink: "Open",
+    close: "Close",
+    cancel: "Cancel",
+    errors: {
+      tooLarge: "This design is too large to share.",
+      invalid: "This design could not be shared.",
+      server: "The link could not be created. Try again in a moment.",
+      network: "The server could not be reached. Check your connection and try again.",
+    },
+    size: (size) => {
+      switch (size.kind) {
+        case "eurorack":
+          return size.rackUnits === 3
+            ? `${size.widthHp} HP`
+            : `${size.widthHp} HP, ${size.rackUnits}U`;
+        case "kosmo":
+          return `Kosmo, ${formatDecimal(size.widthCm)} cm`;
+        case "custom":
+          return `${formatDecimal(size.widthMm)} × ${formatDecimal(size.heightMm)} mm`;
+      }
+    },
+    cardTagline: "Made with Eurorack Panel Designer",
+    pageEyebrow: "Shared panel",
+    untitled: "Untitled panel",
+    previewLoading: "Loading the 3D preview…",
+    openInEditor: "Open in the editor",
+    openInEditorHint:
+      "Opens your own copy in the editor, in your browser. The design you were working on is saved first.",
+    downloadJson: "Download design (JSON)",
+    designYourOwn: "Design your own panel",
+    loading: "Loading the design…",
+    notFound: "No design is shared under this link.",
+    loadError: "This design could not be loaded. Try again in a moment.",
+    opened: (name) => `Opened the shared design "${name}".`,
+    openError: "The shared design could not be opened.",
   },
   shortcuts: {
     shift: "Shift",

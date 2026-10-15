@@ -3,8 +3,10 @@ import { Toaster } from "react-hot-toast";
 
 import { OrderRecap } from "@components/OrderRecap/OrderRecap";
 import { PanelDesigner } from "@components/PanelDesigner/PanelDesigner";
+import { SharedDesign } from "@components/SharedDesign/SharedDesign";
 import { TooltipLayer } from "@components/Tooltip/TooltipLayer";
 import { I18nProvider } from "@i18n/I18nContext";
+import { readShareCodeFromPath } from "@lib/share";
 
 const ORDER_PATH_PREFIX = "/order/";
 
@@ -27,8 +29,14 @@ function resolveOrderId(): string | null {
 // Icons fill 32 px icon buttons and sit next to 13-14 px labels in menus and dialogs.
 const ICON_SIZE_PX = 16;
 
+/** The code of a shared design's page (/p/<code>), or null on any other page. */
+function resolveShareCode(): string | null {
+  return typeof window === "undefined" ? null : readShareCodeFromPath(window.location.pathname);
+}
+
 export function App() {
   const orderId = resolveOrderId();
+  const shareCode = orderId ? null : resolveShareCode();
 
   return (
     <I18nProvider>
@@ -57,7 +65,13 @@ export function App() {
             },
           }}
         />
-        {orderId ? <OrderRecap id={orderId} /> : <PanelDesigner />}
+        {orderId ? (
+          <OrderRecap id={orderId} />
+        ) : shareCode ? (
+          <SharedDesign code={shareCode} />
+        ) : (
+          <PanelDesigner />
+        )}
         <TooltipLayer />
       </LucideProvider>
     </I18nProvider>

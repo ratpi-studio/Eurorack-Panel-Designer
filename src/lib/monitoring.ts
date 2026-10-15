@@ -15,6 +15,10 @@ export type MonitoredFlow =
   // Merging overlapping cut-outs, for the canvas, PNG, SVG and KiCad outputs.
   | "panel-surface"
   | "save-project"
+  // Sharing a design by link, then loading it on its page or opening it in the editor.
+  | "share-create"
+  | "share-page"
+  | "share-open"
   | "stl-geometry"
   // Loading the fonts of text elements, and turning text into outlines.
   | "text-font";

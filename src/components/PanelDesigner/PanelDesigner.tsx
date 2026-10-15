@@ -21,6 +21,7 @@ import { RightPanel } from "@components/PanelDesigner/RightPanel";
 import { ViewModeSwitch } from "@components/PanelDesigner/ViewModeSwitch";
 import { OrderDialog } from "@components/OrderDialog/OrderDialog";
 import { ReferenceCalibrationBar } from "@components/ReferenceCalibrationBar/ReferenceCalibrationBar";
+import { ShareDialog } from "@components/ShareDialog/ShareDialog";
 import { SphereLoader } from "@components/SphereLoader/SphereLoader";
 import { SvgArtworkModal } from "@components/SvgArtworkModal/SvgArtworkModal";
 import { useResponsivePanels } from "@components/PanelDesigner/useResponsivePanels";
@@ -130,6 +131,7 @@ export function PanelDesigner() {
   const [isSvgArtworkModalOpen, setIsSvgArtworkModalOpen] = React.useState(false);
   const [isChangelogOpen, setIsChangelogOpen] = React.useState(false);
   const [isOrderDialogOpen, setIsOrderDialogOpen] = React.useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = React.useState(false);
   const [confirmDialog, setConfirmDialog] = React.useState<{
     message: string;
     onConfirm: () => void;
@@ -1209,6 +1211,7 @@ export function PanelDesigner() {
     onExportClick: handleExportClick,
     onExportJson: handleExportJson,
     onSelectExportFormat: handleSelectExportFormat,
+    onShare: () => setIsShareDialogOpen(true),
     onOrderPrint: isOrderingEnabled() ? () => setIsOrderDialogOpen(true) : undefined,
   };
 
@@ -1612,6 +1615,14 @@ export function PanelDesigner() {
       ) : null}
       {isOrderDialogOpen ? (
         <OrderDialog model={panelModel} onClose={() => setIsOrderDialogOpen(false)} />
+      ) : null}
+      {isShareDialogOpen ? (
+        <ShareDialog
+          model={panelModel}
+          mountingHoles={mountingHoles}
+          projectName={projectName}
+          onClose={() => setIsShareDialogOpen(false)}
+        />
       ) : null}
       {isSvgArtworkModalOpen ? (
         <div

@@ -31,6 +31,7 @@ import {
 import { reportError } from "@lib/monitoring";
 import { withoutHiddenElements } from "@lib/elementVisibility";
 import { deserializePanelModel, serializePanelModel } from "@lib/serialization";
+import { OPEN_DESIGN_PARAM, fetchSharedDesign, readOpenDesignParam } from "@lib/share";
 import { loadTextFonts } from "@lib/text/textFontLoader";
 import { createPanelDimensions } from "@lib/units";
 import { usePanelStore } from "@store/panelStore";
@@ -244,6 +245,55 @@ export function useProjects({
       t,
     ],
   );
+
+  // "Open in the editor" on a shared design's page lands here with ?design=<code>. The work in
+  // progress is saved first, as a new project does, then the shared design replaces it. The ref
+  // keeps it from opening twice, as StrictMode runs effects twice in development.
+  const hasOpenedSharedDesign = React.useRef(false);
+  React.useEffect(() => {
+    const code = readOpenDesignParam(window.location.search);
+    if (!code || hasOpenedSharedDesign.current) {
+      return;
+    }
+    hasOpenedSharedDesign.current = true;
+    const params = new URLSearchParams(window.location.search);
+    params.delete(OPEN_DESIGN_PARAM);
+    const search = params.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${search ? `?${search}` : ""}${window.location.hash}`,
+    );
+    fetchSharedDesign(code)
+      .then((shared) => {
+        if (usePanelStore.getState().model.elements.length > 0) {
+          handleSaveProject();
+        }
+        const name = shared.name || t.share.untitled;
+        setModel(shared.model);
+        clearHistory();
+        setProjectName(name);
+        markSavedState(name, serializePanelModel(shared.model));
+        clearSelection();
+        setPlacementType(null);
+        resetView();
+        setStatus(t.share.opened(name), "success");
+      })
+      .catch((error: unknown) => {
+        reportError(error, "share-open");
+        setStatus(t.share.openError, "error");
+      });
+  }, [
+    clearHistory,
+    clearSelection,
+    handleSaveProject,
+    markSavedState,
+    resetView,
+    setModel,
+    setPlacementType,
+    setStatus,
+    t.share,
+  ]);
 
   const handleExportPng = React.useCallback(() => {
     renderPanelPng()

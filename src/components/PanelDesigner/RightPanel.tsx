@@ -14,6 +14,7 @@ import {
   MonitorCog,
   Pencil,
   Save,
+  Share2,
   ShoppingCart,
   SlidersHorizontal,
   Trash2,
@@ -89,6 +90,8 @@ interface ProjectPanelProps {
   onExportClick: () => void;
   onExportJson: () => void;
   onSelectExportFormat: (format: ExportFormat) => void;
+  /** Opens the dialog that shares the design by link. */
+  onShare: () => void;
   /** Opens the order dialog; the button is hidden when ordering is not configured. */
   onOrderPrint?: () => void;
   /** Closes the drawer the panel sits in on small screens. */
@@ -175,6 +178,7 @@ function ProjectPanel({
   onExportClick,
   onExportJson,
   onSelectExportFormat,
+  onShare,
   onOrderPrint,
   onClose,
 }: ProjectPanelProps) {
@@ -263,6 +267,7 @@ function ProjectPanel({
             icon={ImagePlus}
             onClick={onImportReferenceImageClick}
           />
+          <IconButton label={t.share.button} icon={Share2} onClick={onShare} />
         </div>
         <div ref={exportRef} className={styles.exportSplitButton}>
           <button

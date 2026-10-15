@@ -14,12 +14,27 @@ interface IslandAssets {
 
 /**
  * What the client build wrote for the pages: one stylesheet, and the scripts of the islands. A page
- * without an island loads no script at all.
+ * without an island loads no script but the analytics beacon.
  */
 export interface PageAssets {
   stylesheets: readonly string[];
   islands: Partial<Record<IslandId, IslandAssets>>;
+  /**
+   * Whether the pages load Vercel Web Analytics. Only production builds do: a dev server does not
+   * serve the beacon, and its visits are not worth counting.
+   */
+  analytics: boolean;
 }
+
+/**
+ * Vercel Web Analytics, as the editor gets it from `@vercel/analytics`: the queue the beacon reads,
+ * then the beacon, deferred so it never holds the page back. The content pages render no
+ * JavaScript, so without these two tags their visits were never counted.
+ */
+const ANALYTICS_SCRIPTS = [
+  "<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)}</script>",
+  '<script defer src="/_vercel/insights/script.js"></script>',
+];
 
 const ESCAPES: Record<string, string> = {
   "&": "&amp;",
@@ -83,6 +98,7 @@ export function renderDocument(page: ContentPage, body: string, assets: PageAsse
       (font) => `<link rel="preload" href="${font.url}" as="font" type="font/woff2" crossorigin>`,
     ),
     ...assets.stylesheets.map((href) => `<link rel="stylesheet" href="${href}">`),
+    ...(assets.analytics ? ANALYTICS_SCRIPTS : []),
     ...(island?.preloads ?? []).map((href) => `<link rel="modulepreload" href="${href}">`),
     ...(island ? [`<script type="module" src="${island.script}"></script>`] : []),
     ...pageStructuredData(page).map(jsonLdScript),

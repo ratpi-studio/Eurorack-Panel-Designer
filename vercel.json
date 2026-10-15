@@ -11,10 +11,18 @@
       "statusCode": 308
     }
   ],
-  "rewrites": [{ "source": "/order/:id", "destination": "/" }],
+  "rewrites": [
+    { "source": "/order/:id", "destination": "/" },
+    { "source": "/p/:code/card.png", "destination": "/api/share?code=:code&card=1" },
+    { "source": "/p/:code", "destination": "/api/share-page?code=:code" }
+  ],
   "headers": [
     {
       "source": "/order/:id",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+    },
+    {
+      "source": "/p/:code",
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
     }
   ]

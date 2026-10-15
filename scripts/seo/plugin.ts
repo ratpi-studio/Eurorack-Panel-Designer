@@ -63,8 +63,11 @@ function outputsOf(result: Awaited<ReturnType<typeof build>>): Rolldown.Rolldown
   return outputs.filter((output): output is Rolldown.RolldownOutput => "output" in output);
 }
 
-/** The stylesheet, and every island's entry with the chunks it imports, from the client build. */
-function collectAssets(output: Rolldown.RolldownOutput): PageAssets {
+/**
+ * The stylesheet, and every island's entry with the chunks it imports, from the client build;
+ * `analytics` says whether the pages count their visits.
+ */
+function collectAssets(output: Rolldown.RolldownOutput, analytics: boolean): PageAssets {
   const chunks = new Map<string, Rolldown.OutputChunk>();
   const stylesheets: string[] = [];
   for (const item of output.output) {
@@ -95,7 +98,7 @@ function collectAssets(output: Rolldown.RolldownOutput): PageAssets {
     }
   }
 
-  return { stylesheets, islands };
+  return { stylesheets, islands, analytics };
 }
 
 async function buildClient(config: ResolvedConfig): Promise<Rolldown.RolldownOutput> {
@@ -164,7 +167,7 @@ async function buildSite(config: ResolvedConfig): Promise<SiteFiles> {
   for (const item of client.output) {
     files.set(item.fileName, item.type === "chunk" ? item.code : item.source);
   }
-  for (const file of renderer.renderSite(collectAssets(client))) {
+  for (const file of renderer.renderSite(collectAssets(client, config.command === "build"))) {
     files.set(file.fileName, file.source);
   }
   return files;
