@@ -9,7 +9,7 @@ packageExtensions:
       vite: npm:@voidzero-dev/vite-plus-core@latest
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@0.3.3
-  vite-plus: 0.3.3
+  vite-plus: 1.1.0
 peerDependencyRules:
   allowAny:
     - vite
