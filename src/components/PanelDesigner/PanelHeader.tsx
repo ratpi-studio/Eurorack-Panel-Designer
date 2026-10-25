@@ -7,7 +7,7 @@ import { PAGE_PATHS } from "../../seo/paths";
 import * as styles from "./PanelDesigner.css";
 
 const GITHUB_REPO_URL = "https://github.com/ratpi-studio/Eurorack-Panel-Designer";
-const ETSY_SHOP_URL = "https://www.etsy.com/fr/shop/RatpiSynth?ref=eurorack_panel_designer";
+const ETSY_SHOP_URL = "https://ratpisynth.etsy.com?ref=eurorack_panel_designer";
 const logoSrc = `${import.meta.env.BASE_URL}images/logo.svg`;
 const supportImageSrc = `${import.meta.env.BASE_URL}images/kofi5.png`;
 
