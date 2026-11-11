@@ -217,6 +217,7 @@ describe("panel templates", () => {
     // Two columns of two holes: 7.5 mm from the left edge, and 5 HP further along the rails.
     expect(page?.html).toContain(">32.90<");
     expect(page?.page.description).toContain("4 mounting holes");
+    expect(page?.page.description).toMatch(/^An 8 HP Eurorack blank panel is /);
     expect(page?.html).toContain(`href="${templatePagePath(6)}"`);
     expect(page?.html).toContain(`href="${templatePagePath(10)}"`);
   });

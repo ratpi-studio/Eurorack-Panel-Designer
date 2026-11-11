@@ -12,7 +12,7 @@ import { TemplateFigure } from "../components/TemplateFigure";
 import { PAGE_PATHS, TEMPLATE_MAX_HP, TEMPLATE_PAGE_WIDTHS_HP, templatePagePath } from "../paths";
 import { getPanelTemplate, TEMPLATE_THICKNESS_MM, type PanelTemplate } from "../templates";
 import type { ContentPage, FaqEntry } from "../types";
-import { mm } from "./shared";
+import { aWidthHp, mm } from "./shared";
 
 interface DimensionRow {
   name: string;
@@ -43,6 +43,7 @@ const HOLE_COLUMNS: Column<MountingHole>[] = [
 ];
 
 const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /** How the columns of mounting holes are laid out on this width, in a sentence. */
 function describeColumns({ widthHp, widthMm, columnXs, model }: PanelTemplate): string {
@@ -70,11 +71,11 @@ function widthFaq(template: PanelTemplate): FaqEntry[] {
 
   return [
     {
-      question: `How wide is a ${widthHp} HP Eurorack panel in mm?`,
+      question: `How wide is ${aWidthHp(widthHp)} Eurorack panel in mm?`,
       answer: `${mm(widthMm)} mm. ${widthHp} HP takes ${mm(pitchMm)} mm on the rails, and the panel is cut ${mm(pitchMm - widthMm)} mm under that so it does not bind against its neighbours. ${source}`,
     },
     {
-      question: `How many mounting holes does a ${widthHp} HP panel have?`,
+      question: `How many mounting holes does ${aWidthHp(widthHp)} panel have?`,
       answer: `${holes.length}, in ${plural(columnXs.length, "column")} of two: one hole ${verticalOffsetMm} mm from the top edge and one ${verticalOffsetMm} mm from the bottom, ${diameterMm} mm across for M3 screws.`,
     },
   ];
@@ -224,13 +225,13 @@ export function templateWidthPage(widthHp: number): ContentPage {
     title: `${widthHp} HP Eurorack blank panel: template, SVG and STL`,
     heading: `${widthHp} HP Eurorack blank panel template`,
     description:
-      `A ${widthHp} HP Eurorack blank panel is ${mm(widthMm)} × ${mm(heightMm)} mm, with ` +
+      `${capitalize(aWidthHp(widthHp))} Eurorack blank panel is ${mm(widthMm)} × ${mm(heightMm)} mm, with ` +
       `${plural(holes.length, "mounting hole")}. Free template: SVG outline, STL to 3D print, ` +
       "KiCad Edge.Cuts.",
     kicker: `TEMPLATE / ${widthHp} HP`,
     lead: (
       <>
-        A {widthHp} HP Eurorack blank panel is{" "}
+        {capitalize(aWidthHp(widthHp))} Eurorack blank panel is{" "}
         <strong>
           {mm(widthMm)} × {mm(heightMm)} mm
         </strong>
