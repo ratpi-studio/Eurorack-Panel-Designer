@@ -6,9 +6,10 @@ function breadcrumb(page: ContentPage): object {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: SITE_NAME, item: `${SITE_ORIGIN}/` },
-      { "@type": "ListItem", position: 2, name: page.label, item: absoluteUrl(page.path) },
-    ],
+      { name: SITE_NAME, item: `${SITE_ORIGIN}/` },
+      ...(page.parent ? [{ name: page.parent.label, item: absoluteUrl(page.parent.path) }] : []),
+      { name: page.label, item: absoluteUrl(page.path) },
+    ].map((entry, index) => ({ "@type": "ListItem", position: index + 1, ...entry })),
   };
 }
 

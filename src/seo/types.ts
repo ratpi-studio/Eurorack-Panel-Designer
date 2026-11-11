@@ -9,9 +9,10 @@ export interface PageLink {
   label: string;
   /**
    * Tools compute something; references are tables and guides. Legal pages, such as the terms of
-   * use, are only linked from the footer.
+   * use, are only linked from the footer. Template pages, one per panel width, are left out of
+   * the navigation and the footer: the templates page lists them.
    */
-  group: "tools" | "reference" | "legal";
+  group: "tools" | "reference" | "legal" | "templates";
 }
 
 /** A figure of the spec sheet at the top of a page. */
@@ -28,6 +29,8 @@ export interface FaqEntry {
 }
 
 export interface ContentPage extends PageLink {
+  /** The page this one sits under, which its breadcrumb goes through. */
+  parent?: Pick<PageLink, "path" | "label">;
   /** The `<title>`, and the heading unless `heading` is set. */
   title: string;
   heading?: string;

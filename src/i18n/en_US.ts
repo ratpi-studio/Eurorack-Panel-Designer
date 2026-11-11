@@ -308,6 +308,7 @@ interface Translations {
       stlExportWithWarnings: (count: number) => string;
       stlError: string;
       reset: string;
+      openedWidth: (widthHp: number) => string;
       confirmSaveBeforeNew: string;
       confirmDeleteSelected: (name: string) => string;
       confirmReset: string;
@@ -861,6 +862,7 @@ export const enUS: Translations = {
         `STL export created. ${count} SVG pattern${count === 1 ? " or text is" : "s or texts are"} missing or incomplete in the model.`,
       stlError: "Failed to generate STL export.",
       reset: "Design reset.",
+      openedWidth: (widthHp: number) => `New blank ${widthHp} HP panel.`,
       confirmSaveBeforeNew: "Save current project before creating a new one?",
       confirmDeleteSelected: (name: string) => `Delete saved project "${name}"?`,
       confirmReset: "Reset the current design?",

@@ -4,10 +4,22 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vite-plus/test";
 
+import { OPEN_WIDTH_PARAM } from "@lib/blankPanel";
+
 import { CONTENT_PAGES } from "./pages";
-import { PAGE_PATHS, SITE_FILE_NAMES } from "./paths";
+import {
+  ALL_PAGE_PATHS,
+  PAGE_PATHS,
+  SITE_FILE_NAMES,
+  TEMPLATE_FILE_PATHS,
+  TEMPLATE_PAGE_WIDTHS_HP,
+  TEMPLATE_WIDTHS_HP,
+  templateFilePath,
+  templatePagePath,
+} from "./paths";
 import { renderSite, type PageAssets } from "./render";
 import { SITE_ORIGIN } from "./site";
+import { getPanelTemplate } from "./templates";
 
 const publicDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../public");
 
@@ -38,10 +50,11 @@ function attribute(html: string, pattern: RegExp): string | undefined {
 }
 
 describe("content pages", () => {
-  it("renders every page, with the sitemap, robots.txt and llms.txt", () => {
+  it("renders every page, with the templates, the sitemap, robots.txt and llms.txt", () => {
     expect(files.map((file) => file.fileName).sort()).toEqual(
       [
         ...CONTENT_PAGES.map((page) => `${page.path.slice(1)}index.html`),
+        ...TEMPLATE_FILE_PATHS.map((filePath) => filePath.slice(1)),
         "llms-full.txt",
         "llms.txt",
         "robots.txt",
@@ -63,11 +76,20 @@ describe("content pages", () => {
   );
 
   it.each(pageFiles)("only links $page.path to pages and files that exist", ({ html }) => {
-    const known = new Set(["/", ...CONTENT_PAGES.map((page) => page.path)]);
+    const known = new Set([
+      "/",
+      ...CONTENT_PAGES.map((page) => page.path),
+      ...files.map((file) => `/${file.fileName}`),
+    ]);
+    // The editor starts a blank panel of a given width from "/?hp=<width>".
+    const opensEditor = new RegExp(`^/\\?${OPEN_WIDTH_PARAM}=\\d+$`);
     const links = [...html.matchAll(/href="(\/[^"]*)"/g)].map((match) => match[1]);
     const broken = links.filter(
       (href) =>
-        !known.has(href) && !href.startsWith("/assets/") && !existsSync(path.join(publicDir, href)),
+        !known.has(href) &&
+        !opensEditor.test(href) &&
+        !href.startsWith("/assets/") &&
+        !existsSync(path.join(publicDir, href)),
     );
     expect(broken).toEqual([]);
   });
@@ -150,10 +172,82 @@ describe("content pages", () => {
   });
 
   it("publishes exactly the paths the dev server serves", () => {
-    expect(CONTENT_PAGES.map((page) => page.path).sort()).toEqual(Object.values(PAGE_PATHS).sort());
+    expect(CONTENT_PAGES.map((page) => page.path).sort()).toEqual([...ALL_PAGE_PATHS].sort());
     const siteFileNames = files
       .map((file) => file.fileName)
       .filter((fileName) => !fileName.endsWith("/index.html"));
-    expect(siteFileNames.sort()).toEqual([...SITE_FILE_NAMES].sort());
+    expect(siteFileNames.sort()).toEqual(
+      [...SITE_FILE_NAMES, ...TEMPLATE_FILE_PATHS.map((filePath) => filePath.slice(1))].sort(),
+    );
+  });
+});
+
+describe("panel templates", () => {
+  const source = (filePath: string) =>
+    files.find((file) => file.fileName === filePath.slice(1))?.source ?? "";
+  const hub = pageFiles.find(({ page }) => page.path === PAGE_PATHS.templates)?.html ?? "";
+
+  it("offers every width on the templates page, with its files and the editor", () => {
+    for (const widthHp of TEMPLATE_WIDTHS_HP) {
+      const { files: templateFiles, editorUrl } = getPanelTemplate(widthHp);
+      expect(hub).toContain(`href="${templateFiles.svg}" download`);
+      expect(hub).toContain(`href="${templateFiles.stl}" download`);
+      expect(hub).toContain(`href="${templateFiles.kicad_pcb}" download`);
+      expect(hub).toContain(`href="${editorUrl}"`);
+    }
+  });
+
+  it("links the pages of the widths from the templates page, not from the navigation", () => {
+    const nav = hub.slice(hub.indexOf("<nav"), hub.indexOf("</nav>"));
+    const footer = hub.slice(hub.indexOf("<footer"));
+    for (const widthHp of TEMPLATE_PAGE_WIDTHS_HP) {
+      const href = `href="${templatePagePath(widthHp)}"`;
+      expect(hub).toContain(href);
+      expect(nav).not.toContain(href);
+      expect(footer).not.toContain(href);
+    }
+    expect(nav).toContain(`href="${PAGE_PATHS.templates}"`);
+  });
+
+  it("prints on a width's page the size and the holes of its files", () => {
+    const page = pageFiles.find(({ page }) => page.path === templatePagePath(8));
+    expect(page?.html).toContain("40.30 × 128.50 mm");
+    expect(page?.html).toContain(`href="${templateFilePath(8, "stl")}" download`);
+    expect(page?.html).toContain('href="/?hp=8"');
+    // Two columns of two holes: 7.5 mm from the left edge, and 5 HP further along the rails.
+    expect(page?.html).toContain(">32.90<");
+    expect(page?.page.description).toContain("4 mounting holes");
+    expect(page?.html).toContain(`href="${templatePagePath(6)}"`);
+    expect(page?.html).toContain(`href="${templatePagePath(10)}"`);
+  });
+
+  it("puts the templates page in the breadcrumb of a width's page", () => {
+    const html = pageFiles.find(({ page }) => page.path === templatePagePath(8))?.html ?? "";
+    const block = /<script type="application\/ld\+json">(.*?)<\/script>/.exec(html)?.[1] ?? "{}";
+    const breadcrumb = JSON.parse(block) as {
+      itemListElement: { position: number; item: string }[];
+    };
+    expect(breadcrumb.itemListElement.map((entry) => [entry.position, entry.item])).toEqual([
+      [1, `${SITE_ORIGIN}/`],
+      [2, `${SITE_ORIGIN}${PAGE_PATHS.templates}`],
+      [3, `${SITE_ORIGIN}${templatePagePath(8)}`],
+    ]);
+  });
+
+  it("writes the files with the editor's export code, at the panel's size", () => {
+    expect(source(templateFilePath(8, "svg"))).toContain('viewBox="0 0 40.3 128.5"');
+    expect(source(templateFilePath(8, "svg")).match(/<circle /g)).toHaveLength(4);
+    expect(source(templateFilePath(8, "stl"))).toMatch(/^solid eurorack_panel/);
+    expect(source(templateFilePath(8, "kicad_pcb"))).toContain("Edge.Cuts");
+  });
+
+  it("lists the pages of the widths in the sitemap, under the other pages", () => {
+    const sitemap = files.find((file) => file.fileName === "sitemap.xml")?.source ?? "";
+    expect(sitemap).toContain(`<loc>${SITE_ORIGIN}${templatePagePath(8)}</loc>\n    <lastmod>`);
+    expect(sitemap).toMatch(
+      new RegExp(
+        `${templatePagePath(8)}</loc>\\n\\s*<lastmod>[^<]+</lastmod>\\n\\s*<priority>0.6<`,
+      ),
+    );
   });
 });

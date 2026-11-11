@@ -1,7 +1,7 @@
 /**
  * Publishes the content pages of `src/seo/`: React pages built with the UI kit, rendered to plain
- * HTML so that crawlers which never run JavaScript read them whole, along with the sitemap,
- * robots.txt and llms.txt.
+ * HTML so that crawlers which never run JavaScript read them whole, along with the panel templates
+ * they link, the sitemap, robots.txt and llms.txt.
  *
  * Everything is made at build time, by two builds of its own:
  * - a client build of the pages' stylesheet and island scripts, in `assets/seo/`, kept apart from
@@ -36,7 +36,7 @@ import {
   SEO_STYLES_ENTRY,
   type IslandId,
 } from "../../src/seo/islands/entries";
-import { PAGE_PATHS, SITE_FILE_NAMES } from "../../src/seo/paths";
+import { ALL_PAGE_PATHS, SITE_FILE_NAMES, TEMPLATE_FILE_PATHS } from "../../src/seo/paths";
 import type { PageAssets, SiteFile } from "../../src/seo/render";
 import { chunkCycleGuardPlugin } from "../chunkCycleGuard";
 
@@ -173,8 +173,12 @@ async function buildSite(config: ResolvedConfig): Promise<SiteFiles> {
   return files;
 }
 
-const PAGE_FILES = new Set<string>(Object.values(PAGE_PATHS).map((page) => `${page}index.html`));
-const SITE_FILES = new Set<string>(SITE_FILE_NAMES.map((name) => `/${name}`));
+const PAGE_FILES = new Set<string>(ALL_PAGE_PATHS.map((page) => `${page}index.html`));
+/** The files published beside the pages: those for crawlers, and the panel templates. */
+const SITE_FILES = new Set<string>([
+  ...SITE_FILE_NAMES.map((name) => `/${name}`),
+  ...TEMPLATE_FILE_PATHS,
+]);
 
 /**
  * The file a request asks for among those the content pages publish, or null. Every other
@@ -198,6 +202,9 @@ const CONTENT_TYPES: Record<string, string> = {
   ".js": "text/javascript; charset=utf-8",
   ".xml": "application/xml; charset=utf-8",
   ".txt": "text/plain; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".stl": "model/stl",
+  ".kicad_pcb": "text/plain; charset=utf-8",
 };
 
 /** What the pages are built from: a change under these builds them again. */

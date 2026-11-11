@@ -32,15 +32,18 @@ globalStyle(`${prose} h3`, {
 
 globalStyle(`${prose} > h3:first-child`, { marginTop: 0 });
 
+/** A link in a line of text that sits outside running text, such as a note under a figure. */
+export const link = style({});
+
 // Colour never carries meaning alone: links in text keep an underline.
-globalStyle(`${prose} a`, {
+globalStyle(`${prose} a, ${link}`, {
   color: vars.color.ac,
   textDecoration: "underline",
   textDecorationColor: vars.color.ac24,
   textUnderlineOffset: 3,
 });
 
-globalStyle(`${prose} a:hover`, {
+globalStyle(`${prose} a:hover, ${link}:hover`, {
   color: vars.color.tx,
   textDecorationColor: vars.color.tx3,
 });

@@ -28,13 +28,21 @@ export interface PageText {
   body: string;
 }
 
+/** How much each kind of page weighs next to the editor, which is 1.0. */
+const SITEMAP_PRIORITY: Record<ContentPage["group"], string> = {
+  tools: "0.8",
+  reference: "0.8",
+  templates: "0.6",
+  legal: "0.3",
+};
+
 function sitemap(pages: readonly ContentPage[]): string {
   const today = buildDate();
   const entries = [
     { loc: `${SITE_ORIGIN}/`, priority: "1.0" },
     ...pages.map((page) => ({
       loc: absoluteUrl(page.path),
-      priority: page.group === "legal" ? "0.3" : "0.8",
+      priority: SITEMAP_PRIORITY[page.group],
     })),
   ];
 
@@ -95,6 +103,12 @@ ${pageList(pages, "tools")}
 ## Reference pages
 
 ${pageList(pages, "reference")}
+
+## Blank panel templates
+
+Each width has an SVG outline, an STL and a KiCad board outline to download, free for personal use.
+
+${pageList(pages, "templates")}
 
 ## Project
 

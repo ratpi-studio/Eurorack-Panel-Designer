@@ -2,17 +2,12 @@ import React from "react";
 
 import { useI18n } from "@i18n/I18nContext";
 import {
-  DEFAULT_CLEARANCE_CONFIG,
-  DEFAULT_DESIGN_COLOR,
-  DEFAULT_DESIGN_RELIEF,
-  DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG,
-  DEFAULT_MOUNTING_HOLE_CONFIG,
-  DEFAULT_PANEL_COLOR,
-  DEFAULT_PANEL_OPTIONS,
-  type MountingHole,
-  type PanelModel,
-} from "@lib/panelTypes";
-import { DEFAULT_PANEL_FORMAT } from "@lib/panelFormat";
+  DEFAULT_BLANK_PANEL_HP,
+  OPEN_WIDTH_PARAM,
+  createBlankPanelModel,
+  readOpenWidthParam,
+} from "@lib/blankPanel";
+import { type MountingHole, type PanelModel } from "@lib/panelTypes";
 import { buildPanelPngDataUrl } from "@lib/canvas/exportPng";
 import { collectTextFontIds } from "@lib/designLayer";
 import {
@@ -33,7 +28,6 @@ import { withoutHiddenElements } from "@lib/elementVisibility";
 import { deserializePanelModel, serializePanelModel } from "@lib/serialization";
 import { OPEN_DESIGN_PARAM, fetchSharedDesign, readOpenDesignParam } from "@lib/share";
 import { loadTextFonts } from "@lib/text/textFontLoader";
-import { createPanelDimensions } from "@lib/units";
 import { usePanelStore } from "@store/panelStore";
 
 interface UseProjectsArgs {
@@ -466,39 +460,62 @@ export function useProjects({
     return true;
   }, [lastDeletedProject, markSavedState, setStatus, t.projects.messages, trySaveProject]);
 
+  /** Replaces the design with a blank 3U panel of `widthHp` HP, as an untitled project. */
+  const startBlankPanel = React.useCallback(
+    (widthHp: number, message: string) => {
+      const blankModel = createBlankPanelModel(widthHp);
+      setModel(blankModel);
+      clearHistory();
+      setPlacementType(null);
+      clearSelection();
+      setProjectName(t.projects.defaultName);
+      markSavedState(t.projects.defaultName, serializePanelModel(blankModel));
+      setLastDeletedProject(null);
+      setStatus(message, "info");
+      resetView();
+    },
+    [
+      clearHistory,
+      markSavedState,
+      setStatus,
+      resetView,
+      setModel,
+      setPlacementType,
+      clearSelection,
+      t.projects.defaultName,
+    ],
+  );
+
   const handleReset = React.useCallback(() => {
-    const resetModel = {
-      dimensions: createPanelDimensions(10),
-      elements: [],
-      options: { ...DEFAULT_PANEL_OPTIONS },
-      mountingHoleConfig: { ...DEFAULT_MOUNTING_HOLE_CONFIG },
-      elementHoleConfig: { ...DEFAULT_ELEMENT_MOUNTING_HOLE_CONFIG },
-      clearance: { ...DEFAULT_CLEARANCE_CONFIG },
-      panelColor: DEFAULT_PANEL_COLOR,
-      designColor: DEFAULT_DESIGN_COLOR,
-      designRelief: { ...DEFAULT_DESIGN_RELIEF },
-      format: { ...DEFAULT_PANEL_FORMAT },
-    };
-    setModel(resetModel);
-    clearHistory();
-    setPlacementType(null);
-    clearSelection();
-    setProjectName(t.projects.defaultName);
-    markSavedState(t.projects.defaultName, serializePanelModel(resetModel));
-    setLastDeletedProject(null);
-    setStatus(t.projects.messages.reset, "info");
-    resetView();
-  }, [
-    clearHistory,
-    markSavedState,
-    setStatus,
-    resetView,
-    setModel,
-    setPlacementType,
-    clearSelection,
-    t.projects.defaultName,
-    t.projects.messages.reset,
-  ]);
+    startBlankPanel(DEFAULT_BLANK_PANEL_HP, t.projects.messages.reset);
+  }, [startBlankPanel, t.projects.messages.reset]);
+
+  // "Open in the editor" on a panel template lands here with ?hp=<width>. The work in progress is
+  // saved first, as a new project does, then a blank panel of that width replaces it. A shared
+  // design asked for in the same address wins: the effect above has already taken it.
+  const hasOpenedWidth = React.useRef(false);
+  React.useEffect(() => {
+    const widthHp = readOpenWidthParam(window.location.search);
+    if (widthHp === null || hasOpenedWidth.current) {
+      return;
+    }
+    hasOpenedWidth.current = true;
+    const params = new URLSearchParams(window.location.search);
+    params.delete(OPEN_WIDTH_PARAM);
+    const search = params.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${search ? `?${search}` : ""}${window.location.hash}`,
+    );
+    if (hasOpenedSharedDesign.current) {
+      return;
+    }
+    if (usePanelStore.getState().model.elements.length > 0) {
+      handleSaveProject();
+    }
+    startBlankPanel(widthHp, t.projects.messages.openedWidth(widthHp));
+  }, [handleSaveProject, startBlankPanel, t.projects.messages]);
 
   return {
     projectName,

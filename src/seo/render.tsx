@@ -16,6 +16,7 @@ import { ISLANDS } from "./islands/islands";
 import { CONTENT_PAGES } from "./pages";
 import { buildDate } from "./site";
 import { siteFiles, toPlainText, type PageText, type SiteFile } from "./siteFiles";
+import { templateFiles } from "./templateFiles";
 import type { ContentPage, PageLink } from "./types";
 
 export type { PageAssets } from "./document";
@@ -66,7 +67,10 @@ function pageText(page: ContentPage): PageText {
   };
 }
 
-/** Every file the content pages publish: the pages, the sitemap, robots.txt and llms.txt. */
+/**
+ * Every file the content pages publish: the pages, the panel templates they link, the sitemap,
+ * robots.txt and llms.txt.
+ */
 export function renderSite(assets: PageAssets): SiteFile[] {
   const islands = renderIslands();
   const updated = buildDate();
@@ -75,6 +79,7 @@ export function renderSite(assets: PageAssets): SiteFile[] {
       fileName: pageFileName(page),
       source: renderPage(page, assets, islands, updated),
     })),
+    ...templateFiles(),
     ...siteFiles(CONTENT_PAGES, CONTENT_PAGES.map(pageText)),
   ];
 }

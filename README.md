@@ -42,7 +42,9 @@ plain HTML that needs none:
   plus a static summary inside `#root` that React replaces when it mounts.
 - `src/seo/` holds the content pages: the HP and U calculator (`/eurorack-hp-calculator/`) and the
   reference pages (`/eurorack-hp-to-mm/`, `/eurorack-panel-dimensions/`, `/eurorack-drill-sizes/`,
-  `/3d-print-eurorack-panel/`, `/kicad-eurorack-panel/`), and the terms of use (`/terms/`). They
+  `/3d-print-eurorack-panel/`, `/kicad-eurorack-panel/`), the blank panel templates
+  (`/eurorack-panel-templates/`, with a page for the common widths, such as
+  `/eurorack-panel-templates/8hp/`), and the terms of use (`/terms/`). They
   are React pages built with the
   [UI kit](#ui-kit), rendered to plain HTML at build time by `scripts/seo/plugin.ts`, along with
   `sitemap.xml`, `robots.txt`, `llms.txt` and `llms-full.txt`. Their styles are a stylesheet
@@ -51,13 +53,17 @@ plain HTML that needs none:
   it is an island, hydrated over the HTML the build rendered for it; the other pages load no
   script. Every measurement on the pages is read from `src/lib`, so a page cannot quote a number
   the editor no longer applies.
+- The templates are blank 3U panels from 1 to 42 HP, each as an SVG outline, an STL and a
+  `.kicad_pcb`, written at build time by the editor's own export code (`src/seo/templateFiles.ts`).
+  Their **Open** link starts the editor on a blank panel of that width, through `/?hp=<width>`.
 - `vp dev` serves the very files the build makes, built on the first request and again after a
   source file changes: reload the page to see a change.
 - `public/images/og.png` is the link preview card, drawn by `scripts/generate-og-image.py` and
   committed; the build needs no Python.
 
-Add a page by adding it to `CONTENT_PAGES` in `src/seo/pages/index.ts`: the navigation, the footer,
-the sitemap and `llms.txt` follow on their own.
+Add a page by adding its path to `src/seo/paths.ts` and the page to `CONTENT_PAGES` in
+`src/seo/pages/index.ts`: the navigation, the footer, the sitemap and `llms.txt` follow on their
+own. Give a template width a page of its own by adding it to `TEMPLATE_PAGE_WIDTHS_HP`.
 
 ### UI kit
 

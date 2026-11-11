@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.20.0 - 2026-11-11
+
+- New **blank panel templates**, at /eurorack-panel-templates/: a blank 3U Eurorack panel for every width from 1 to 42 HP, to download as an SVG outline, an STL (2 mm thick) or a KiCad board outline. They are cut at the widths Doepfer publishes, with their mounting holes on the grid of the rails, and are the very files the editor exports for a blank panel. The most common widths, such as 4, 8 or 12 HP, also have a page of their own, with the panel drawn to scale, its dimensions and the position of each hole.
+- **Open** on a template starts the editor on a blank panel of that width. The address `/?hp=12` does the same for any width: the design in progress is saved as a project first, as **New project** does.
+
 ## 0.19.0 - 2026-10-15
 
 - New **Terms of use** page (`/terms/`), linked from the scale button in the editor's header, under the export formats, and at the foot of every content page. The editor stays free for personal use, but the files it exports, and panels or other objects made from them, may not be sold; panels ordered from the editor are made and sold by the RatpiSynth shop on Etsy. The page also says what data leaves the browser (hosting, visit counts, error reports, orders), and holds the legal notice.
