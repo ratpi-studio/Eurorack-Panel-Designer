@@ -48,6 +48,7 @@ Prefer Vite+ commands when working in the repository:
   - `PanelDesigner` is the main shell.
   - `RightPanel` keeps the project controls on top and three tabs below: Display, Properties, and Components (`ComponentList`). The open tab is a preference (`useRightPanelTab`); canvas selections open Properties unless Components is open.
   - `PanelCanvas` and its hooks handle canvas interaction and rendering orchestration.
+  - `ResourcesMenu`, in the header, links the content pages. Its links stay in the DOM while the menu is closed (`hidden`), since search engines follow the links of the rendered editor, where React has replaced the static summary of `index.html`: keep them rendered, and add a link there with each new content page.
 - `src/store/`
   - `panelStore.ts` is the main persisted Zustand store.
   - `usePanelHistory.ts` owns undo / redo behavior.

@@ -23,6 +23,13 @@ interface Translations {
     etsyLabel: string;
     etsyAriaLabel: string;
     termsLabel: string;
+    resources: {
+      label: string;
+      links: Record<
+        "calculator" | "templates" | "hpToMm" | "dimensions" | "drillSizes" | "printing" | "kicad",
+        string
+      >;
+    };
   };
   canvas: {
     hudSuffix: string;
@@ -469,6 +476,18 @@ export const enUS: Translations = {
     etsyLabel: "Etsy",
     etsyAriaLabel: "Open the RatpiSynth Etsy shop",
     termsLabel: "Terms of use",
+    resources: {
+      label: "Tools, templates and guides",
+      links: {
+        calculator: "HP and U calculator",
+        templates: "Blank panel templates",
+        hpToMm: "HP to mm table",
+        dimensions: "Panel dimensions",
+        drillSizes: "Drill sizes for parts",
+        printing: "3D printing a panel",
+        kicad: "KiCad export",
+      },
+    },
   },
   canvas: {
     hudSuffix: "Static render",

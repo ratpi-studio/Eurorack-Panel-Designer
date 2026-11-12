@@ -5,6 +5,7 @@ import { iconLabelProps } from "@components/Tooltip/TooltipLayer";
 
 import { PAGE_PATHS } from "../../seo/paths";
 import * as styles from "./PanelDesigner.css";
+import { ResourcesMenu, type ResourcesMenuCopy } from "./ResourcesMenu";
 
 const GITHUB_REPO_URL = "https://github.com/ratpi-studio/Eurorack-Panel-Designer";
 const ETSY_SHOP_URL = "https://ratpisynth.etsy.com?ref=eurorack_panel_designer";
@@ -18,6 +19,7 @@ interface PanelHeaderCopy {
   etsyLabel: string;
   etsyAriaLabel: string;
   termsLabel: string;
+  resources: ResourcesMenuCopy;
 }
 
 interface PanelHeaderProps {
@@ -69,6 +71,7 @@ export function PanelHeader({ title, changelogLabel, copy, onOpenChangelog }: Pa
             <ShoppingBag />
             <span className={styles.etsyWordmark}>{copy.etsyLabel}</span>
           </a>
+          <ResourcesMenu copy={copy.resources} />
           <a
             className={styles.githubLink}
             href={PAGE_PATHS.terms}

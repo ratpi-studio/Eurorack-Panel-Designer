@@ -18,6 +18,8 @@ export const page = style({
 });
 
 export const header = style({
+  // The menu of tools and guides spans the header on small screens.
+  position: "relative",
   display: "flex",
   flexDirection: "column",
   gap: vars.spacing.xs,
@@ -286,6 +288,66 @@ export const changelogButton = style({
   selectors: {
     "&:hover": {
       backgroundColor: "#101c33",
+    },
+  },
+});
+
+// The menu of tools and guides hangs under its button, in the header.
+export const resourcesMenuRoot = style({
+  position: "relative",
+  display: "inline-flex",
+  "@media": {
+    // On small screens the button sits mid-row: the menu spans the header instead.
+    "screen and (max-width: 720px)": {
+      position: "static",
+    },
+  },
+});
+
+// The links stay in the page while the menu is closed: `hidden` takes it off the screen.
+export const resourcesMenu = style({
+  position: "absolute",
+  top: "100%",
+  right: 0,
+  marginTop: 6,
+  minWidth: "220px",
+  backgroundColor: vars.color.surface,
+  borderRadius: "8px",
+  border: `1px solid ${vars.color.border}`,
+  boxShadow: "0 16px 40px rgba(15, 23, 42, 0.65)",
+  zIndex: 30,
+  overflow: "hidden",
+  display: "flex",
+  flexDirection: "column",
+  selectors: {
+    "&[hidden]": {
+      display: "none",
+    },
+  },
+  "@media": {
+    "screen and (max-width: 720px)": {
+      left: 0,
+    },
+  },
+});
+
+export const resourcesMenuLink = style({
+  display: "flex",
+  alignItems: "center",
+  gap: vars.spacing.sm,
+  padding: `${vars.spacing.xs} ${vars.spacing.sm}`,
+  color: vars.color.textPrimary,
+  textDecoration: "none",
+  fontSize: "14px",
+  fontWeight: 600,
+  whiteSpace: "nowrap",
+  selectors: {
+    "&:hover": {
+      backgroundColor: "#101c33",
+    },
+    "&:focus-visible": {
+      outline: `2px solid ${vars.color.accent}`,
+      outlineOffset: "-2px",
     },
   },
 });
