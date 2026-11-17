@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -21,7 +21,8 @@ import { renderSite, type PageAssets } from "./render";
 import { SITE_ORIGIN } from "./site";
 import { getPanelTemplate } from "./templates";
 
-const publicDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../public");
+const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const publicDir = path.join(rootDir, "public");
 
 const ASSETS: PageAssets = {
   stylesheets: ["/assets/seo/style-test.css"],
@@ -250,5 +251,27 @@ describe("panel templates", () => {
         `${templatePagePath(8)}</loc>\\n\\s*<lastmod>[^<]+</lastmod>\\n\\s*<priority>0.6<`,
       ),
     );
+  });
+
+  it("keeps the STL and KiCad files out of search engines, and nothing else", () => {
+    const config = JSON.parse(readFileSync(path.join(rootDir, "vercel.json"), "utf8")) as {
+      headers: { source: string; headers: { key: string; value: string }[] }[];
+    };
+    // vercel.json writes sources in path-to-regexp syntax: ":name" stands for one path segment.
+    const noindex = config.headers
+      .filter((entry) =>
+        entry.headers.some(({ key, value }) => key === "X-Robots-Tag" && value === "noindex"),
+      )
+      .map(
+        ({ source }) => new RegExp(`^${source.replace(/\./g, "\\.").replace(/:\w+/g, "[^/]+")}$`),
+      );
+    const isNoindex = (pathname: string) => noindex.some((pattern) => pattern.test(pathname));
+
+    for (const filePath of TEMPLATE_FILE_PATHS) {
+      expect([filePath, isNoindex(filePath)]).toEqual([filePath, !filePath.endsWith(".svg")]);
+    }
+    for (const pagePath of ["/", ...ALL_PAGE_PATHS]) {
+      expect([pagePath, isNoindex(pagePath)]).toEqual([pagePath, false]);
+    }
   });
 });

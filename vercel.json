@@ -24,6 +24,14 @@
     {
       "source": "/p/:code",
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+    },
+    {
+      "source": "/eurorack-panel-templates/:file.stl",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+    },
+    {
+      "source": "/eurorack-panel-templates/:file.kicad_pcb",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
     }
   ]
 }
